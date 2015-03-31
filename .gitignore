@@ -1,0 +1,7 @@
+*.sublime-project
+*.sublime-workspace
+*.o
+*.mod
+*.a
+bin/badlands
+.project

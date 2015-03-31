@@ -1,2 +1,4 @@
-# badlands
-BAsin anD LANdscape DynamicS
+Badlands
+=====
+
+Basin and Landscape Dynamics
