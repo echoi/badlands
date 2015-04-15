@@ -1,5 +1,5 @@
 ! =====================================================================================
-! BADLANDS (BAsin anD LANdscape DynamicS)
+! BALAD (BAsin and LAndscape Dynamics)
 !
 ! Copyright (C) 2015 Tristan Salles 
 !
@@ -60,7 +60,7 @@ contains
 
       ! Create header
       write(iunit,'(a26)')'# vtk DataFile Version 2.0'
-      write(iunit,'(a27)')'Badlands to Underworld Data'
+      write(iunit,'(a24)')'Balad to Underworld Data'
       write(iunit,'(a5)')'ASCII'
       write(iunit,'(a25)')'DATASET STRUCTURED_POINTS'
       write(iunit,'(a10,1x,i10,1x,i10,1x,i2)')'DIMENSIONS',nx,ny,1
@@ -132,7 +132,10 @@ contains
           ! Read the maestro file
           open(iu,file=maestro,status="old",action="read",iostat=ios)
           rewind(iu)
-          read(iu,'(a1)') charac
+          if(ios==0)then 
+            read(iu,'(a1)',iostat=ios) charac
+            if(ios/=0) charac='U'
+          endif
           close(iu)
           call Sleep(1)
        enddo
