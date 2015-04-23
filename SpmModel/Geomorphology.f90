@@ -80,6 +80,7 @@ contains
         facType=0.
       endif
       spmZ=tcoordZ
+
       if(faciesOn==1.and..not.restartFlag)then
         if(allocated(stratalZ)) deallocate(stratalZ)
         if(allocated(stratalFacies)) deallocate(stratalFacies)
@@ -91,6 +92,7 @@ contains
         layerID=1
         stratalZ(layerID,:)=spmZ
       endif
+
       cumDisp=0.
       CFL_diffusion=layer_interval
       time_step=0. 
@@ -98,6 +100,7 @@ contains
       layer_time=time_start 
       if(Cefficiency>0..or.stream_ero>0.) Tforce=1
     endif
+
     cpl_time=min(cpl1_time,cpl2_time)
     cpl_time=min(cpl_time,time_end)
 
@@ -120,6 +123,8 @@ contains
 !       call ESMF_VMWtime(time2,rc=rc)
 !       if(pet_id==0) print*,'define_landscape_network1',time2-time1
 !       call ESMF_VMWtime(time1,rc=rc)
+
+      if(perosive==1) depressionAlgo=.false.
 
       ! Find drainage area
       call compute_cumulative_discharge
@@ -328,7 +333,7 @@ contains
         SPL=0.
         Qs1=0.
         if(Cerodibility>0.) call detachmentlimited(id,rcv,distance,diffH,SPL,Qs1)
-        
+
         ! Sediment Transport Law (transport-limited)
         STL=0.
         Qs2=0.
@@ -453,6 +458,7 @@ contains
     do lid=1,localNodes
       id=localNodesGID(lid)
       k=stackOrder(id) 
+      rcv=receivers(k)
       if(voronoiCell(k)%border==0)then 
         if(tcoordX(k)==minx.and.bounds(3)==0)change_local(k)=0. 
         if(tcoordX(k)==maxx.and.bounds(4)==0)change_local(k)=0.

@@ -376,7 +376,7 @@ contains
 
     logical::compression
 
-    integer(ESMF_KIND_I4)::id,i,k,rank,iter,p,id1
+    integer(ESMF_KIND_I4)::id,i,rank,iter,p,id1
     integer(ESMF_KIND_I4),dimension(:),allocatable::connect
 
     real(ESMF_KIND_R8),dimension(:),allocatable::nodes,cellID,LayID,facID
@@ -822,7 +822,7 @@ contains
 
     logical::compression
 
-    integer(ESMF_KIND_I4)::id,id1,i,k,p,rank,iter,totnodes,ierr
+    integer(ESMF_KIND_I4)::id,i,k,p,rank,iter,totnodes,ierr
     real(ESMF_KIND_R8),dimension(:),allocatable::zstrat,cID,faciesT
 
     character(len=128)::text,file

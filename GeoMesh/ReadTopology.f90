@@ -570,6 +570,8 @@ contains
     endif
 
     if(display_interval<layer_interval) layer_interval=display_interval
+    if(faciesOn==1 .and. layer_interval==0) layer_interval=display_interval
+
 
   end subroutine topology_parser
   ! =====================================================================================

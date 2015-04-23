@@ -55,7 +55,7 @@ contains
 
     integer(ESMF_KIND_I4)::id,i,k,p,rank,iter,totnodes,totelems,ierr
     integer(ESMF_KIND_I4),dimension(:),allocatable::connect
-    real(ESMF_KIND_R8),dimension(:),allocatable::nodes,facc,dz,rego,cID,nID
+    real(ESMF_KIND_R8),dimension(:),allocatable::nodes,facc,dz,rego,cID,nID,sl
 
     character(len=128)::text,file
 
@@ -86,6 +86,7 @@ contains
     allocate(facc(totnodes))
     allocate(cID(totnodes))
     allocate(nID(totnodes))
+    allocate(sl(totnodes))
     allocate(connect(3*totelems))
 
     ! Create nodes arrays
@@ -113,6 +114,7 @@ contains
         endif
        endif
        cID(k)=real(subcatchmentID(i))
+       sl(k)=gsea%actual_sea
        nID(k)=real(i)
        id=id+3
     enddo
@@ -287,6 +289,30 @@ contains
     call h5dclose_f(dset_id,ierr)
     call h5sclose_f(filespace,ierr)
 
+    ! Sea-level
+    dims(1)=1
+    dims(2)=totnodes
+    rank=2
+    call h5screate_simple_f(rank,dims,filespace,ierr)
+    text=''
+    text="/sl"
+    
+    ! Create property list for collective dataset write
+    call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
+    call h5pset_deflate_f(plist_id,9,ierr)
+    call h5pset_chunk_f(plist_id,rank,dims,ierr)
+
+    ! Create the dataset with default properties
+    call h5dcreate_f(file_id,trim(text),h5t_native_double,filespace,dset_id,ierr,plist_id)
+
+    ! Write the dataset collectively
+    call h5dwrite_f(dset_id,h5t_native_double,sl,dims,ierr)
+    call h5pclose_f(plist_id,ierr)
+
+    ! Close the dataset
+    call h5dclose_f(dset_id,ierr)
+    call h5sclose_f(filespace,ierr)
+
     ! Regolith depth
     if(regoProd>0.)then
         dims(1)=1
@@ -330,7 +356,8 @@ contains
     type(xmlf_t)::xf
     integer::ierr
     integer(ESMF_KIND_I4)::iter,totnodes,totelems,k
-    character(len=128)::str,stg,filename,filename1,filename2,file,filename3,filename4,filename5
+    character(len=128)::str,stg,filename,filename1,filename2,file,filename3
+    character(len=128)::filename4,filename5,filename6
 
     call spm_hdf5(iter)
 
@@ -386,6 +413,7 @@ contains
             filename3=filename
             filename4=filename
             filename5=filename
+            filename6=filename
             str=':/connectivity'
             call append_str(filename,str)
             str=':/vertices'
@@ -398,6 +426,8 @@ contains
             call append_str(filename4,str)
             str=':/cID'
             call append_str(filename5,str)
+            str=':/sl'
+            call append_str(filename6,str)
 
             ! Block begin
             call xml_NewElement(xf,"Grid")
@@ -485,6 +515,23 @@ contains
             call append_nb2(str,1)
             call xml_AddAttribute(xf,"Dimensions",trim(str))
             call xml_AddCharacters(xf,trim(filename5))
+            call xml_EndElement(xf,"DataItem")
+            call xml_EndElement(xf,"Attribute") 
+
+            ! Sea level
+            call xml_NewElement(xf,"Attribute")
+            call xml_AddAttribute(xf,"Type","Scalar")
+            call xml_AddAttribute(xf,"Center","Node")
+            call xml_AddAttribute(xf,"Name","Sealevel")
+            call xml_NewElement(xf,"DataItem")
+            call xml_AddAttribute(xf,"Format","HDF")
+            call xml_AddAttribute(xf,"NumberType","Float")
+            call xml_AddAttribute(xf,"Precision","4")
+            str=' '
+            call append_nb2(str,totnodes)
+            call append_nb2(str,1)
+            call xml_AddAttribute(xf,"Dimensions",trim(str))
+            call xml_AddCharacters(xf,trim(filename6))
             call xml_EndElement(xf,"DataItem")
             call xml_EndElement(xf,"Attribute") 
 

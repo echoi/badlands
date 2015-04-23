@@ -310,9 +310,14 @@ contains
           watercell(k)=spmZ(-cID)+fh-spmZ(k)
         endif
       endif
+      
+      if(watercell(k)<0.) watercell(k)=0.
+      
       ! On border fix DEM elevation for filling calculation
       if(tcoordX(k)==minx-dx.or.tcoordX(k)==maxx+dx.or.tcoordY(k)==miny-dx &
-        .or.tcoordY(k)==maxy+dx) filldem(k)=spmZ(k)+watercell(k)
+        .or.tcoordY(k)==maxy+dx)then 
+        filldem(k)=spmZ(k)+watercell(k)
+      endif
     enddo
 
     ! Now find the sinks and fill them using Planchon's method
