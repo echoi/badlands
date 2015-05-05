@@ -150,10 +150,12 @@ contains
         i=drainers(k)
         p=p+1
         if(i>0)then
-            if(voronoiCell(i)%border==0.and.voronoiCell(i)%btype<0)then
+            if(voronoiCell(i)%border==0.and.voronoiCell(i)%btype<0.and.tcoordX(i)>=minx.and.&
+             tcoordX(i)<=maxx.and.tcoordY(i)>=miny.and.tcoordY(i)<=maxy)then
                 rcv=receivers(i)
                 if(rcv/=i.and.voronoiCell(rcv)%border==0.and.voronoiCell(rcv)%btype<0)then
-                    if(subcatchmentProc(i)==pet_id)then
+                    if(subcatchmentProc(i)==pet_id.and.tcoordX(rcv)>=minx.and.tcoordX(rcv)<=maxx.and. &
+                      tcoordY(rcv)>=miny.and.tcoordY(rcv)<=maxy)then
                         totelems=totelems+1
                         if(totnodes*2<totelems)print*,'Problem when writing drainage hdf5 files'
                         connect(id)=k

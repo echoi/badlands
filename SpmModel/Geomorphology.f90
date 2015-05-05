@@ -51,7 +51,7 @@ module geomorpho
   integer::iter
 
   real(ESMF_KIND_R8)::cpl_time,max_time
-  real(ESMF_KIND_R8)::time1,time2,wt1,wt2
+  real(ESMF_KIND_R8)::time1,time2
 
 contains
 
@@ -106,65 +106,64 @@ contains
 
     do while(simulation_time<cpl_time)
 
-!       call ESMF_VMWtime(wt1,rc=rc)
-!       call ESMF_VMWtime(time1,rc=rc)
-      ! From rough surface find the stream network 
-      depressionAlgo=.false.
+      if(.not.allocated(filldem)) allocate(filldem(dnodes))
+      if(.not.allocated(watercell)) allocate(watercell(dnodes))
 
       ! Update borders
       call update_grid_borders
-      if(.not.allocated(filldem)) allocate(filldem(dnodes))
-      if(.not.allocated(watercell)) allocate(watercell(dnodes))
-      watercell=0.
-      filldem=spmZ
 
-      ! Find network tree based on Braun & Willet 2013
-      call define_landscape_network
-!       call ESMF_VMWtime(time2,rc=rc)
-!       if(pet_id==0) print*,'define_landscape_network1',time2-time1
-!       call ESMF_VMWtime(time1,rc=rc)
-
-      if(perosive==1) depressionAlgo=.false.
-
-      ! Find drainage area
-      call compute_cumulative_discharge
-!       call ESMF_VMWtime(time2,rc=rc)
-!       if(pet_id==0) print*,'compute_cumulative_discharge1',time2-time1
-!       call ESMF_VMWtime(time1,rc=rc)
-
-     ! Depressionless DEM required
-      if(depressionAlgo)then 
-        ! Define lake height for each local minima
-        call define_drained_water_thickness
-!       call ESMF_VMWtime(time2,rc=rc)
-!       if(pet_id==0) print*,'define_drained_water_thickness',time2-time1
-!       call ESMF_VMWtime(time1,rc=rc)
-        ! Perform depressionless filling algo
-        call planchon_dem_fill_algorithm  
-!       call ESMF_VMWtime(time2,rc=rc)
-!       if(pet_id==0) print*,'planchon_dem_fill_algorithm',time2-time1
-!       call ESMF_VMWtime(time1,rc=rc)
+      ! From rough surface find the stream network,
+      ! this is performed on the main PET ID
+      if(pet_id==0)then
+        depressionAlgo=.false.
+        watercell=0.
+        filldem=spmZ
         ! Find network tree based on Braun & Willet 2013
         call define_landscape_network
-!       call ESMF_VMWtime(time2,rc=rc)
-!       if(pet_id==0) print*,'define_landscape_network2',time2-time1
-!       call ESMF_VMWtime(time1,rc=rc)
+        if(perosive==1) depressionAlgo=.false.
         ! Find drainage area
         call compute_cumulative_discharge
-!       call ESMF_VMWtime(time2,rc=rc)
-!       if(pet_id==0) print*,'compute_cumulative_discharge2',time2-time1
-!       call ESMF_VMWtime(time1,rc=rc)
+        ! Depressionless DEM required
+        if(depressionAlgo)then 
+          ! Define lake height for each local minima
+          call define_drained_water_thickness
+          ! Perform depressionless filling algo
+          call planchon_dem_fill_algorithm  
+          ! Find network tree based on Braun & Willet 2013
+          call define_landscape_network
+          ! Find drainage area
+          call compute_cumulative_discharge
+        endif
+      else
+        if(.not.allocated(receivers)) allocate(receivers(dnodes))
+        if(.not.allocated(stackOrder)) allocate(stackOrder(dnodes))
+        if(.not.allocated(discharge)) allocate(discharge(dnodes))
       endif
 
+      ! Broadcast stream network dataset
+      call ESMF_VMBroadcast(vm=vm,bcstData=receivers,count=dnodes,rootPet=0,rc=rc)
+      call ESMF_VMBroadcast(vm=vm,bcstData=stackOrder,count=dnodes,rootPet=0,rc=rc)
+      call ESMF_VMBroadcast(vm=vm,bcstData=watercell,count=dnodes,rootPet=0,rc=rc)
+      call ESMF_VMBroadcast(vm=vm,bcstData=filldem,count=dnodes,rootPet=0,rc=rc)
+      call ESMF_VMBroadcast(vm=vm,bcstData=discharge,count=dnodes,rootPet=0,rc=rc)
+
       ! Define subcathcment partitioning
-      call compute_subcatchment
-!       call ESMF_VMWtime(time2,rc=rc)
-!       if(pet_id==0) print*,'compute_subcatchment',time2-time1
-!       call ESMF_VMWtime(time1,rc=rc)
+      if(pet_id==0)then
+        call compute_subcatchment
+      else
+        if(.not.allocated(strahler)) allocate(strahler(dnodes))
+        if(.not.allocated(subcatchmentID)) allocate(subcatchmentID(dnodes))
+      endif
+
+      ! Broadcast subcatchment dataset
+      call ESMF_VMBroadcast(vm=vm,bcstData=subcatchmentID,count=dnodes,rootPet=0,rc=rc)
+
+      ! Define load balancing
+      call bcast_loadbalancing
 
       if(simulation_time==time_start) newZ=spmZ
       if(pet_id==0)print*,'Current time:',simulation_time
-
+      
       ! Visualisation surface
       if(simulation_time>=time_display)then
         call visualise_surface_changes(iter)
@@ -177,9 +176,6 @@ contains
         newZ=spmZ
         cumDisp=0.
       endif
-!       call ESMF_VMWtime(time2,rc=rc)
-!       if(pet_id==0) print*,'visualise',time2-time1
-!       call ESMF_VMWtime(time1,rc=rc)
       
       ! Add facies layer
       if(simulation_time>=layer_time.and.faciesOn==1)then
@@ -188,19 +184,12 @@ contains
         stratalZ(layerID,:)=stratalZ(layerID-1,:)
         facType=0.0
       endif
-
+      
       ! Get time step size for hillslope process and stream power law
       call CFL_condition 
-!       call ESMF_VMWtime(time2,rc=rc)
-!       if(pet_id==0) print*,'CFL_condition',time2-time1
-!       call ESMF_VMWtime(time1,rc=rc)
-      
       ! Geomorphological evolution
       call geomorphic_evolution
-!       call ESMF_VMWtime(time2,rc=rc)
-!       if(pet_id==0) print*,'geomorphic_evolution',time2-time1
-!       call ESMF_VMWtime(time1,rc=rc)
-
+      
       ! Advance time
       simulation_time=simulation_time+time_step
       ! Update sea-level
@@ -208,9 +197,6 @@ contains
       ! Apply displacement
       if(disp%event>0) call compute_vertical_displacement
 
-!       call ESMF_VMWtime(time2,rc=rc)
-!       if(pet_id==0) print*,'compute_vertical_displacement',time2-time1
-!       call ESMF_VMWtime(time1,rc=rc)
       ! Merge local geomorphic evolution
       call ESMF_VMAllReduce(vm=vm,sendData=nZ,recvData=spmZ,count=dnodes,&
         reduceflag=ESMF_REDUCE_MAX,rc=rc)
@@ -219,14 +205,7 @@ contains
         reduceflag=ESMF_REDUCE_MAX,rc=rc)
 
       if(faciesOn==1) call update_facies
-!       call ESMF_VMWtime(time2,rc=rc)
-!       if(pet_id==0) print*,'reduce',time2-time1
-!       call ESMF_VMWtime(time1,rc=rc)
-!       call ESMF_VMWtime(wt2,rc=rc)
-!       call ESMF_VMBarrier(vm=vm,rc=rc)
-!       if(pet_id==0) print*,'-------- total loop',wt2-wt1
-!       if(pet_id==0) stop
-
+      call ESMF_VMBarrier(vm=vm,rc=rc)
     enddo
 
     if(simulation_time>=time_end)then

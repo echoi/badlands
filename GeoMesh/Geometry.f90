@@ -43,6 +43,8 @@ module geomesh
   use outsurf
   use meshPartition
   use parallel
+  use m_mrgrnk
+  use orderpack
 
   implicit none
 
@@ -64,16 +66,40 @@ contains
     call ESMF_VMWtime(time1,rc=rc)
     call ESMF_LogWrite("Defined the Mesh Geometries",ESMF_LOGMSG_INFO,rc=rc)
     call topology_parser
+!     call ESMF_VMWtime(time2,rc=rc)
+!     if(pet_id==0) print*,'topo parser ',time2-time1
+!     call ESMF_VMWtime(time1,rc=rc)
     call geomorphology_parser
+!     call ESMF_VMWtime(time2,rc=rc)
+!     if(pet_id==0) print*,'geo parser ',time2-time1
+!     call ESMF_VMWtime(time1,rc=rc)
     call forces_parser
+!     call ESMF_VMWtime(time2,rc=rc)
+!     if(pet_id==0) print*,'forces parser ',time2-time1
+!     call ESMF_VMWtime(time1,rc=rc)
     call ReadRegular
+!     call ESMF_VMWtime(time2,rc=rc)
+!     if(pet_id==0) print*,'read reg ',time2-time1
+!     call ESMF_VMWtime(time1,rc=rc)
     call ESMF_LogWrite("- Structured Grid initialised ",ESMF_LOGMSG_INFO,rc=rc)
     if(pet_id==0) call DelaunayTransform
+!     call ESMF_VMWtime(time2,rc=rc)
+!     if(pet_id==0) print*,'delaunay transform ',time2-time1
+!     call ESMF_VMWtime(time1,rc=rc)
     call ESMF_VMBarrier(vm=vm,rc=rc)
     call ReadTriangle
+!     call ESMF_VMWtime(time2,rc=rc)
+!     if(pet_id==0) print*,'read tri ',time2-time1
+!     call ESMF_VMWtime(time1,rc=rc)
     call ESMF_LogWrite("- Conforming Delaunay Triangulation ",ESMF_LOGMSG_INFO,rc=rc)
     call DelaunayVoronoiDuality 
+!     call ESMF_VMWtime(time2,rc=rc)
+!     if(pet_id==0) print*,'vor dual ',time2-time1
+!     call ESMF_VMWtime(time1,rc=rc)
     call DelaunayBorders
+!     call ESMF_VMWtime(time2,rc=rc)
+!     if(pet_id==0) print*,'borders ',time2-time1
+!     call ESMF_VMWtime(time1,rc=rc)
     call ESMF_LogWrite("- Voronoi Diagram of the CDT generated ",ESMF_LOGMSG_INFO,rc=rc)
 !     if(pet_id==0)then
 !       call delaunay_xmf
@@ -81,6 +107,9 @@ contains
 !     endif
     ! Unstructured Grid Partitioning
     call UnstructureGridPart
+!     call ESMF_VMWtime(time2,rc=rc)
+!     if(pet_id==0) print*,'grid part ',time2-time1
+!     call ESMF_VMWtime(time1,rc=rc)
     ! Structured Grid Partitioning
     call StructureGridPart
     call ESMF_VMWtime(time2,rc=rc)
@@ -419,10 +448,10 @@ contains
     integer::iu
     integer::n,a,b,c,m,id
 
-    character(len=50)::stg 
     character(len=256)::trifile
 
     real(ESMF_KIND_R8),dimension(2)::center
+    real(ESMF_KIND_R8),dimension(:,:),allocatable::map
 
     call ESMF_UtilIOUnitGet(unit=iu,rc=rc)
     if(ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -541,16 +570,11 @@ contains
     close(iu)
 
     ! Mark any duplicate points
-    do n=1,vnodes-1
-       if(mask(n)==n)then
-          do m=n+1,vnodes
-             if(abs(vcoordX(n)-vcoordX(m))<0.00001_8 .and. &
-                  abs(vcoordY(n)-vcoordY(m))<0.00001_8)then
-                mask(m)=n
-             endif
-          enddo
-       endif
-    enddo
+    if(allocated(map)) deallocate(map)
+    allocate(map(2,vnodes))
+    map(1,:)=anint(vcoordX(:)*100000.0)/100000.0
+    map(2,:)=anint(vcoordY(:)*100000.0)/100000.0
+    call findmap(map,mask)
 
     ! Read Voronoi edges
     trifile='TIN.1.v.edge'
@@ -567,8 +591,9 @@ contains
     read(iu,*) vedge,a
     allocate(vedg(vedge,2))
     do n=1,vedge
-       read(iu,"(A50)")stg
-       call ReadStrings(n,stg)
+       read(iu,*)a,vedg(n,1:2)
+       if(vedg(n,1)>0) vedg(n,1)=mask(vedg(n,1))
+       if(vedg(n,2)>0) vedg(n,2)=mask(vedg(n,2))
     enddo
     close(iu)
 
@@ -580,8 +605,10 @@ contains
 
     logical::rec,rec2
 
-    integer(ESMF_KIND_I4)::cell,n,id,id1,id2,p,k,nvert,m,tvert,pt(2)
+    integer(ESMF_KIND_I4)::cell,n,id,id1,id2,id3,p,k,nvert,m,tvert,pt(2)
     integer(ESMF_KIND_I4),dimension(20)::vsort,sortedID,vorPtsn,vorPts,tsort
+
+    integer(ESMF_KIND_I4),dimension(:),allocatable::ed1,ed2,rk1,rk2
 
     real(ESMF_KIND_R8)::dist,area 
     real(ESMF_KIND_R8),dimension(20)::vnx,vny,tnx,tny
@@ -591,132 +618,194 @@ contains
     vcellIN=0
     velemIN=0
 
+    ! Rank the edges by point IDs
+    if(allocated(ed1)) deallocate(ed1,ed2)
+    if(allocated(rk1)) deallocate(rk1,rk2)
+    allocate(ed1(dedge),ed2(dedge))
+    allocate(rk1(dedge),rk2(dedge))
+    ed1(:)=dedg(:,1)
+    ed2(:)=dedg(:,2)
+    call mrgrnk(ed1,rk1)
+    call mrgrnk(ed2,rk2)
+
+    id1=0
+    id2=0
     do cell=1,dnodes
-       delaunayVertex(cell)%ngbNb=0
-       delaunayVertex(cell)%ngbID=-1
-       delaunayVertex(cell)%voronoi_edge=0.0_8
-       voronoiCell(cell)%perimeter=0.0_8
-       voronoiCell(cell)%vertexID=-1
-       voronoiCell(cell)%vertexNb=0
-       voronoiCell(cell)%border=0
-       voronoiCell(cell)%area=0.0_8
-       do n=1,dedge
-          ! Search every edge that has the vertex as endpoint
-          if(dedg(n,1)==cell.or.dedg(n,2)==cell)then
-             ! Set the delaunay neighbors
-             rec=.true.
-             if(dedg(n,1)/=cell.and.dedg(n,1)>0)then
-                ! Check that the points has been recorded yet
-                do id=1,delaunayVertex(cell)%ngbNb
-                   if(delaunayVertex(cell)%ngbID(id)==dedg(n,1)) rec=.false.
-                enddo
-                if(rec)then
-                   id=delaunayVertex(cell)%ngbNb+1
-                   delaunayVertex(cell)%ngbNb=id
-                   delaunayVertex(cell)%ngbID(id)=dedg(n,1)
-                endif
-             elseif(dedg(n,2)/=cell.and.dedg(n,2)>0)then 
-                ! Check that the points has been recorded yet
-                do id=1,delaunayVertex(cell)%ngbNb
-                   if(delaunayVertex(cell)%ngbID(id)==dedg(n,2)) rec=.false.
-                enddo
-                if(rec)then
-                   id=delaunayVertex(cell)%ngbNb+1
-                   delaunayVertex(cell)%ngbNb=id
-                   delaunayVertex(cell)%ngbID(id)=dedg(n,2)
-                endif
-             endif
+      delaunayVertex(cell)%ngbNb=0
+      delaunayVertex(cell)%ngbID=-1
+      delaunayVertex(cell)%voronoi_edge=0.0_8
+      voronoiCell(cell)%perimeter=0.0_8
+      voronoiCell(cell)%vertexID=-1
+      voronoiCell(cell)%vertexNb=0
+      voronoiCell(cell)%border=0
+      voronoiCell(cell)%area=0.0_8
 
-             ! Get the Voronoi cell by duality
-             rec=.true.
-             rec2=.true.
-             if(voronoiCell(cell)%vertexNb>=1)then
-                do p=1,voronoiCell(cell)%vertexNb
-                   if(voronoiCell(cell)%vertexID(p)==vedg(n,1))then
-                      rec=.false.
-                   endif
-                   if(voronoiCell(cell)%vertexID(p)==vedg(n,2))then
-                      rec2=.false.
-                   endif
-                enddo
-                if(rec.and.vedg(n,1)>0)then 
-                   id=voronoiCell(cell)%vertexNb+1 
-                   voronoiCell(cell)%vertexNb=id
-                   voronoiCell(cell)%vertexID(id)=vedg(n,1)
-                endif
-                if(rec2.and.vedg(n,2)>0.and.vedg(n,2)/=vedg(n,1))then 
-                   id=voronoiCell(cell)%vertexNb+1 
-                   voronoiCell(cell)%vertexNb=id
-                   voronoiCell(cell)%vertexID(id)=vedg(n,2)
-                endif
-             else
-                if(vedg(n,1)>0)then 
-                   id=voronoiCell(cell)%vertexNb+1 
-                   voronoiCell(cell)%vertexNb=id
-                   voronoiCell(cell)%vertexID(id)=vedg(n,1)
-                endif
-                if(vedg(n,2)>0.and.vedg(n,2)/=vedg(n,1))then 
-                   id=voronoiCell(cell)%vertexNb+1 
-                   voronoiCell(cell)%vertexNb=id
-                   voronoiCell(cell)%vertexID(id)=vedg(n,2)
-                endif
-             endif
-             if(vedg(n,1)<=0.or.vedg(n,2)<=0) voronoiCell(cell)%border=1
-          endif
-       enddo
-
-       ! Define the voronoi polygon as a convex hull 
-       if(voronoiCell(cell)%border==0)then
-          vsort=-1
-          n=voronoiCell(cell)%vertexNb
-          do p=1,n
-             id=voronoiCell(cell)%vertexID(p)
-             vnx(p)=vcoordX(id)
-             vny(p)=vcoordY(id)
-          enddo
-
-          ! Perform vertex sorting
-          call Envelope(vnx(1:n),vny(1:n),n,vsort,nvert)
-
-          ! Reorganise voronoi cell vertex
-          if(nvert/=voronoiCell(cell)%vertexNb)then
-              print*,nvert,voronoiCell(cell)%vertexNb
-              call ESMF_LogSetError(rcToCheck=ESMF_RC_VAL_WRONG, &
-                msg="Failed during creation of voronoi convex hull ", &
-                line=__LINE__,file=__FILE__)
-              call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      lp_ed1:do n=id1+1,dedge
+        if(dedg(rk1(n),1)==cell)then
+          id1=n
+          rec=.true.
+          if(dedg(rk1(n),2)>0)then
+            ! Check that the points has not been recorded yet
+            do id=1,delaunayVertex(cell)%ngbNb
+              if(delaunayVertex(cell)%ngbID(id)==dedg(rk1(n),2)) rec=.false.
+            enddo
+            if(rec)then
+              id=delaunayVertex(cell)%ngbNb+1
+              delaunayVertex(cell)%ngbNb=id
+              delaunayVertex(cell)%ngbID(id)=dedg(rk1(n),2)
+            endif
           endif
 
-          do p=1,nvert
-             sortedID(p)=voronoiCell(cell)%vertexID(vsort(p))
-          enddo
-
-          ! Update sorted vertex
-          do p=1,nvert
-             voronoiCell(cell)%vertexID(p)=sortedID(p)
-          enddo
-
-          ! Get voronoi cell parameters
-          do p=1,nvert
-             id=sortedID(p)
-             id2=sortedID(p+1)
-             if(p==nvert) id2=sortedID(1)
-             ! Perimeter
-             dist=sqrt((vcoordX(id2)-vcoordX(id))**2.0 &
-                  +(vcoordY(id2)-vcoordY(id))**2.0)
-             voronoiCell(cell)%perimeter=voronoiCell(cell)%perimeter+dist
-             ! Area
-             area=(vcoordX(id)-tcoordX(cell))*(vcoordY(id2)-tcoordY(cell)) &
-                  -(vcoordX(id2)-tcoordX(cell))*(vcoordY(id)-tcoordY(cell))
-             voronoiCell(cell)%area=voronoiCell(cell)%area+0.5_8*abs(area)
-          enddo
-
-          ! Count voronoi cells and vertices (used for output only)
-          if(voronoiCell(cell)%vertexNb>0)then 
-             vcellIN=vcellIN+1
-             velemIN=velemIN+voronoiCell(cell)%vertexNb
+          ! Get the Voronoi cell by duality
+          rec=.true.
+          rec2=.true.
+          if(voronoiCell(cell)%vertexNb>=1)then
+            do p=1,voronoiCell(cell)%vertexNb
+              if(voronoiCell(cell)%vertexID(p)==vedg(rk1(n),1))then
+                rec=.false.
+              endif
+              if(voronoiCell(cell)%vertexID(p)==vedg(rk1(n),2))then
+                rec2=.false.
+              endif
+            enddo
+            if(rec.and.vedg(rk1(n),1)>0)then 
+              id=voronoiCell(cell)%vertexNb+1 
+              voronoiCell(cell)%vertexNb=id
+              voronoiCell(cell)%vertexID(id)=vedg(rk1(n),1)
+            endif
+            if(rec2.and.vedg(rk1(n),2)>0.and.vedg(rk1(n),2)/=vedg(rk1(n),1))then 
+              id=voronoiCell(cell)%vertexNb+1 
+              voronoiCell(cell)%vertexNb=id
+              voronoiCell(cell)%vertexID(id)=vedg(rk1(n),2)
+            endif
+          else
+            if(vedg(rk1(n),1)>0)then 
+              id=voronoiCell(cell)%vertexNb+1 
+              voronoiCell(cell)%vertexNb=id
+              voronoiCell(cell)%vertexID(id)=vedg(rk1(n),1)
+            endif
+            if(vedg(rk1(n),2)>0.and.vedg(rk1(n),2)/=vedg(rk1(n),1))then 
+              id=voronoiCell(cell)%vertexNb+1 
+              voronoiCell(cell)%vertexNb=id
+              voronoiCell(cell)%vertexID(id)=vedg(rk1(n),2)
+            endif
           endif
-       endif
+          if(vedg(rk1(n),1)<=0) voronoiCell(cell)%border=1
+        else
+          exit lp_ed1
+        endif
+      enddo lp_ed1
+
+      lp_ed2:do n=id2+1,dedge
+        if(dedg(rk2(n),2)==cell)then
+          id2=n
+          rec=.true.
+          if(dedg(rk2(n),1)>0)then
+            ! Check that the points has not been recorded yet
+            do id=1,delaunayVertex(cell)%ngbNb
+              if(delaunayVertex(cell)%ngbID(id)==dedg(rk2(n),1)) rec=.false.
+            enddo
+            if(rec)then
+              id=delaunayVertex(cell)%ngbNb+1
+              delaunayVertex(cell)%ngbNb=id
+              delaunayVertex(cell)%ngbID(id)=dedg(rk2(n),1)
+            endif
+          endif
+
+          ! Get the Voronoi cell by duality
+          rec=.true.
+          rec2=.true.
+          if(voronoiCell(cell)%vertexNb>=1)then
+            do p=1,voronoiCell(cell)%vertexNb
+              if(voronoiCell(cell)%vertexID(p)==vedg(rk2(n),1))then
+                rec=.false.
+              endif
+              if(voronoiCell(cell)%vertexID(p)==vedg(rk2(n),2))then
+                rec2=.false.
+              endif
+            enddo
+            if(rec.and.vedg(rk2(n),1)>0)then 
+              id=voronoiCell(cell)%vertexNb+1 
+              voronoiCell(cell)%vertexNb=id
+              voronoiCell(cell)%vertexID(id)=vedg(rk2(n),1)
+            endif
+            if(rec2.and.vedg(rk2(n),2)>0.and.vedg(rk2(n),2)/=vedg(rk2(n),1))then 
+              id=voronoiCell(cell)%vertexNb+1 
+              voronoiCell(cell)%vertexNb=id
+              voronoiCell(cell)%vertexID(id)=vedg(rk2(n),2)
+            endif
+          else
+            if(vedg(rk2(n),1)>0)then 
+              id=voronoiCell(cell)%vertexNb+1 
+              voronoiCell(cell)%vertexNb=id
+              voronoiCell(cell)%vertexID(id)=vedg(rk2(n),1)
+            endif
+            if(vedg(rk2(n),2)>0.and.vedg(rk2(n),2)/=vedg(rk2(n),1))then 
+              id=voronoiCell(cell)%vertexNb+1 
+              voronoiCell(cell)%vertexNb=id
+              voronoiCell(cell)%vertexID(id)=vedg(rk2(n),2)
+            endif
+          endif
+          if(vedg(rk2(n),1)<=0) voronoiCell(cell)%border=1
+
+        else
+          exit lp_ed2
+        endif
+      enddo lp_ed2
+
+      ! Define the voronoi polygon as a convex hull 
+      if(voronoiCell(cell)%border==0)then
+        vsort=-1
+        n=voronoiCell(cell)%vertexNb
+        do p=1,n
+          id=voronoiCell(cell)%vertexID(p)
+          vnx(p)=vcoordX(id)
+          vny(p)=vcoordY(id)
+        enddo
+
+        ! Perform vertex sorting
+        call Envelope(vnx(1:n),vny(1:n),n,vsort,nvert)
+
+        ! Reorganise voronoi cell vertex
+        if(nvert/=voronoiCell(cell)%vertexNb)then
+          print*,nvert,voronoiCell(cell)%vertexNb
+          call ESMF_LogSetError(rcToCheck=ESMF_RC_VAL_WRONG, &
+            msg="Failed during creation of voronoi convex hull ", &
+            line=__LINE__,file=__FILE__)
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        endif
+
+        do p=1,nvert
+          sortedID(p)=voronoiCell(cell)%vertexID(vsort(p))
+        enddo
+
+        ! Update sorted vertex
+        do p=1,nvert
+          voronoiCell(cell)%vertexID(p)=sortedID(p)
+        enddo
+
+        ! Get voronoi cell parameters
+        do p=1,nvert
+          id=sortedID(p)
+          id3=sortedID(p+1)
+          if(p==nvert) id3=sortedID(1)
+          ! Perimeter
+          dist=sqrt((vcoordX(id3)-vcoordX(id))**2.0 &
+              +(vcoordY(id3)-vcoordY(id))**2.0)
+          voronoiCell(cell)%perimeter=voronoiCell(cell)%perimeter+dist
+          ! Area
+          area=(vcoordX(id)-tcoordX(cell))*(vcoordY(id3)-tcoordY(cell)) &
+              -(vcoordX(id3)-tcoordX(cell))*(vcoordY(id)-tcoordY(cell))
+          voronoiCell(cell)%area=voronoiCell(cell)%area+0.5_8*abs(area)
+        enddo
+
+        ! Count voronoi cells and vertices (used for output only)
+        if(voronoiCell(cell)%vertexNb>0)then 
+          vcellIN=vcellIN+1
+          velemIN=velemIN+voronoiCell(cell)%vertexNb
+        endif
+      endif
+
     enddo
 
     ! Allocate voronoi edge length to delaunay neighborhood 

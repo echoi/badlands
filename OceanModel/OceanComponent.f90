@@ -116,6 +116,7 @@ contains
       allocate(nodeOwners(numNodes))
       if(allocated(oceanIDs)) deallocate(oceanIDs)
       allocate(oceanIDs(sOwnedNode))
+
       k=1
       p=1
       do i=1,numNodes 
@@ -228,14 +229,14 @@ contains
           return
       endif      
       call ESMF_LogWrite("Ocean Initialize: Get Export Field oceanV",ESMF_LOGMSG_INFO,rc=rclocal)
-      
+
       ! Set ocean velocities field
       call ESMF_MeshGet(oceanMesh,numOwnedNodes=numOwnedNodes,rc=rclocal)
       do i=1,numOwnedNodes
         fptr1D(i)=rcoordZ(oceanIDs(i))
-        fptr1D3=0.0
-        fptr1D4=0.0
       enddo
+      fptr1D3=0.0
+      fptr1D4=0.0
 
       ! Add Export Field to State
       call ESMF_StateAdd(exportState,(/oceanH,oceanU,oceanV/),rc=rclocal)

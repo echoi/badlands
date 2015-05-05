@@ -144,8 +144,9 @@ contains
     minimaNb=0
     nonIsoNb=0
     sillNb=0
-    sillGID=0
+!     sillGID=0
     sillMax=-1.e6
+
     do p=1,baseNb
       allocs=-1
       k=baselist(p)
@@ -156,7 +157,7 @@ contains
       sillNb(p)=0
       minimaNb=minimaNb+1 
       catchID=-k
-      depressionAlgo=.true.
+      if(voronoiCell(k)%border<1) depressionAlgo=.true.
       if(catchID>0)then
         nonIsoNb=nonIsoNb+1
         trueCatch(nonIsoNb)=catchID
@@ -296,7 +297,7 @@ contains
   subroutine planchon_dem_fill_algorithm
 
     logical::flag
-    integer::p,k,cID
+    integer::p,k,cID 
 
     real(ESMF_KIND_R8)::step 
 
@@ -657,128 +658,5 @@ contains
 
   end subroutine inside_triangle
   ! =====================================================================================
-!   subroutine compute_local_minima
-
-!     logical::isolateCatchmentNode
-
-!     integer::k,p,nid,n,c,cID
-
-!     if(minimaNb==0)return
-
-!     if(.not. allocated(sillID)) allocate(sillID(dnodes))
-!     if(.not. allocated(sillnID)) allocate(sillnID(dnodes))
-!     if(.not. allocated(sillMinH)) allocate(sillMinH(dnodes))
-!     if(.not. allocated(sillMinH2)) allocate(sillMinH2(dnodes))
-!     sillID=-1
-!     sillnID=-1
-!     sillMinH=1.e6
-!     sillMinH2=1.e6
-
-!     isolateCatchmentNode=.true.
-
-!     do while (isolateCatchmentNode)
-!       isolateCatchmentNode=.false.
-!       do n=1,baseNb
-!         c=baselist(n)
-!         ! Get one isolated catchment
-!         if(catchmentID(c)<0)then
-!           cID=catchmentID(c)
-!           do k=1,dnodes
-!             ! For each node in the considered catchment
-!             if(catchmentID(k)==cID)then
-!               do p=1,delaunayVertex(k)%ngbNb
-!                 nid=delaunayVertex(k)%ngbID(p)
-!                 if(nid>0)then
-!                   ! Neighbor nodes in a non-isolated catchment
-!                   if(catchmentID(nid)>0)then
-!                     ! Store the minimal elevation node 
-!                     if(sillMinH(-cID)>=spmZ(k))then
-!                       sillMinH(-cID)=spmZ(k)
-!                       if(sillMinH2(-cID)>spmZ(nid))then
-!                         sillID(-cID)=catchmentID(nid)
-!                         sillnID(-cID)=nid
-!                         sillMinH2(-cID)=spmZ(nid)
-!                       endif
-!                     endif
-!                   endif
-!                 endif
-!               enddo
-!             endif
-!           enddo
-!           if(sillID(-cID)>0)then
-! !             catchmentID(c)=sillID(-cID)
-! !             do k=1,dnodes
-! !               if(catchmentID(k)==cID)catchmentID(k)=sillID(-cID)
-! !             enddo
-!             sillMinH(-cID)=spmZ(sillnID(-cID))
-! !             receivers(c)=sillnID(-cID)
-!           else
-!             isolateCatchmentNode=.true.
-!           endif
-!         endif
-!       enddo
-!     enddo
-    
-!   end subroutine compute_local_minima
-  ! =====================================================================================
-!   subroutine delaunaySlopeEvaluation
-
-!     integer::k,n
-!     integer(ESMF_KIND_I4),dimension(20)::tsort
-
-!     real(ESMF_KIND_R8)::slpx,slpy,slp,sum
-!     real(ESMF_KIND_R8),dimension(4)::plane
-!     real(ESMF_KIND_R8),dimension(20)::slopeArray
-
-!     do k=1,dnodes
-!       delaunayVertex(k)%slope=0.0
-!       delaunayVertex(k)%weight=0.0
-!       if(voronoiCell(k)%border==0)then
-!         ! Compute each triangle plane equation
-!         sum=0.0
-!         tsort=delaunayVertex(k)%sortedHull
-!         do n=1,delaunayVertex(k)%sortedHullNb
-!           if(n<delaunayVertex(k)%sortedHullNb)then
-!             call DeriveTrianglePlanes(k,tsort(n),tsort(n+1),plane)
-!           else
-!             call DeriveTrianglePlanes(k,tsort(n),tsort(1),plane)
-!           endif
-!           ! Get the slope for the triangle
-!           if(plane(3)==0.0)then
-!             call ESMF_LogSetError(rcToCheck=ESMF_RC_VAL_WRONG, &
-!             msg="Failed during computation of delaunay face plane equation ", &
-!             line=__LINE__,file=__FILE__)
-!             call ESMF_Finalize(endflag=ESMF_END_ABORT)
-!           endif
-!           slpx=-plane(1)/plane(3)
-!           slpy=-plane(2)/plane(3)
-!           ! Maximal slope
-!           slp=sqrt(slpx*slpx+slpy*slpy)
-!           sum=sum+slp
-!         enddo
-
-!         ! Averaged slope over all neighborhood
-!         delaunayVertex(k)%slope=sum/delaunayVertex(k)%ngbNb
-        
-!         ! Get matrix of flow fraction based on neighborhood elevation
-!         slopeArray=0.0
-!         sum=0.0
-!         do n=1,delaunayVertex(k)%ngbNb
-!           if(n>0)then
-!             if(spmZ(k)>spmZ(n))then
-!               slopeArray(n)=(spmZ(k)-spmZ(n))/delaunayVertex(k)%distance(n)
-!             endif
-!           endif
-!           sum=sum+slopeArray(n)
-!         enddo
-!         do n=1,delaunayVertex(k)%ngbNb
-!           if(slopeArray(n)>0.0) delaunayVertex(k)%weight(n)=slopeArray(n)/sum
-!         enddo
-!       endif
-!     enddo
-
-!   end subroutine delaunaySlopeEvaluation
-  ! =====================================================================================
-  
 
 end module hydrology 

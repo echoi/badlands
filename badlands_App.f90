@@ -106,7 +106,7 @@ program BADLANDS_Application
   spmComp=ESMF_GridCompCreate(name=spm,rc=localrc)
   if(ESMF_LogFoundError(rcToCheck=localrc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,&
     file=__FILE__,rcToReturn=rc)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-  
+
   coupler1="BADLANDS Coupler Ocean 2 SPM"
   cpl1=ESMF_CplCompCreate(name=coupler1,rc=localrc)
   if(ESMF_LogFoundError(rcToCheck=localrc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,&
@@ -210,7 +210,6 @@ program BADLANDS_Application
   if(ESMF_LogFoundError(rcToCheck=localrc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__, &
     file=__FILE__,rcToReturn=rc)) call ESMF_Finalize(endflag=ESMF_END_ABORT) 
 
-
 !-------------------------------------------------------------------------
 !-------------------------------------------------------------------------
 !  Init section
@@ -234,7 +233,7 @@ program BADLANDS_Application
     file=__FILE__,rcToReturn=rc)) call ESMF_Finalize(endflag=ESMF_END_ABORT) 
   if(ESMF_LogFoundError(rcToCheck=urc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__, &
     file=__FILE__,rcToReturn=rc)) call ESMF_Finalize(endflag=ESMF_END_ABORT) 
- 
+
   ! Initialise Import/Export states for the Earth Model
   EstateImp=ESMF_StateCreate(name="earth import", &
       stateintent=ESMF_STATEINTENT_EXPORT,rc=localrc)
