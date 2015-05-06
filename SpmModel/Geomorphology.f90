@@ -156,6 +156,7 @@ contains
       endif
 
       ! Broadcast subcatchment dataset
+      call ESMF_VMBroadcast(vm=vm,bcstData=strahler,count=dnodes,rootPet=0,rc=rc)
       call ESMF_VMBroadcast(vm=vm,bcstData=subcatchmentID,count=dnodes,rootPet=0,rc=rc)
 
       ! Define load balancing
