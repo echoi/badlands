@@ -34,6 +34,7 @@
 
 module geomesh
 
+  use parallel
   use parameters
   use readtopo
   use external_forces
@@ -50,76 +51,50 @@ module geomesh
 
 contains
   ! =====================================================================================
+
   subroutine GeoMesher
 
     logical::found
 
-    real(ESMF_KIND_R8)::time1,time2
-
+!     real(kind=8)::time1,time2
+    update3d=.false.
     inquire(file=xmlfile,exist=found)
     if(.not.found)then
        if(pet_id==0) print*,'Cannot find XmL input file'
-       call ESMF_Finalize(endflag=ESMF_END_ABORT)
+       call mpi_finalize(rc)
     endif
 
     ! GeoMesh main utilities
-    call ESMF_VMWtime(time1,rc=rc)
-    call ESMF_LogWrite("Defined the Mesh Geometries",ESMF_LOGMSG_INFO,rc=rc)
+!     time1=mpi_wtime()
     call topology_parser
-!     call ESMF_VMWtime(time2,rc=rc)
-!     if(pet_id==0) print*,'topo parser ',time2-time1
-!     call ESMF_VMWtime(time1,rc=rc)
     call geomorphology_parser
-!     call ESMF_VMWtime(time2,rc=rc)
-!     if(pet_id==0) print*,'geo parser ',time2-time1
-!     call ESMF_VMWtime(time1,rc=rc)
     call forces_parser
-!     call ESMF_VMWtime(time2,rc=rc)
-!     if(pet_id==0) print*,'forces parser ',time2-time1
-!     call ESMF_VMWtime(time1,rc=rc)
     call ReadRegular
-!     call ESMF_VMWtime(time2,rc=rc)
-!     if(pet_id==0) print*,'read reg ',time2-time1
-!     call ESMF_VMWtime(time1,rc=rc)
-    call ESMF_LogWrite("- Structured Grid initialised ",ESMF_LOGMSG_INFO,rc=rc)
     if(pet_id==0) call DelaunayTransform
-!     call ESMF_VMWtime(time2,rc=rc)
-!     if(pet_id==0) print*,'delaunay transform ',time2-time1
-!     call ESMF_VMWtime(time1,rc=rc)
-    call ESMF_VMBarrier(vm=vm,rc=rc)
+    call mpi_barrier(badlands_world,rc)
     call ReadTriangle
-!     call ESMF_VMWtime(time2,rc=rc)
-!     if(pet_id==0) print*,'read tri ',time2-time1
-!     call ESMF_VMWtime(time1,rc=rc)
-    call ESMF_LogWrite("- Conforming Delaunay Triangulation ",ESMF_LOGMSG_INFO,rc=rc)
     call DelaunayVoronoiDuality 
-!     call ESMF_VMWtime(time2,rc=rc)
-!     if(pet_id==0) print*,'vor dual ',time2-time1
-!     call ESMF_VMWtime(time1,rc=rc)
     call DelaunayBorders
-!     call ESMF_VMWtime(time2,rc=rc)
-!     if(pet_id==0) print*,'borders ',time2-time1
-!     call ESMF_VMWtime(time1,rc=rc)
-    call ESMF_LogWrite("- Voronoi Diagram of the CDT generated ",ESMF_LOGMSG_INFO,rc=rc)
 !     if(pet_id==0)then
 !       call delaunay_xmf
 !       call voronoi_xmf
 !     endif
+
     ! Unstructured Grid Partitioning
     call UnstructureGridPart
-!     call ESMF_VMWtime(time2,rc=rc)
-!     if(pet_id==0) print*,'grid part ',time2-time1
-!     call ESMF_VMWtime(time1,rc=rc)
     ! Structured Grid Partitioning
     call StructureGridPart
-    call ESMF_VMWtime(time2,rc=rc)
-    if(pet_id==0) print*,'BADLANDS Meshes Declaration & Partitioning Completed (s) ',time2-time1
+
+!     time2=mpi_wtime()
+!     if(pet_id==0) print*,'Number of points',dnodes
+!     if(pet_id==0) print*,'BADLANDS Meshes Declaration & Partitioning Completed (s) ',time2-time1
     simulation_time=time_start
 
     return
 
   end subroutine GeoMesher
   ! =====================================================================================
+
   subroutine ReadRegular
 
     logical::first
@@ -127,21 +102,16 @@ contains
     character(len=1)::line
 
     integer::iu,id,k,p,m,nnx,nny
-    integer(ESMF_KIND_I4)::n
-    integer(ESMF_KIND_I4),parameter::maxrecs=1000000000
+    integer::n
+    integer,parameter::maxrecs=1000000000
 
-    real(ESMF_KIND_R8)::xo,yo
+    real(kind=8)::xo,yo
 
-    call ESMF_UtilIOUnitGet(unit=iu,rc=rc)
-    if(ESMF_LogFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
+    iu=97
     open(iu,file=regularfile,status="old",action="read",iostat=rc)
     if(rc/=0)then
-      call ESMF_LogSetError(rcToCheck=ESMF_RC_FILE_OPEN, &
-        msg="Failed to open namelist file 'regular_input_file'", &
-        line=__LINE__,file=__FILE__)
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      print*,'Failed to open regular input file'
+      call mpi_finalize(rc)
     endif
 
     ! Determine total number of lines in file
@@ -150,10 +120,8 @@ contains
        read(iu,*,iostat=rc) line
        if(rc/=0) exit nodes_count
        if(n==maxrecs)then
-          call ESMF_LogSetError(rcToCheck=ESMF_RC_FILE_OPEN, &
-            msg="Maximum number of nodes number exceeded in the regular input file", &
-            line=__LINE__,file=__FILE__)
-          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          print*,'Maximum number of nodes number exceeded in the regular input file'
+          call mpi_finalize(rc)
        endif
        nbnodes=nbnodes+1
     enddo nodes_count
@@ -194,10 +162,7 @@ contains
         print*,'The delaunay area should not be greater than the imported cell area.'
         print*,'If you wish to increase the simulation area in some places define some refine area'
       endif
-      call ESMF_LogSetError(rcToCheck=ESMF_RC_VAL_WRONG, &
-        msg="Chosen delaunay area too small ", &
-        line=__LINE__,file=__FILE__)
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      call mpi_finalize(rc)
     endif
 
     ! Create a halo around the number of regular grid
@@ -213,8 +178,15 @@ contains
     if(allocated(rainVal))deallocate(rainVal)
     if(allocated(rDisp))deallocate(rDisp)
     if(allocated(rvertDisp))deallocate(rvertDisp)
-    allocate(rcoordX(bnbnodes),rcoordY(bnbnodes),rcoordZ(bnbnodes))
-    allocate(rtectoZ(bnbnodes),rDisp(bnbnodes),rvertDisp(bnbnodes),rainVal(bnbnodes))
+    allocate(rcoordX(bnbnodes),rcoordY(bnbnodes),rcoordZ(bnbnodes),rainVal(bnbnodes))
+    if(.not.disp3d)then
+      allocate(rtectoZ(bnbnodes),rDisp(bnbnodes,1),rvertDisp(bnbnodes))
+    else
+      if(allocated(rhyDisp))deallocate(rhyDisp)
+      if(allocated(rhxDisp))deallocate(rhxDisp)
+      allocate(rhyDisp(bnbnodes),rhxDisp(bnbnodes),rvertDisp(bnbnodes))
+      allocate(rtectoZ(bnbnodes),rDisp(bnbnodes,3))
+    endif
     xo=minx-dx
     yo=miny-dx
     m=0
@@ -294,17 +266,15 @@ contains
 
   end subroutine ReadRegular
   ! =====================================================================================
+
   subroutine DelaunayTransform
 
     character(len=128)::TINCfile,OPTC,stg
 
-    integer(ESMF_KIND_I4)::iu,n,p,k,tnb,issue
-    integer(ESMF_KIND_I4),dimension(:,:),allocatable::ptid
+    integer::iu,n,p,k,tnb,issue
+    integer,dimension(:,:),allocatable::ptid
 
-    call ESMF_UtilIOUnitGet(unit=iu,rc=rc)
-    if(ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
+    iu=65
     TINfile='TIN.poly'
     call addpath2(TINfile)
     TINCfile='TIN.poly'
@@ -312,10 +282,8 @@ contains
     TINCfile(len(TINfile):len(TINfile))=CHAR(0)
     open(iu,file=TINfile,status="replace",action="write",iostat=rc)
     if(rc/=0)then
-      call ESMF_LogSetError(rcToCheck=ESMF_RC_FILE_OPEN, &
-        msg="Failed to open namelist file 'Triangle Polygon Shape File'", &
-        line=__LINE__,file=__FILE__)
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      print*,'Failed to open Triangle Polygon Shape File'
+      call mpi_finalize(rc)
     endif    
     rewind(iu)
 
@@ -377,10 +345,7 @@ contains
             print*,refine_grid(n)%xcoord(1:2),minx,maxx
             print*,refine_grid(n)%ycoord(1:2),miny,maxy
           endif
-          call ESMF_LogSetError(rcToCheck=ESMF_RC_VAL_WRONG, &
-            msg="Refined area borders not properly set ", &
-            line=__LINE__,file=__FILE__)
-          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          call mpi_finalize(rc)
         endif
       enddo
     endif
@@ -443,6 +408,7 @@ contains
 
   end subroutine DelaunayTransform
   ! =====================================================================================
+
   subroutine ReadTriangle
 
     integer::iu
@@ -450,22 +416,17 @@ contains
 
     character(len=256)::trifile
 
-    real(ESMF_KIND_R8),dimension(2)::center
-    real(ESMF_KIND_R8),dimension(:,:),allocatable::map
-
-    call ESMF_UtilIOUnitGet(unit=iu,rc=rc)
-    if(ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+    real(kind=8),dimension(2)::center
+    real(kind=8),dimension(:,:),allocatable::map
 
     ! Read Delaunay nodes
+    iu=45
     trifile='TIN.1.node'
     call addpath2(trifile)
     open(iu,file=trifile,status="old",action="read",iostat=rc)
     if(rc/=0)then
-      call ESMF_LogSetError(rcToCheck=ESMF_RC_FILE_OPEN, &
-        msg="Failed to open namelist file 'Triangle Node File'", &
-        line=__LINE__,file=__FILE__)
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      print*,'Failed to open namelist file Triangle Node File'
+      call mpi_finalize(rc)
     endif 
     rewind(iu)
 
@@ -492,10 +453,8 @@ contains
     call addpath2(trifile)
     open(iu,file=trifile,status="old",action="read",iostat=rc)
     if(rc/=0)then
-      call ESMF_LogSetError(rcToCheck=ESMF_RC_FILE_OPEN, &
-        msg="Failed to open namelist file 'Triangle Element File'", &
-        line=__LINE__,file=__FILE__)
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      print*,'Failed to open namelist file Triangle Element File'
+      call mpi_finalize(rc)
     endif 
     rewind(iu)
 
@@ -531,10 +490,8 @@ contains
     call addpath2(trifile)
     open(iu,file=trifile,status="old",action="read",iostat=rc)
     if(rc/=0)then
-      call ESMF_LogSetError(rcToCheck=ESMF_RC_FILE_OPEN, &
-        msg="Failed to open namelist file 'Triangle Edge File'", &
-        line=__LINE__,file=__FILE__)
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      print*,'Failed to open namelist file Triangle Edge File'
+      call mpi_finalize(rc)
     endif 
     rewind(iu)
 
@@ -551,10 +508,8 @@ contains
     call addpath2(trifile)
     open(iu,file=trifile,status="old",action="read",iostat=rc)
     if(rc/=0)then
-      call ESMF_LogSetError(rcToCheck=ESMF_RC_FILE_OPEN, &
-        msg="Failed to open namelist file 'Voronoi Nodes File'", &
-        line=__LINE__,file=__FILE__)
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      print*,'Failed to open namelist file Voronoi Nodes File'
+      call mpi_finalize(rc)
     endif 
     rewind(iu)
 
@@ -581,10 +536,8 @@ contains
     call addpath2(trifile)
     open(iu,file=trifile,status="old",action="read",iostat=rc)
     if(rc/=0)then
-      call ESMF_LogSetError(rcToCheck=ESMF_RC_FILE_OPEN, &
-        msg="Failed to open namelist file 'Voronoi Edges File'", &
-        line=__LINE__,file=__FILE__)
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      print*,'Failed to open namelist file Voronoi Edges File'
+      call mpi_finalize(rc)
     endif 
     rewind(iu)
 
@@ -601,17 +554,18 @@ contains
 
   end subroutine ReadTriangle
   ! =====================================================================================
+
   subroutine DelaunayVoronoiDuality
 
     logical::rec,rec2
 
-    integer(ESMF_KIND_I4)::cell,n,id,id1,id2,id3,p,k,nvert,m,tvert,pt(2)
-    integer(ESMF_KIND_I4),dimension(20)::vsort,sortedID,vorPtsn,vorPts,tsort
+    integer::cell,n,id,id1,id2,id3,p,k,nvert,m,tvert,pt(2),tt
+    integer,dimension(20)::vsort,sortedID,vorPtsn,vorPts,tsort
 
-    integer(ESMF_KIND_I4),dimension(:),allocatable::ed1,ed2,rk1,rk2
+    integer,dimension(:),allocatable::ed1,ed2,rk1,rk2
 
-    real(ESMF_KIND_R8)::dist,area 
-    real(ESMF_KIND_R8),dimension(20)::vnx,vny,tnx,tny
+    real(kind=8)::dist,area 
+    real(kind=8),dimension(20)::vnx,vny,tnx,tny
 
     ! Delaunay and voronoi parametrisation
     allocate(voronoiCell(dnodes))
@@ -769,10 +723,8 @@ contains
         ! Reorganise voronoi cell vertex
         if(nvert/=voronoiCell(cell)%vertexNb)then
           print*,nvert,voronoiCell(cell)%vertexNb
-          call ESMF_LogSetError(rcToCheck=ESMF_RC_VAL_WRONG, &
-            msg="Failed during creation of voronoi convex hull ", &
-            line=__LINE__,file=__FILE__)
-          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          print*,'Failed during creation of voronoi convex hull'
+          call mpi_finalize(rc)
         endif
 
         do p=1,nvert
@@ -815,6 +767,7 @@ contains
        delaunayVertex(cell)%sortedHullNb=0
        if(voronoiCell(cell)%border==0)then
           vorPts=voronoiCell(cell)%vertexID
+
           do n=1,delaunayVertex(cell)%ngbNb
              id=delaunayVertex(cell)%ngbID(n)
              vorPtsn=voronoiCell(id)%vertexID
@@ -831,10 +784,8 @@ contains
              if(m==1)then
                 dist=0.0_8
              elseif(m==0 .or. m>2)then
-                call ESMF_LogSetError(rcToCheck=ESMF_RC_VAL_WRONG, &
-                  msg="Failed to allocate voronoi edge lenght to delaunay neighborhood ", &
-                  line=__LINE__,file=__FILE__)
-                  call ESMF_Finalize(endflag=ESMF_END_ABORT)
+                print*,'Failed to allocate voronoi edge lenght to delaunay neighborhood'
+                call mpi_finalize(rc)
              elseif(m==2)then
                 dist=sqrt((vcoordX(pt(1))-vcoordX(pt(2)))**2.0+( &
                      vcoordY(pt(2))-vcoordY(pt(1)))**2.0)
@@ -862,8 +813,10 @@ contains
           enddo
 
           if(tvert<delaunayVertex(cell)%ngbNb)then
+            tt=0
             do while(tvert<delaunayVertex(cell)%ngbNb)
               sortedID=-1
+
               ! Find missing node ID
               loop:do p=1,delaunayVertex(cell)%ngbNb
                 id=-1
@@ -876,7 +829,10 @@ contains
                   exit loop
                 endif
               enddo loop
+
               if(id==0) goto 13
+              if(tt>delaunayVertex(cell)%ngbNb*2) goto 13
+
               ! Add missing point in the convex hull
               lp:do p=1,tvert
                 id1=delaunayVertex(cell)%sortedHull(p)
@@ -899,27 +855,27 @@ contains
                   exit lp
                 endif
               enddo lp
-
+              tt=tt+1
             enddo
 13 continue
           endif
           do p=1,tvert
             delaunayVertex(cell)%sortedHull(p)=sortedID(p)
           enddo
-        endif
-
+        endif          
     enddo
 
     return 
 
   end subroutine DelaunayVoronoiDuality
   ! =====================================================================================
+
   function PointTriangle(id0,id1,id2,id) result(inside)
 
     logical::inside
 
-    integer(ESMF_KIND_I4)::id0,id1,id2,id
-    real(ESMF_KIND_R8)::denom,s,t,epsl,epsl2,xmin,xmax,ymin,ymax
+    integer::id0,id1,id2,id
+    real(kind=8)::denom,s,t,epsl,epsl2,xmin,xmax,ymin,ymax
 
     ! Point in triangle bounding box
     epsl=0.001
@@ -961,9 +917,10 @@ contains
 
   end function PointTriangle
   ! =====================================================================================
+
   function distanceSquarePointToSegment(x1,y1,x2,y2,x,y) result(dist2)
     
-    real(ESMF_KIND_R8)::x1,y1,x2,y2,x,y,sqrl,sqrl2,dotprod,dist2
+    real(kind=8)::x1,y1,x2,y2,x,y,sqrl,sqrl2,dotprod,dist2
 
     sqrl=(x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)
     dotprod=((x -x1)*(x2-x1)+(y-y1)*(y2-y1))/sqrl
@@ -979,6 +936,7 @@ contains
 
   end function distanceSquarePointToSegment
   ! =====================================================================================
+
   subroutine DelaunayBorders
 
     integer::k,p,n
@@ -1114,6 +1072,7 @@ contains
 
   end subroutine DelaunayBorders
   ! =====================================================================================
+
   subroutine Envelope(x,y,n,vertex,nvert)
 
     ! Find the vertices (in clockwise order) of a polygon enclosing
@@ -1122,11 +1081,11 @@ contains
     ! iwk() is an integer work array which must have dimension at least n
     ! in the calling program.
 
-    integer(ESMF_KIND_I4)::n,vertex(n),nvert,iwk(n)
-    integer(ESMF_KIND_I4)::next(20),i,i1,i2,j,jp1,jp2,i2save,i3,i2next
+    integer::n,vertex(n),nvert,iwk(n)
+    integer::next(20),i,i1,i2,j,jp1,jp2,i2save,i3,i2next
 
-    real(ESMF_KIND_R8)::x(n),y(n),xmax,xmin,ymax,ymin,dist,dmax,dmin,x1,y1
-    real(ESMF_KIND_R8)::dx,dy,x2,y2,dx1,dx2,dmax1,dmax2,dy1,dy2,temp,zero
+    real(kind=8)::x(n),y(n),xmax,xmin,ymax,ymin,dist,dmax,dmin,x1,y1
+    real(kind=8)::dx,dy,x2,y2,dx1,dx2,dmax1,dmax2,dy1,dy2,temp,zero
 
     zero=0.0_8
 
@@ -1311,6 +1270,7 @@ contains
 
   end subroutine Envelope
   ! =====================================================================================
+
   subroutine UnstructuredMeshDestroy
 
     if(allocated(dcentroid))deallocate(dcentroid)
@@ -1342,8 +1302,12 @@ contains
 
   end subroutine UnstructuredMeshDestroy
   ! =====================================================================================
+  
   subroutine RegularGridDestroy
 
+    if(allocated(bilinearX))deallocate(bilinearX)
+    if(allocated(bilinearY))deallocate(bilinearY)
+    if(allocated(bilinearV))deallocate(bilinearV)
     if(allocated(coordX))deallocate(coordX)
     if(allocated(coordY))deallocate(coordY)
     if(allocated(coordZ))deallocate(coordZ)
@@ -1358,6 +1322,8 @@ contains
     if(allocated(rcoordZ))deallocate(rcoordZ)
     if(allocated(rtectoZ))deallocate(rtectoZ)
     if(allocated(rDisp))deallocate(rDisp)
+    if(allocated(rhyDisp))deallocate(rhyDisp)
+    if(allocated(rhxDisp))deallocate(rhxDisp)
     if(allocated(rvertDisp))deallocate(rvertDisp)
     if(allocated(rainVal))deallocate(rainVal)
     if(allocated(frainmap))deallocate(frainmap)

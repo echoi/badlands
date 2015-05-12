@@ -49,13 +49,14 @@ module outspm_surface
 contains
 
   ! =====================================================================================
+
   subroutine spm_hdf5(iter)
 
     logical::compression
 
-    integer(ESMF_KIND_I4)::id,i,k,p,rank,iter,totnodes,totelems,ierr
-    integer(ESMF_KIND_I4),dimension(:),allocatable::connect
-    real(ESMF_KIND_R8),dimension(:),allocatable::nodes,facc,dz,rego,cID,nID,sl
+    integer::id,i,k,p,rank,iter,totnodes,totelems,ierr
+    integer,dimension(:),allocatable::connect
+    real(kind=8),dimension(:),allocatable::nodes,facc,dz,rego,cID,nID,sl
 
     character(len=128)::text,file
 
@@ -351,11 +352,12 @@ contains
 
   end subroutine spm_hdf5
   ! =====================================================================================
+
   subroutine spm_xmf(iter)
 
     type(xmlf_t)::xf
     integer::ierr
-    integer(ESMF_KIND_I4)::iter,totnodes,totelems,k
+    integer::iter,totnodes,totelems,k
     character(len=128)::str,stg,filename,filename1,filename2,file,filename3
     character(len=128)::filename4,filename5,filename6
 
@@ -567,6 +569,7 @@ contains
 
   end subroutine spm_xmf
   ! =====================================================================================
+  
   subroutine visualise_surface_changes(iter)
 
     ! Parameters Declaration

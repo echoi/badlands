@@ -9,7 +9,9 @@ CONFFILE= $(TOP)/config/Makefile.inc
 
 include $(CONFFILE)
 
-DIRMODS= GlobalUtils GeoMesh OceanModel EarthModel SpmModel CouplerModel
+DIRMODS= GlobalUtils GeoMesh SpmModel EarthModel CouplerUtils
+
+#OceanModel EarthModel  CouplerModel
 
 SOURCES = badlands_App.f90
 OBJS=$(SOURCES:.f90=.o)
@@ -41,8 +43,8 @@ dist:
 	make $(EXEC)
 
 $(EXEC) :	$(OBJS)
-	$(ESMF_F90LINKER) $(ESMF_F90LINKOPTS) $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) -o $@ $^ \
-	$(LDFLAGS) -lBADLANDS $(H5LDFLAGS) $(H5LIBS) $(ZOLTANLDFLAGS) $(ZOLTANLIBS) $(METISLDFLAGS) $(METISLIBS) $(LDFOXFLAGS) $(ESMF_F90ESMFLINKLIBS)
+	$(BADLANDS_F) $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) -o $@ $^ \
+	$(LDFLAGS) -lBADLANDS $(H5LDFLAGS) $(H5LIBS) $(ZOLTANLDFLAGS) $(ZOLTANLIBS) $(METISLDFLAGS) $(METISLIBS) $(LDFOXFLAGS)
 	@echo "*************************************************"
 	@echo	
 	@echo "BADLANDS updated in ./bin/."
@@ -50,7 +52,7 @@ $(EXEC) :	$(OBJS)
 	@echo "*************************************************"
 
 %.o : %.f90
-	$(ESMF_F90COMPILER) -c $(ESMF_F90COMPILEOPTS) $(ESMF_F90COMPILEPATHS) $(ESMF_F90COMPILEFREENOCPP) $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) $< -o $@ 
+	$(BADLANDS_F) -c $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) $< -o $@ 
 	$(AR) $(LIBDIR)/libBADLANDS.a $(OBJDIR)/*.o
 	
 dust :

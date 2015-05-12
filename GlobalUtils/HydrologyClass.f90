@@ -34,9 +34,11 @@
 
 module hydroUtil
 
-  use ESMF
+  use parallel
 
   implicit none
+
+
 
   ! Logical flag for regolith file
   logical::regofileflag
@@ -61,16 +63,13 @@ module hydroUtil
   integer,dimension(:),allocatable::baselist
 
   ! Discharge
-  real(ESMF_KIND_R8),dimension(:),allocatable::discharge
+  real(kind=8),dimension(:),allocatable::discharge
 
   ! Maximum number of receiver nodes
   integer::maxrcvs
 
   ! Stream network accumulation minimal value
-  real(ESMF_KIND_R8)::accu_thres
-
-  ! Check if facies is required
-  real(ESMF_KIND_R8)::faciesOn
+  real(kind=8)::accu_thres
   
   ! Strahler stream order
   integer,dimension(:),allocatable::strahler
@@ -83,64 +82,58 @@ module hydroUtil
 
   ! Simulation time parameters
   integer::Tforce
-  real(ESMF_KIND_R8)::time_step,simulation_time,layer_time,udw_time,force_time
-  real(ESMF_KIND_R8)::time_start,time_end,time_display,cpl1_time,cpl2_time
-  real(ESMF_KIND_R8)::display_interval,layer_interval,CFL_diffusion
+  real(kind=8)::time_step,simulation_time,udw_time,force_time
+  real(kind=8)::time_start,time_end,time_display,cpl1_time,cpl2_time
+  real(kind=8)::display_interval,CFL_diffusion
   
   ! Diffusion coefficient
-  real(ESMF_KIND_R8),dimension(2)::Cdiffusion ! linear
-  real(ESMF_KIND_R8),dimension(2)::Cdiffusion_d ! depth-dependent
-  real(ESMF_KIND_R8)::Cdiff_m ! depth-dependent 
-  real(ESMF_KIND_R8)::Cdiff_n ! depth-dependent 
-  real(ESMF_KIND_R8),dimension(2)::Cdiffusion_nl ! non-linear
-  real(ESMF_KIND_R8)::slope_critical 
+  real(kind=8),dimension(2)::Cdiffusion ! linear
+  real(kind=8),dimension(2)::Cdiffusion_d ! depth-dependent
+  real(kind=8)::Cdiff_m ! depth-dependent 
+  real(kind=8)::Cdiff_n ! depth-dependent 
+  real(kind=8),dimension(2)::Cdiffusion_nl ! non-linear
+  real(kind=8)::slope_critical 
   
   ! Surface erodibility coefficient
   integer::perosive
-  real(ESMF_KIND_R8)::Cerodibility
+  real(kind=8)::Cerodibility
   
   ! Stream Power Law coefficient
-  real(ESMF_KIND_R8)::spl_m
-  real(ESMF_KIND_R8)::spl_n
+  real(kind=8)::spl_m
+  real(kind=8)::spl_n
 
   ! Sefiment transport efficiency coefficient
-  real(ESMF_KIND_R8)::Cefficiency
+  real(kind=8)::Cefficiency
 
   ! Fraction of total load delivered to channels as bedload
-  real(ESMF_KIND_R8)::Fracbed
+  real(kind=8)::Fracbed
   
   ! Stream Power Law coefficient
-  real(ESMF_KIND_R8)::stl_m
-  real(ESMF_KIND_R8)::stl_n
+  real(kind=8)::stl_m
+  real(kind=8)::stl_n
 
   ! Regolith formation
-  real(ESMF_KIND_R8)::regoProd
-  real(ESMF_KIND_R8)::regoDepth
-  real(ESMF_KIND_R8)::soil_density
-  real(ESMF_KIND_R8)::rock_density
+  real(kind=8)::regoProd
+  real(kind=8)::regoDepth
+  real(kind=8)::soil_density
+  real(kind=8)::rock_density
 
   ! Capacity model coefficient
-  real(ESMF_KIND_R8)::chan_exp
-  real(ESMF_KIND_R8)::chan_width
-  real(ESMF_KIND_R8)::bed_length
-  real(ESMF_KIND_R8)::sed_length
-  real(ESMF_KIND_R8)::stream_ero
-  real(ESMF_KIND_R8)::bed_sed_interface
+  real(kind=8)::chan_exp
+  real(kind=8)::chan_width
+  real(kind=8)::bed_length
+  real(kind=8)::sed_length
+  real(kind=8)::stream_ero
+  real(kind=8)::bed_sed_interface
 
   ! New elevation change
-  real(ESMF_KIND_R8),dimension(:),allocatable::newZ,spmZ,spmH
-
-  ! Stratigraphic record
-  integer::layerNb,layerID
-  integer,parameter::faciestype=12
-  real(ESMF_KIND_R8),dimension(:,:),allocatable::stratalZ
-  real(ESMF_KIND_R8),dimension(:,:),allocatable::stratalFacies
+  real(kind=8),dimension(:),allocatable::newZ,spmZ,spmH
 
   ! Sediment influx
-  real(ESMF_KIND_R8),dimension(:),allocatable::Qs_in
+  real(kind=8),dimension(:),allocatable::Qs_in
 
   ! Subcatchement declaration type
-  integer(ESMF_KIND_I4),dimension(:),allocatable::subcatchNb
+  integer,dimension(:),allocatable::subcatchNb
 
   ! Network parallelisation stream declaration
   integer::localNodes

@@ -53,14 +53,13 @@ module hydrology
   integer,dimension(:),allocatable::catchmentID,sillNb
   integer,dimension(:,:),allocatable::sillGID 
   
-  real(ESMF_KIND_R8),dimension(:),allocatable::cumDisp,watercell
-  real(ESMF_KIND_R8),dimension(:),allocatable::nZ,nH,change_local,filldem,sillMax
-
-  real(ESMF_KIND_R8),dimension(:,:),allocatable::facType
+  real(kind=8),dimension(:),allocatable::cumDisp,watercell
+  real(kind=8),dimension(:),allocatable::nZ,nH,change_local,filldem,sillMax
   
 contains
 
   ! =====================================================================================
+
   subroutine define_landscape_network
 
     integer::k,p,j,lowestID,maxtree,success
@@ -173,6 +172,7 @@ contains
     
   end subroutine define_landscape_network
   ! =====================================================================================
+
   recursive function addtostack(base,donor,stackID) result(success)
 
     integer::base,donor,stackID,n,success
@@ -198,13 +198,14 @@ contains
 
   end function addtostack
   ! =====================================================================================
+
   subroutine define_drained_water_thickness
 
     integer::c,q,cID,n,p,no,k,nid,qo
     integer,dimension(:),allocatable::ptOrder,minimaOrder,maximaOrder
 
-    real(ESMF_KIND_R8)::vol,totvol,hstep,height,maxheight,dh
-    real(ESMF_KIND_R8),dimension(:),allocatable::fz
+    real(kind=8)::vol,totvol,hstep,height,maxheight,dh
+    real(kind=8),dimension(:),allocatable::fz
     ! Order minima from top to bottom
     if(allocated(maximaOrder)) deallocate(maximaOrder)
     if(allocated(minimaOrder)) deallocate(minimaOrder)
@@ -294,12 +295,13 @@ contains
 
   end subroutine define_drained_water_thickness
   ! =====================================================================================
+
   subroutine planchon_dem_fill_algorithm
 
     logical::flag
     integer::p,k,cID 
 
-    real(ESMF_KIND_R8)::step 
+    real(kind=8)::step 
 
     ! Update DEM borders elevation values
     step=0.0001
@@ -359,6 +361,7 @@ contains
 
   end subroutine planchon_dem_fill_algorithm
   ! =====================================================================================
+
   subroutine compute_vertical_displacement
 
     integer::k,lid,id
@@ -376,37 +379,12 @@ contains
 
   end subroutine compute_vertical_displacement
   ! =====================================================================================
-  subroutine clean_SPM_model
 
-    if(allocated(stackOrder)) deallocate(stackOrder)
-    if(allocated(allocs)) deallocate(allocs)
-    if(allocated(subcatchmentID)) deallocate(subcatchmentID)
-    if(allocated(subcatchmentProc)) deallocate(subcatchmentProc)
-    if(allocated(intArray)) deallocate(intArray)
-    if(allocated(donorCount)) deallocate(donorCount)
-    if(allocated(trueCatch)) deallocate(trueCatch)
-    if(allocated(sillNb)) deallocate(sillNb)
-    if(allocated(sillGID)) deallocate(sillGID)
-    if(allocated(sillMax)) deallocate(sillMax)
-    if(allocated(precipitation)) deallocate(precipitation)
-    if(allocated(discharge)) deallocate(discharge)
-    if(allocated(strahler)) deallocate(strahler)
-    if(allocated(baselist)) deallocate(baselist)
-    if(allocated(donorInfo)) deallocate(donorInfo)
-    if(allocated(indexArray)) deallocate(indexArray)
-    if(allocated(donorsList)) deallocate(donorsList)
-    if(allocated(receivers)) deallocate(receivers)
-    if(allocated(cumDisp)) deallocate(cumDisp)
-    if(allocated(spmZ)) deallocate(spmZ)
-    if(allocated(newZ)) deallocate(newZ)
-
-  end subroutine clean_SPM_model
-  ! =====================================================================================
   subroutine update_grid_borders
 
     integer::k,p
 
-    if(simulation_time==time_start)then
+    if(simulation_time==time_start.or.update3d)then
       if(.not.allocated(delemID)) allocate(delemID(delem))
       delemoo=0
       delemID=-1
@@ -604,21 +582,22 @@ contains
 
   end subroutine update_grid_borders
   ! =====================================================================================
-  subroutine DeriveTrianglePlanes(lay,x,y,id1,id2,id3,z)
 
-    integer(ESMF_KIND_I4)::id1,id2,id3,lay
-    real(ESMF_KIND_R8)::s,x,y,z
+  subroutine DeriveTrianglePlanes(x,y,id1,id2,id3,z)
 
-    real(ESMF_KIND_R8),dimension(3)::d1,d2,n
-    real(ESMF_KIND_R8),dimension(4)::plane
+    integer::id1,id2,id3
+    real(kind=8)::s,x,y,z
+
+    real(kind=8),dimension(3)::d1,d2,n
+    real(kind=8),dimension(4)::plane
 
     d1(1)=tcoordX(id2)-tcoordX(id1)
     d1(2)=tcoordY(id2)-tcoordY(id1)
-    d1(3)=stratalZ(lay,id2)-stratalZ(lay,id1)
+    d1(3)=tcoordZ(id2)-tcoordZ(id1)
 
     d2(1)=tcoordX(id3)-tcoordX(id1)
     d2(2)=tcoordY(id3)-tcoordY(id1)
-    d2(3)=stratalZ(lay,id3)-stratalZ(lay,id1)
+    d2(3)=tcoordZ(id3)-tcoordZ(id1)
 
     n(1)=d2(2)*d1(3)-d2(3)*d1(2)
     n(2)=d2(3)*d1(1)-d2(1)*d1(3)
@@ -629,18 +608,52 @@ contains
     plane(1)=n(1)*s
     plane(2)=n(2)*s
     plane(3)=n(3)*s
-    plane(4)= -(plane(1)*tcoordX(id1)+plane(2)*tcoordY(id1)+plane(3)*stratalZ(lay,id1))
+    plane(4)= -(plane(1)*tcoordX(id1)+plane(2)*tcoordY(id1)+plane(3)*tcoordZ(id1))
 
     z=-(plane(1)*x+plane(2)*y+plane(4))/plane(3)
 
   end subroutine DeriveTrianglePlanes
   ! =====================================================================================
+
+  subroutine DeriveTrianglePlanes2(xy,xa,ya,za,z)
+
+    real(kind=8),dimension(2)::xy
+    real(kind=8),dimension(3)::xa,ya,za
+    real(kind=8)::s,z
+
+    real(kind=8),dimension(3)::d1,d2,n
+    real(kind=8),dimension(4)::plane
+
+    d1(1)=xa(2)-xa(1)
+    d1(2)=ya(2)-ya(1)
+    d1(3)=za(2)-za(1)
+
+    d2(1)=xa(3)-xa(1)
+    d2(2)=ya(3)-ya(1)
+    d2(3)=za(3)-za(1)
+
+    n(1)=d2(2)*d1(3)-d2(3)*d1(2)
+    n(2)=d2(3)*d1(1)-d2(1)*d1(3)
+    n(3)=d2(1)*d1(2)-d2(2)*d1(1)
+
+    s=1.0/sqrt(n(1)*n(1)+n(2)*n(2)+n(3)*n(3))
+
+    plane(1)=n(1)*s
+    plane(2)=n(2)*s
+    plane(3)=n(3)*s
+    plane(4)= -(plane(1)*xa(1)+plane(2)*ya(1)+plane(3)*za(1))
+
+    z=-(plane(1)*xy(1)+plane(2)*xy(2)+plane(4))/plane(3)
+
+  end subroutine DeriveTrianglePlanes2
+  ! =====================================================================================
+  
   subroutine inside_triangle(xa,ya,xb,yb,l)
 
     integer,intent(out)::l
 
-    real(ESMF_KIND_R8),intent(in)::xa,ya,xb(3),yb(3)
-    real(ESMF_KIND_R8)::det0,det1,det2
+    real(kind=8),intent(in)::xa,ya,xb(3),yb(3)
+    real(kind=8)::det0,det1,det2
 
     l=-1
 

@@ -40,6 +40,7 @@ module orderpack
 
 contains
   ! =====================================================================================
+
   subroutine findmap(stkprm,stkmap)
 
     ! Given 2-d real array stkprm, find a mapping described below:
@@ -91,6 +92,7 @@ contains
 
   end subroutine findmap
   ! =====================================================================================
+  
   recursive subroutine ar_mrgrnk(xdont, irngt)
 
     ! behaves like mrgrnk of ORDERPACK, except that array is 2-d

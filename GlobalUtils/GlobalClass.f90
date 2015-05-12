@@ -42,40 +42,20 @@ end module parallel
 
 module parameters
 
-  use ESMF
+  use parallel
 
   implicit none
 
-  logical::updateSPM_elevation,oceanFlag,geodynamicFlag,restartFlag,udwFlag
+  logical::updateSPM_elevation,oceanFlag,geodynamicFlag,restartFlag,udwFlag,update3d
 
   ! Step for restarting simulation
   integer::restartStep,restartPet
-
-  ! ESMF Virtual Machine Class
-  type(ESMF_VM),save::vm
 
   ! Persistent Execution Threads (ID and total number)
   integer::pet_id,npets,rc 
 
   ! Grid / Coupler Component Names
-  character(len=128)::ocean,spm,earth,coupler1,coupler2,coupler3,coupler4
-
-  ! Grid Component Declaration
-  type(ESMF_GridComp),save::oceanComp,spmComp,earthComp
-
-  ! Coupler Component Declaration
-  type(ESMF_CplComp),save::cpl1,cpl2,cpl3,cpl4
-
-  ! Import and Export States Declaration
-  type(ESMF_State),save::SstateExp,SstateImp
-  type(ESMF_State),save::OstateExp,OstateImp
-  type(ESMF_State),save::EstateExp,EstateImp
-
-  ! Instantiate a clock, a calendar, and timesteps
-  type(ESMF_Clock),save::clock
-  type(ESMF_Calendar),save::GeologyCalendar
-  type(ESMF_TimeInterval),save::timeStep
-  type(ESMF_Time),save::startTime,stopTime,currentTime
+!   character(len=128)::ocean,spm,earth
 
   ! Simulation directories and file names
   character(len=128)::regularfile,outdir,xmlfile
@@ -88,95 +68,100 @@ module parameters
   character(len=128)::regofile
 
   ! Regular structured grid nodes on X/Y directions 
-  integer(ESMF_KIND_I4)::nx,ny
+  integer::nx,ny
 
   ! Regular structured grid resolution 
-  real(ESMF_KIND_R8)::dx
+  real(kind=8)::dx
 
   ! Regular structured grid region extensions 
-  real(ESMF_KIND_R8)::minx,miny,maxx,maxy
+  real(kind=8)::minx,miny,maxx,maxy
 
   ! Regular structured grid X,Y,Z coordinates 
-  real(ESMF_KIND_R8),dimension(:),allocatable::coordX,coordY,coordZ
+  real(kind=8),dimension(:),allocatable::coordX,coordY,coordZ
 
   ! Regular structured grid X,Y,Z coordinates with added cells 
   ! on the edges and vertical displacement
-  real(ESMF_KIND_R8),dimension(:),allocatable::rcoordX,rcoordY,rcoordZ
+  real(kind=8),dimension(:),allocatable::rcoordX,rcoordY,rcoordZ
+
+  ! Regular structured grid bilinear
+  real,dimension(:),allocatable::bilinearX,bilinearY
+  real,dimension(:,:),allocatable::bilinearV,bilinearHx,bilinearHy
 
   ! Conforming Delaunay Triangulation (CDT) parameters
-  integer(ESMF_KIND_I4)::tnodes,dnodes,delem,dedge
+  integer::tnodes,dnodes,delem,dedge
 
   ! Output parameters for CDT and drainage
-  integer(ESMF_KIND_I4)::delemo,delemoo,drainOde
-  integer(ESMF_KIND_I4),dimension(:),allocatable::outelem,outnode,dglbID,doutelem,doutnode
+  integer::delemo,delemoo,drainOde
+  integer,dimension(:),allocatable::outelem,outnode,dglbID,doutelem,doutnode
 
   ! Voronoi Diagram of the CDT parameters
-  integer(ESMF_KIND_I4)::vnodes,vedge,vcellIN,velemIN
+  integer::vnodes,vedge,vcellIN,velemIN
 
   ! Conforming Delaunay Triangulation X,Y,Z coordinates and vertical displacement
-  real(ESMF_KIND_R8),dimension(:),allocatable::tcoordX,tcoordY,tcoordZ
+  real(kind=8),dimension(:),allocatable::tcoordX,tcoordY,tcoordZ
 
   ! Voronoi point triangle face pt ID
-  integer(ESMF_KIND_I4),dimension(:,:),allocatable::vorDel
+  integer,dimension(:,:),allocatable::vorDel
 
   ! Voronoi Diagram X,Y,Z coordinates 
-  real(ESMF_KIND_R8),dimension(:),allocatable::vcoordX,vcoordY 
+  real(kind=8),dimension(:),allocatable::vcoordX,vcoordY 
 
   ! Regular structured elements (square cells) with added cells on the edges 
-  integer(ESMF_KIND_I4),dimension(:,:),allocatable::relmt
+  integer,dimension(:,:),allocatable::relmt
 
   ! Number of grid nodes owned by the processor on a given pet 
-  integer(ESMF_KIND_I4)::sOwnedNode,uOwnedNode
+  integer::sOwnedNode,uOwnedNode
 
   ! Partition processor ID for unstructured grid
-  integer(ESMF_KIND_I4),dimension(:),allocatable::snodeID,selemID,sownedID,snodeLID
+  integer,dimension(:),allocatable::snodeID,selemID,sownedID,snodeLID
 
   ! Partition processor ID for unstructured grid
-  integer(ESMF_KIND_I4),dimension(:),allocatable::unodeID,unodeIDI,uelemID,uownEID,uownedID,unodeLID,delemID
+  integer,dimension(:),allocatable::unodeID,unodeIDI,uelemID,uownEID,uownedID,unodeLID,delemID
 
   ! Number of nodes and elements on each partition mesh
-  integer(ESMF_KIND_I4)::upartN,upartE,spartN,spartE !,upartI
+  integer::upartN,upartE,spartN,spartE !,upartI
 
-  ! Redistribruted array of arbitrary distrinuted ESMF mesh indexes
-  integer(ESMF_KIND_I4),dimension(:),allocatable::earthIDs,oceanIDs,spmIDs
+  ! Redistribruted array of arbitrary distrinuted mesh indexes
+  integer,dimension(:),allocatable::earthIDs,oceanIDs,spmIDs
 
   ! Voronoi Cell Declaration Type
   type voronoi
-     integer(ESMF_KIND_I4)::vertexNb
-     integer(ESMF_KIND_I4)::border
-     integer(ESMF_KIND_I4)::btype
-     integer(ESMF_KIND_I4)::bpoint
-     integer(ESMF_KIND_I4),dimension(20)::vertexID
-     real(ESMF_KIND_R8)::perimeter
-     real(ESMF_KIND_R8)::area
+     integer::vertexNb
+     integer::border
+     integer::btype
+     integer::bpoint
+     integer,dimension(20)::vertexID
+     real(kind=8)::perimeter
+     real(kind=8)::area
   end type voronoi
   type(voronoi),dimension(:),allocatable::voronoiCell
 
   ! Conforming Delaunay Triangulation Declaration Type
   type delaunay
-     integer(ESMF_KIND_I4)::ngbNb
-     integer(ESMF_KIND_I4)::sortedHullNb
-     integer(ESMF_KIND_I4),dimension(20)::ngbID
-     integer(ESMF_KIND_I4),dimension(20)::sortedHull
-     real(ESMF_KIND_R8)::slope
-     real(ESMF_KIND_R8),dimension(20)::voronoi_edge
-     real(ESMF_KIND_R8),dimension(20)::distance
-     real(ESMF_KIND_R8),dimension(20)::weight
+     integer::ngbNb
+     integer::sortedHullNb
+     integer,dimension(20)::ngbID
+     integer,dimension(20)::sortedHull
+     real(kind=8)::slope
+     real(kind=8),dimension(20)::voronoi_edge
+     real(kind=8),dimension(20)::distance
+     real(kind=8),dimension(20)::weight
   end type delaunay
   type(delaunay),dimension(:),allocatable::delaunayVertex
 
   ! Number of seconds per year
-  real(ESMF_KIND_R8),parameter::secyear=31536000.0
+  real(kind=8),parameter::secyear=31536000.0
 
   ! Maximum filling algorithm height
-  real(ESMF_KIND_R8)::fh
+  real(kind=8)::fh
 
   ! Infiltration evaporation percentage for water in lakes
-  real(ESMF_KIND_R8)::infiltration_evaporation
+  real(kind=8)::infiltration_evaporation
 
 contains
   
   ! =====================================================================================
+  
   subroutine term_command(cmds)
 
     logical(4)::result
@@ -186,7 +171,7 @@ contains
     result = .false.
 
     ! INTEL FORTRAN COMPILER
-    !        result = systemqq( cmds )
+    ! result = systemqq( cmds )
     ! GNU FORTRAN COMPILER
     call system(cmds)
 

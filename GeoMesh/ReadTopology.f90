@@ -34,6 +34,7 @@
 
 module readtopo
 
+  use parallel
   use FoX_sax
   use topology
   use hydroUtil
@@ -43,7 +44,7 @@ module readtopo
   
   implicit none
 
-  integer(ESMF_KIND_I4)::refnb,falg
+  integer::refnb,falg
 
   logical,save::in_outdir=.false.
   logical,save::in_geostruct=.false.
@@ -65,7 +66,6 @@ module readtopo
   logical,save::in_watLoss=.false.
   logical,save::in_fillAlgo=.false.
   logical,save::in_accThres=.false.
-  logical,save::in_facies=.false.
   logical,save::in_timestruct=.false.
   logical,save::in_timerestart=.false.
   logical,save::in_timefileid=.false.
@@ -73,7 +73,6 @@ module readtopo
   logical,save::in_timestart=.false.
   logical,save::in_timeend=.false.
   logical,save::in_displaytime=.false.
-  logical,save::in_sedtranstime=.false.
   logical,save::in_forcestep=.false.
   logical,save::in_Tforce=.false.
   logical,save::in_udwstruct=.false.
@@ -85,14 +84,17 @@ module readtopo
 
 contains
   ! =====================================================================================
+
   subroutine startDocument_handler
 
   end subroutine startDocument_handler
   ! =====================================================================================
+
   subroutine endDocument_handler
 
   end subroutine endDocument_handler
   ! =====================================================================================
+
   subroutine startElement_handler(namespaceURI,localname,name,atts)
 
     character(len=*),intent(in)::namespaceURI
@@ -116,6 +118,7 @@ contains
 
   end subroutine startElement_handler
   ! =====================================================================================
+
   subroutine endElement_handler(namespaceURI,localname,name)
 
     character(len=*),intent(in)::namespaceURI
@@ -134,6 +137,7 @@ contains
 
   end subroutine endElement_handler
   ! =====================================================================================
+
   subroutine characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -159,6 +163,7 @@ contains
 
   end subroutine characters_handler
   ! =====================================================================================
+
   subroutine SgeometryElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -175,10 +180,10 @@ contains
     if(name=='water_loss') in_watLoss=.true.
     if(name=='fill_heigth') in_fillAlgo=.true.
     if(name=='stream_network') in_accThres=.true.
-    if(name=='facies') in_facies=.true.
 
   end subroutine SgeometryElement_handler
   ! =====================================================================================
+
   subroutine SrefineElement_handler(name)
 
     character(len=*), intent(in) :: name
@@ -191,6 +196,7 @@ contains
 
   end subroutine SrefineElement_handler
   ! =====================================================================================
+
   subroutine StimeElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -201,12 +207,12 @@ contains
     if(name=='restart_fileID') in_timefileid=.true.
     if(name=='restart_petNb') in_procfileid=.true.    
     if(name=='display_interval') in_displaytime=.true.
-    if(name=='layer_time') in_sedtranstime=.true.
     if(name=='time_step') in_forcestep=.true.
     if(name=='limit_step') in_Tforce=.true.
 
   end subroutine StimeElement_handler
   ! =====================================================================================
+
   subroutine SudwElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -216,6 +222,7 @@ contains
 
   end subroutine SudwElement_handler
   ! =====================================================================================
+
   subroutine EgeometryElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -232,10 +239,10 @@ contains
     if(name=='water_loss') in_watLoss=.false.
     if(name=='fill_heigth') in_fillAlgo=.false.
     if(name=='stream_network') in_accThres=.false.
-    if(name=='facies') in_facies=.false.
 
   end subroutine EgeometryElement_handler
   ! =====================================================================================
+
   subroutine ErefineElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -248,6 +255,7 @@ contains
 
   end subroutine ErefineElement_handler
   ! =====================================================================================
+
   subroutine EtimeElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -258,12 +266,12 @@ contains
     if(name=='restart_fileID') in_timefileid=.false.
     if(name=='restart_petNb') in_procfileid=.false.  
     if(name=='display_interval') in_displaytime=.false.
-    if(name=='layer_time') in_sedtranstime=.false.
     if(name=='time_step') in_forcestep=.false.
     if(name=='limit_step') in_Tforce=.false.
 
   end subroutine EtimeElement_handler
   ! =====================================================================================
+
   subroutine EudwElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -273,6 +281,7 @@ contains
 
   end subroutine EudwElement_handler
   ! =====================================================================================
+
   subroutine geometry_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -304,12 +313,11 @@ contains
        call rts(chars,fh)
     elseif(in_accThres)then
       call rts(chars,accu_thres)
-    elseif(in_facies)then
-      call rts(chars,faciesOn)
     endif
 
   end subroutine geometry_characters_handler
   ! =====================================================================================
+
   subroutine refine_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -334,6 +342,7 @@ contains
 
   end subroutine refine_characters_handler
   ! =====================================================================================
+
   subroutine time_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -355,12 +364,11 @@ contains
         call rts(chars,force_time)
     elseif(in_Tforce)then
         call rts(chars,Tforce)
-    elseif(in_sedtranstime)then
-        call rts(chars,layer_interval)
     endif
 
   end subroutine time_characters_handler
   ! =====================================================================================
+
   subroutine udw_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -373,12 +381,13 @@ contains
 
   end subroutine udw_characters_handler
   ! =====================================================================================
+  
   subroutine topology_parser
 
     type(xml_t)::xf
     logical::found
     integer::k
-    integer(ESMF_KIND_I4)::l1,l2
+    integer::l1,l2
     character(len=128)::command,stg,fildir,file
 
     refnb=0
@@ -389,9 +398,7 @@ contains
     udwFlag=.false.
     restartFlag=.false.
     display_interval=0.
-    layer_interval=0.
     accu_thres=10
-    faciesOn=0
     outlet=0
     bounds=2
     fh=1.
@@ -410,10 +417,8 @@ contains
     ! Open file
     call open_xml_file(xf,xmlfile,rc)
     if(rc/=0)then
-      call ESMF_LogSetError(rcToCheck=ESMF_RC_FILE_OPEN, &
-        msg="Failed to open namelist file 'XmL_input_file'", &
-        line=__LINE__,file=__FILE__)
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      print*,'Failed to open XmL input file'
+      call mpi_finalize(rc)
     endif
 
     ! Parser 
@@ -535,8 +540,8 @@ contains
       call term_command(command)
     endif
 
-    call ESMF_VMBroadcast(vm=vm,bcstData=outdir1,count=128,rootPet=0,rc=rc)
-    call ESMF_VMBroadcast(vm=vm,bcstData=outdir2,count=128,rootPet=0,rc=rc)
+    call mpi_bcast(outdir1,128,mpi_character,0,badlands_world,rc)
+    call mpi_bcast(outdir2,128,mpi_character,0,badlands_world,rc)
 
     if(udwFlag)then
       fudw='topsurface.vtk'
@@ -568,10 +573,6 @@ contains
         disp_time(k,2)=disp_time(k,1)+udw_time
       enddo
     endif
-
-    if(display_interval<layer_interval) layer_interval=display_interval
-    if(faciesOn==1 .and. layer_interval==0) layer_interval=display_interval
-
 
   end subroutine topology_parser
   ! =====================================================================================

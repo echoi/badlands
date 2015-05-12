@@ -34,6 +34,7 @@
 
 module hillslope
 
+  use parallel
   use topology
   use parameters
   use hydroUtil
@@ -45,10 +46,11 @@ module hillslope
 contains
 
   ! =====================================================================================
+
   subroutine CFLdiffusion
 
     integer::lid,k,n,p,id
-    real(ESMF_KIND_R8)::distance,denom,Cdiff,ldt(2),dt(2)
+    real(kind=8)::distance,denom,Cdiff,ldt(2),dt(2)
 
   	time_step=CFL_diffusion
     
@@ -67,6 +69,10 @@ contains
         				CFL_diffusion=min(CFL_diffusion,0.1*(distance)**2/(2.0*Cdiff))
         				time_step=min(time_step,CFL_diffusion)
         			endif
+              if(simulation_time>time_start.and.update3d.and.Cdiff>0.)then
+                CFL_diffusion=min(CFL_diffusion,0.1*(distance)**2/(2.0*Cdiff))
+                time_step=min(time_step,CFL_diffusion)
+              endif
         			! CFL depth-dependent diffusion
               Cdiff=max(Cdiffusion_d(1),Cdiffusion_d(2))
         			if(Cdiff>0.)then
@@ -88,17 +94,17 @@ contains
     if(time_step>display_interval) time_step=display_interval
     ldt(1)=CFL_diffusion
     ldt(2)=time_step
-    call ESMF_VMAllReduce(vm=vm,sendData=ldt,recvData=dt,count=2,&
-      reduceflag=ESMF_REDUCE_MIN,rc=rc)
+    call mpi_allreduce(ldt,dt,2,mpi_double_precision,mpi_min,badlands_world,rc)
     CFL_diffusion=dt(1)
     time_step=dt(2)
     
   end subroutine CFLdiffusion   
   ! =====================================================================================
+  
   subroutine hillslope_flux(id,LDL,DDD,NDL,diffH)
 
     integer::id,n,p
-    real(ESMF_KIND_R8)::LDL,DDD,NDL,dh,edge,distance,diffH
+    real(kind=8)::LDL,DDD,NDL,dh,edge,distance,diffH
 
     LDL=0.
     DDD=0.

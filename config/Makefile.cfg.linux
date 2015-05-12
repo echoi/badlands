@@ -45,4 +45,3 @@ METIS=/home/tristan/suiteIntel/metis
 METISLDFLAGS = -L${METIS}/lib 
 METISLIBS =  -lmetis
 
-

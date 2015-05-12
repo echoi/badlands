@@ -42,7 +42,7 @@ $(TARGETLIB): $(COBJS) $(FOBJS)
 	done
 
 %.o : %.f90
-	$(ESMF_F90COMPILER) -c $(ESMF_F90COMPILEOPTS) $(ESMF_F90COMPILEPATHS) $(ESMF_F90COMPILEFREENOCPP) $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) $< -o $@ 
+	$(BADLANDS_F) -c $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) $< -o $@ 
 	
 dust:
 	rm -fv *.bak *~ *.o *.mod *.original $(FSTG)/*.o $(FSTG)/*.original 

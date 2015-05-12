@@ -34,6 +34,7 @@
 
 module watershed
 
+  use parallel
   use topology
   use parameters
   use hydroUtil
@@ -49,11 +50,12 @@ module watershed
 
   integer,dimension(:),allocatable::options
   integer,pointer::vsize,adjwgt 
-  real(ESMF_KIND_R8),pointer::tpwgts,ubvec
+  real(kind=8),pointer::tpwgts,ubvec
 
 contains
 
   ! =====================================================================================
+
   subroutine compute_cumulative_discharge
 
     integer::k,rcv 
@@ -87,6 +89,7 @@ contains
 
   end subroutine compute_cumulative_discharge
   ! =====================================================================================
+
   subroutine compute_subcatchment
   
     integer::id,k,n,p,s,maxs,subcatchID
@@ -152,6 +155,7 @@ contains
 
   end subroutine compute_subcatchment
   ! =====================================================================================
+
   recursive function addtosubcatch(k,catchID) result(success)
 
     integer::n,success,k,catchID,s
@@ -170,6 +174,7 @@ contains
 
   end function addtosubcatch
   ! =====================================================================================
+
   subroutine metis_loadbalancing
 
     integer::l,s,id,k,p,objval
@@ -180,12 +185,12 @@ contains
     if(allocated(partition)) deallocate(partition)
     allocate(partition(junctionsNb+1))
 
-      if(allocated(vwgt)) deallocate(vwgt,CRSadj,CRSadjncy)
-      if(allocated(connects)) deallocate(connects,connectsNb)
-      allocate(vwgt(junctionsNb+1))
-      allocate(CRSadj(junctionsNb+2),CRSadjncy(2*(junctionsNb)))
-      allocate(connectsNb(junctionsNb+1),connects(junctionsNb+1,junctionsNb+1))
-      connectsNb=0
+    if(allocated(vwgt)) deallocate(vwgt,CRSadj,CRSadjncy)
+    if(allocated(connects)) deallocate(connects,connectsNb)
+    allocate(vwgt(junctionsNb+1))
+    allocate(CRSadj(junctionsNb+2),CRSadjncy(2*(junctionsNb)))
+    allocate(connectsNb(junctionsNb+1),connects(junctionsNb+1,junctionsNb+1))
+    connectsNb=0
 
       do s=1,junctionsNb+1
         if(s<=junctionsNb)then
@@ -249,20 +254,18 @@ contains
 
   end subroutine metis_loadbalancing
   ! =====================================================================================
+  
   subroutine bcast_loadbalancing
 
     integer::s,id,k,p
-    integer(ESMF_KIND_I4),dimension(2)::jNb
 
     ! Broadcast partitioning
-    if(pet_id==0) jNb=junctionsNb
-    call ESMF_VMBroadcast(vm=vm,bcstData=jNb,count=2,rootPet=0,rc=rc)
+    call mpi_bcast(junctionsNb,1,mpi_integer,0,badlands_world,rc)
     if(pet_id/=0)then
-      junctionsNb=jNb(1)
       if(allocated(partition)) deallocate(partition)
       allocate(partition(junctionsNb+1))
     endif
-    call ESMF_VMBroadcast(vm=vm,bcstData=partition,count=junctionsNb+1,rootPet=0,rc=rc)
+    call mpi_bcast(partition,junctionsNb+1,mpi_integer,0,badlands_world,rc)
     
     if(.not.allocated(subcatchmentProc)) allocate(subcatchmentProc(dnodes))
     subcatchmentProc=-1
@@ -273,10 +276,7 @@ contains
       subcatchmentProc(k)=partition(subcatchmentID(k))-1 
       if(pet_id==subcatchmentProc(k))localNodes=localNodes+1
     enddo
-
-    if(pet_id==0) jNb=maxrcvs
-    call ESMF_VMBroadcast(vm=vm,bcstData=jNb,count=2,rootPet=0,rc=rc)
-    if(pet_id/=0) maxrcvs=jNb(1)
+    call mpi_bcast(maxrcvs,1,mpi_integer,0,badlands_world,rc)
 
     ! Define local and inter-processor communications
     if(.not.allocated(sendprocID)) allocate(sendprocID(dnodes))

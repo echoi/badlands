@@ -34,6 +34,7 @@
 
 module underworld
 
+  use parallel
   use topology
   use parameters
   use hydroUtil
@@ -44,15 +45,14 @@ module underworld
 contains
 
   ! =====================================================================================
+
   subroutine SurfaceVTK
 
     integer::iunit,ios,k,p,n,m,uorb
 
     uorb=0
     ! Create the top surface
-    call ESMF_UtilIOUnitGet(unit=iunit,rc=rc)
-    if(ESMF_LogFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+    iunit=81
 
     if(pet_id==0)then
       open(iunit,file=fudw,status="replace",action="write",iostat=ios)
@@ -75,7 +75,7 @@ contains
         do n=1,nx+2
           m=m+1
           if(n>1.and.n<nx+1.and.k>1.and.k<ny+2)then
-            write(iunit,'(f12.3,1x)',advance='no')rtectoZ(m)
+            write(iunit,'(f12.3,1x)',advance='no')rcoordZ(m)
           elseif(n==nx+1.and.k>1.and.k<ny+2)then
             write(iunit,'(f12.3,1x)')rtectoZ(m)
           endif
@@ -117,6 +117,7 @@ contains
 
   end subroutine SurfaceVTK
   ! =====================================================================================
+
   subroutine WaitStepCompletion
 
     integer::iu,ios
@@ -126,9 +127,7 @@ contains
 
     if(pet_id==0)then
        do while(charac/='L')
-          call ESMF_UtilIOUnitGet(unit=iu,rc=rc)
-          if(ESMF_LogFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-               call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          iu=79
           ! Read the maestro file
           open(iu,file=maestro,status="old",action="read",iostat=ios)
           rewind(iu)
@@ -140,7 +139,8 @@ contains
           call Sleep(1)
        enddo
     endif
-    call ESMF_VMBarrier(vm=vm,rc=rc)
+
+    call mpi_barrier(badlands_world,rc)
 
     return
 

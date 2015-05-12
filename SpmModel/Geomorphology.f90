@@ -34,28 +34,29 @@
 
 module geomorpho
 
-  use ESMF
+  use bilinear
+  use parallel
   use topology
   use parameters
   use hydrology
   use hydroUtil
   use hillslope
   use watershed
-  use facies
   use outspm_surface
   use outspm_drainage
   use external_forces
 
   implicit none
   
-  integer::iter
+  integer::iter,idiff
 
-  real(ESMF_KIND_R8)::cpl_time,max_time
-  real(ESMF_KIND_R8)::time1,time2
+  real(kind=8)::cpl_time,max_time
+  real(kind=8)::time1,time2
 
 contains
 
   ! =====================================================================================
+
   subroutine geomorphology
 
     integer::k
@@ -68,43 +69,25 @@ contains
     if(.not.allocated(Qs_in)) allocate(Qs_in(dnodes))
     if(.not.allocated(cumDisp)) allocate(cumDisp(upartN))
     if(.not.allocated(change_local)) allocate(change_local(dnodes))
-    
+   
     ! Define paramaters
-    if(simulation_time==time_start)then
-      iter=0
+    if(simulation_time==time_start.or.update3d)then
+      if(simulation_time==time_start) iter=0
       spmH=0.
       if(stream_ero>0.) spmH=bed_sed_interface
-      if(faciesOn==1)then
-        if(allocated(facType)) deallocate(facType)
-        allocate(facType(dnodes,faciestype))
-        facType=0.
-      endif
       spmZ=tcoordZ
-
-      if(faciesOn==1.and..not.restartFlag)then
-        if(allocated(stratalZ)) deallocate(stratalZ)
-        if(allocated(stratalFacies)) deallocate(stratalFacies)
-        layerNb=int((time_end-time_start)/layer_interval)+1
-        allocate(stratalZ(layerNb,dnodes))
-        allocate(stratalFacies(layerNb,dnodes))
-        stratalZ=0.
-        stratalFacies=0.
-        layerID=1
-        stratalZ(layerID,:)=spmZ
-      endif
-
       cumDisp=0.
-      CFL_diffusion=layer_interval
-      time_step=0. 
-      time_display=time_start
-      layer_time=time_start 
+      CFL_diffusion=display_interval
+      idiff=0
+      if(simulation_time==time_start) time_step=0. 
+      if(simulation_time==time_start) time_display=time_start
       if(Cefficiency>0..or.stream_ero>0.) Tforce=1
     endif
 
     cpl_time=min(cpl1_time,cpl2_time)
     cpl_time=min(cpl_time,time_end)
 
-    do while(simulation_time<cpl_time)
+    do while(simulation_time<cpl_time+0.001)
 
       if(.not.allocated(filldem)) allocate(filldem(dnodes))
       if(.not.allocated(watercell)) allocate(watercell(dnodes))
@@ -141,11 +124,11 @@ contains
       endif
 
       ! Broadcast stream network dataset
-      call ESMF_VMBroadcast(vm=vm,bcstData=receivers,count=dnodes,rootPet=0,rc=rc)
-      call ESMF_VMBroadcast(vm=vm,bcstData=stackOrder,count=dnodes,rootPet=0,rc=rc)
-      call ESMF_VMBroadcast(vm=vm,bcstData=watercell,count=dnodes,rootPet=0,rc=rc)
-      call ESMF_VMBroadcast(vm=vm,bcstData=filldem,count=dnodes,rootPet=0,rc=rc)
-      call ESMF_VMBroadcast(vm=vm,bcstData=discharge,count=dnodes,rootPet=0,rc=rc)
+      call mpi_bcast(receivers,dnodes,mpi_integer,0,badlands_world,rc)
+      call mpi_bcast(stackOrder,dnodes,mpi_integer,0,badlands_world,rc)
+      call mpi_bcast(watercell,dnodes,mpi_double_precision,0,badlands_world,rc)
+      call mpi_bcast(filldem,dnodes,mpi_double_precision,0,badlands_world,rc)
+      call mpi_bcast(discharge,dnodes,mpi_double_precision,0,badlands_world,rc)
 
       ! Define subcathcment partitioning
       if(pet_id==0)then
@@ -156,34 +139,25 @@ contains
       endif
 
       ! Broadcast subcatchment dataset
-      call ESMF_VMBroadcast(vm=vm,bcstData=strahler,count=dnodes,rootPet=0,rc=rc)
-      call ESMF_VMBroadcast(vm=vm,bcstData=subcatchmentID,count=dnodes,rootPet=0,rc=rc)
+      call mpi_bcast(strahler,dnodes,mpi_integer,0,badlands_world,rc)
+      call mpi_bcast(subcatchmentID,dnodes,mpi_integer,0,badlands_world,rc)
 
       ! Define load balancing
       call bcast_loadbalancing
 
-      if(simulation_time==time_start) newZ=spmZ
+      if(simulation_time==time_start.or.update3d) newZ=spmZ
       if(pet_id==0)print*,'Current time:',simulation_time
       
       ! Visualisation surface
       if(simulation_time>=time_display)then
         call visualise_surface_changes(iter)
         call visualise_drainage_changes(iter)
-        if(faciesOn==1)call visualise_facies_change(iter)
-        call ESMF_VMBarrier(vm=vm,rc=rc)
+        call mpi_barrier(badlands_world,rc)
         if(pet_id==0)print*,'Creating output: ',int(simulation_time)
         time_display=time_display+display_interval
         iter=iter+1
         newZ=spmZ
         cumDisp=0.
-      endif
-      
-      ! Add facies layer
-      if(simulation_time>=layer_time.and.faciesOn==1)then
-        layer_time=layer_time+layer_interval
-        layerID=layerID+1
-        stratalZ(layerID,:)=stratalZ(layerID-1,:)
-        facType=0.0
       endif
       
       ! Get time step size for hillslope process and stream power law
@@ -196,24 +170,21 @@ contains
       ! Update sea-level
       if(gsea%sealevel) call eustatism
       ! Apply displacement
-      if(disp%event>0) call compute_vertical_displacement
+      if(disp%event>0.and..not.disp3d) call compute_vertical_displacement
 
-      ! Merge local geomorphic evolution
-      call ESMF_VMAllReduce(vm=vm,sendData=nZ,recvData=spmZ,count=dnodes,&
-        reduceflag=ESMF_REDUCE_MAX,rc=rc)
+      ! Merge local geomorphic evolution      
+      call mpi_allreduce(nZ,spmZ,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
       if(stream_ero>0..or.regoProd>0.) &
-        call ESMF_VMAllReduce(vm=vm,sendData=nH,recvData=spmH,count=dnodes,&
-        reduceflag=ESMF_REDUCE_MAX,rc=rc)
+        call mpi_allreduce(nH,spmH,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
+      call mpi_barrier(badlands_world,rc)
+      update3d=.false.
 
-      if(faciesOn==1) call update_facies
-      call ESMF_VMBarrier(vm=vm,rc=rc)
     enddo
 
     if(simulation_time>=time_end)then
       call visualise_surface_changes(iter)
       call visualise_drainage_changes(iter)
-      if(faciesOn==1)call visualise_facies_change(iter)
-      call ESMF_VMBarrier(vm=vm,rc=rc)
+      call mpi_barrier(badlands_world,rc)
       if(pet_id==0)print*,'simulation time: ',int(time_display)
     endif
 
@@ -225,15 +196,18 @@ contains
 
   end subroutine geomorphology
   ! =====================================================================================
+
   subroutine CFL_condition
 
     integer::k,p,id,lid
-    real(ESMF_KIND_R8)::denom,distance,dh,ldt(1),dt(1)
+    real(kind=8)::denom,distance,dh,ldt,dt
 
     ! Hillslope CFL conditions
-    if(simulation_time==time_start.or.Cdiffusion_d(1)>0..or.Cdiffusion_nl(1)>0..or.CFL_diffusion<1.)then 
+    if(simulation_time==time_start.or.idiff==0.or.Cdiffusion_d(1)>0. &
+      .or.Cdiffusion_nl(1)>0..or.CFL_diffusion<1.)then 
       call CFLdiffusion
       CFL_diffusion=display_interval
+      idiff=1
       if(CFL_diffusion==0.) time_step=display_interval
     else
       time_step=CFL_diffusion
@@ -263,25 +237,24 @@ contains
     if(time_step<force_time) time_step=force_time
     
     ! Get maximum time step for stability
-    ldt(1)=time_step
-    call ESMF_VMAllReduce(vm=vm,sendData=ldt,recvData=dt,count=1,&
-      reduceflag=ESMF_REDUCE_MIN,rc=rc)
-    time_step=dt(1)
+    ldt=time_step    
+    call mpi_allreduce(ldt,dt,1,mpi_double_precision,mpi_min,badlands_world,rc)
+    time_step=dt
 
     ! Check time-step in relation to coupling time
     if(simulation_time+time_step>cpl_time) time_step=cpl_time-simulation_time+1.e-4
-    if(simulation_time+time_step>layer_time.and.faciesOn==1) time_step=layer_time-simulation_time+1.e-4
     if(simulation_time+time_step>time_display) time_step=time_display-simulation_time+1.e-4
     if(simulation_time+time_step>time_end) time_step=time_end-simulation_time+1.e-4
       
   end subroutine CFL_condition
   ! =====================================================================================
+
   subroutine geomorphic_evolution
 
     integer::k,id,rcv,lid,p,q,m
     integer::stat(mpi_status_size),ierr,req(localNodes),r
-    real(ESMF_KIND_R8)::Ps,STL,SPL,STC,LDL,NDL,DDD,ST,Qsr,mtime,dt(1),maxtime(1)
-    real(ESMF_KIND_R8)::distance,diffH,Qs1,Qs2,Qs3,S_d,S_t,N_dt,maxh
+    real(kind=8)::Ps,STL,SPL,STC,LDL,NDL,DDD,ST,Qsr,mtime,dt,maxtime
+    real(kind=8)::distance,diffH,Qs1,Qs2,Qs3,S_d,S_t,N_dt,maxh
 
     max_time=time_step
     Qs_in=0.0
@@ -399,9 +372,9 @@ contains
 
     ! Adapt time step to ensure stability
     if(Tforce==0)then
-      maxtime(1)=max_time
+      maxtime=max_time
     else
-      maxtime(1)=time_step
+      maxtime=time_step
     endif
     if(Tforce==0)then
       do lid=1,localNodes
@@ -419,18 +392,17 @@ contains
             enddo
             if(maxh>0.)then
               mtime=maxh/change_local(id)
-              maxtime(1)=min(maxtime(1),mtime)
+              maxtime=min(maxtime,mtime)
             endif
           else
             mtime=watercell(id)/change_local(id)
-            maxtime(1)=min(maxtime(1),mtime)
+            maxtime=min(maxtime,mtime)
           endif
         endif
       enddo
     endif
-    call ESMF_VMAllReduce(vm=vm,sendData=maxtime,recvData=dt,count=1,&
-      reduceflag=ESMF_REDUCE_MIN,rc=rc)
-    time_step=dt(1)    
+    call mpi_allreduce(maxtime,dt,1,mpi_double_precision,mpi_min,badlands_world,rc)
+    time_step=dt   
 
     if(time_step<force_time) time_step=force_time
 
@@ -463,10 +435,11 @@ contains
 
   end subroutine geomorphic_evolution
   ! =====================================================================================
+
   subroutine detachmentlimited(id,rcv,distance,maxh,ST,Qs)
 
     integer::id,rcv
-    real(ESMF_KIND_R8)::ST,dh,distance,Qs,maxh
+    real(kind=8)::ST,dh,distance,Qs,maxh
 
     ! Stream Power Law (detachment-limited) - bedrock incision
     dh=0.95*(spmZ(id)-spmZ(rcv))
@@ -540,10 +513,11 @@ contains
 
   end subroutine detachmentlimited
   ! =====================================================================================
+
   subroutine streamcapacity(id,rcv,distance,maxh,ST,Qs)
 
     integer::id,rcv
-    real(ESMF_KIND_R8)::ST,dh,width,distance,Qs,maxh,Qe
+    real(kind=8)::ST,dh,width,distance,Qs,maxh,Qe
 
     dh=0.95*(spmZ(id)-spmZ(rcv))
     if(dh<0.001)dh=0.
@@ -620,10 +594,11 @@ contains
 
   end subroutine streamcapacity
   ! =====================================================================================
+
   subroutine transportlimited(id,rcv,distance,maxh,ST,Qs) 
 
     integer::id,rcv
-    real(ESMF_KIND_R8)::ST,distance,dh,QsOut,Qs,maxh,area
+    real(kind=8)::ST,distance,dh,QsOut,Qs,maxh,area
 
     ST=0.
     QsOut=0.

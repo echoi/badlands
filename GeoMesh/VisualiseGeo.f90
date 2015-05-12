@@ -46,14 +46,15 @@ module outsurf
 contains
 
   ! =====================================================================================
+
   subroutine delaunay_hdf5
 
     logical::compression
 
-    integer(ESMF_KIND_I4)::id,i,rank,iter,totnodes,totelems
-    integer(ESMF_KIND_I4),dimension(:),allocatable::connect
+    integer::id,i,rank,iter,totnodes,totelems
+    integer,dimension(:),allocatable::connect
 
-    real(ESMF_KIND_R8),dimension(:),allocatable::nodes
+    real(kind=8),dimension(:),allocatable::nodes
 
     character(len=128)::text,file
 
@@ -168,11 +169,12 @@ contains
 
   end subroutine delaunay_hdf5
   ! =====================================================================================
+
   subroutine delaunay_xmf
 
     type(xmlf_t)::xf
 
-    integer(ESMF_KIND_I4)::iter,totnodes,totelems
+    integer::iter,totnodes,totelems
 
     character(len=128)::str,filename,filename1,filename2,file
 
@@ -265,14 +267,15 @@ contains
 
   end subroutine delaunay_xmf
   ! =====================================================================================
+
   subroutine voronoi_hdf5
 
     logical :: compression
 
     ! Parameters Declaration
-    integer(ESMF_KIND_I4)::id,i,rank,iter,totnodes
+    integer::id,i,rank,iter,totnodes
 
-    real(ESMF_KIND_R8),dimension(:),allocatable::nodes
+    real(kind=8),dimension(:),allocatable::nodes
 
     character(len=128)::text,stg,file
 
@@ -352,11 +355,12 @@ contains
 
   end subroutine voronoi_hdf5
   ! =====================================================================================
+  
   subroutine voronoi_xmf
 
     type(xmlf_t)::xf
 
-    integer(ESMF_KIND_I4)::iter,totnodes,totelems,i,k
+    integer::iter,totnodes,totelems,i,k
 
     character(len=128)::str,filename,filename1,file
 

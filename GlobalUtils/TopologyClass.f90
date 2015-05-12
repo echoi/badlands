@@ -43,48 +43,49 @@ module topology
   character(len=128)::TINfile,elemfile,vorofile,rstfolder 
 
   ! Total number of nodes and elements of the user provided regular grid
-  integer(ESMF_KIND_I4)::nbnodes
-  integer(ESMF_KIND_I4)::bnbnodes
-  integer(ESMF_KIND_I4)::nbelm
+  integer::nbnodes
+  integer::bnbnodes
+  integer::nbelm
 
   ! Users requested minimum delaunay triangle angle and maximum area 
-  real(ESMF_KIND_R8)::del_area, del_angle
+  real(kind=8)::del_area,del_angle
   
   ! Boundary type 
-  integer(ESMF_KIND_I4),dimension(4)::bounds
+  integer,dimension(4)::bounds
   
   ! Outlet type 
-  integer(ESMF_KIND_I4)::outlet
+  integer::outlet
 
   ! Delaunay cell centroid 
-  real(ESMF_KIND_R8),dimension(:,:),allocatable::dcentroid
-  real(ESMF_KIND_R8),dimension(:,:),allocatable::Fdata
+  real(kind=8),dimension(:,:),allocatable::dcentroid
+  real(kind=8),dimension(:,:),allocatable::Fdata,Fdata2
 
   ! Shewchuck Triangle's algorithm delaunay elements/edges and voronoi edges  
-  integer(ESMF_KIND_I4),dimension(:,:),allocatable::delmt,dedg,vedg
+  integer,dimension(:,:),allocatable::delmt,dedg,vedg,delmt2
 
   ! Shewchuck Triangle's algorithm grid boundaries, voronoi duplicates and output masks 
-  integer(ESMF_KIND_I4),dimension(:),allocatable::tbound,mask,elemtmask
+  integer,dimension(:),allocatable::tbound,mask,elemtmask
 
   ! Number of user defined refinement regions
-  integer(ESMF_KIND_I4)::refineNb
+  integer::refineNb
 
   ! Users requested refinement regions parameters
   type regions_refine
-     real(ESMF_KIND_R8),dimension(2)::xcoord
-     real(ESMF_KIND_R8),dimension(2)::ycoord
-     real(ESMF_KIND_R8)::area
+     real(kind=8),dimension(2)::xcoord
+     real(kind=8),dimension(2)::ycoord
+     real(kind=8)::area
   end type regions_refine
   type(regions_refine),dimension(:),allocatable::refine_grid
 
 contains 
   ! =====================================================================================
+
   function cmp_centroid(fce) result(centroid)
 
-    integer(ESMF_KIND_I4)::fce,k
-    integer(ESMF_KIND_I4),dimension(3)::nids
+    integer::fce,k
+    integer,dimension(3)::nids
 
-    real(ESMF_KIND_R8),dimension(2)::centroid
+    real(kind=8),dimension(2)::centroid
 
     nids=delmt(fce,1:3)
     centroid(1:2)=0.0_8
@@ -99,6 +100,7 @@ contains
 
   end function cmp_centroid
   ! =====================================================================================
+
   subroutine ReadStrings(id,str)
 
     character(len=50)::str 
@@ -123,9 +125,10 @@ contains
 
   end subroutine ReadStrings
   ! =====================================================================================
+
   subroutine addpath(fname)
 
-    integer(ESMF_KIND_I4)::pathlen,flen
+    integer::pathlen,flen
     
     character(len=128)::fname,dname,dummy
 
@@ -148,9 +151,10 @@ contains
 
   end subroutine addpath
   ! =====================================================================================
+
   subroutine addpath1(fname)
 
-    integer(ESMF_KIND_I4)::pathlen,flen
+    integer::pathlen,flen
 
     
     character(len=128)::fname,dname,dummy
@@ -174,9 +178,10 @@ contains
 
   end subroutine addpath1
   ! =====================================================================================
+
   subroutine addpath2(fname)
 
-    integer(ESMF_KIND_I4)::pathlen,flen
+    integer::pathlen,flen
 
     character(len=128)::fname,dname,dummy
 
@@ -199,9 +204,10 @@ contains
 
   end subroutine addpath2
   ! =====================================================================================
+
   subroutine addpath3(fname)
 
-    integer(ESMF_KIND_I4)::pathlen,flen
+    integer::pathlen,flen
 
     character(len=128)::fname,dname,dummy
 
@@ -224,9 +230,10 @@ contains
 
   end subroutine addpath3
   ! =====================================================================================
+
   subroutine noblnk(string)
 
-    integer(ESMF_KIND_I4)::i,j,lg
+    integer::i,j,lg
 
     character(len=128)::string
 
@@ -271,9 +278,10 @@ contains
 
   end subroutine noblnk
   ! =====================================================================================
+
   subroutine append_str(stg1,stg2)
 
-    integer(ESMF_KIND_I4) :: l1,l2
+    integer :: l1,l2
 
     character(len=128) :: stg1,stg2
 
@@ -286,9 +294,10 @@ contains
 
   end subroutine append_str
   ! =====================================================================================
+
   subroutine append_zero(stg1,i)
 
-    integer(ESMF_KIND_I4)::l1,l2,i
+    integer::l1,l2,i
 
     character(len=128)::stg1,stg2,str
 
@@ -317,11 +326,12 @@ contains
 
   end subroutine append_zero
   ! =====================================================================================
+
   subroutine append_nbreal(stg1,n)
 
-    real(ESMF_KIND_R8)::n
+    real(kind=8)::n
 
-    integer(ESMF_KIND_I4)::l1,l2
+    integer::l1,l2
 
     character(len=128)::stg1,stg2
 
@@ -336,9 +346,10 @@ contains
 
   end subroutine append_nbreal
   ! =====================================================================================
+
   subroutine append_nb(stg1,i)
 
-    integer(ESMF_KIND_I4)::l1,l2,i
+    integer::l1,l2,i
 
     character(len=128)::stg1,stg2
 
@@ -353,9 +364,10 @@ contains
 
   end subroutine append_nb
   ! =====================================================================================
+  
   subroutine append_nb2(stg1,i)
 
-    integer(ESMF_KIND_I4)::l1,l2,i
+    integer::l1,l2,i
 
     character(len=128)::stg1,stg2
 

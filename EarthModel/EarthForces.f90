@@ -34,6 +34,7 @@
 
 module earthforces
 
+  use parallel
   use topology
   use parameters
   use hydroUtil
@@ -46,6 +47,7 @@ module earthforces
 contains
 
   ! =====================================================================================
+
   subroutine displacement
 
     integer::kn,k,iu,p,id,m,n
@@ -59,17 +61,12 @@ contains
         vdisp%event=vdisp%event+1
         if(disp_time(k,1)>=disp_time(k,2))then
           if(pet_id==0)print*,'ERROR: reading displacements time declaration in event:',k
-          call ESMF_LogSetError(rcToCheck=ESMF_RC_VAL_WRONG, &
-            msg="Reading displacement time declaration ", &
-            line=__LINE__,file=__FILE__)
-          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          call mpi_finalize(rc)
         endif
         if(k<disp%event)then
           if(disp_time(k,2)>disp_time(k+1,1))then
             if(pet_id==0)print*,'ERROR: reading displacements time declaration between events:',k,k+1
-            call ESMF_LogSetError(rcToCheck=ESMF_RC_VAL_WRONG, &
-              msg="Reading displacement time declaration between events", &
-              line=__LINE__,file=__FILE__)
+            call mpi_finalize(rc)
           endif
           if(disp_time(k,2)/=disp_time(k+1,1)) vdisp%event=vdisp%event+1
         endif
@@ -144,15 +141,11 @@ contains
     ! Open displacements field file for the considered event number
     kn=disp%actual
     if(disp_fill(kn)>0)then
-      call ESMF_UtilIOUnitGet(unit=iu,rc=rc)
-      if(ESMF_LogFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      iu=54
       open(iu,file=fgeodyn(disp_fill(kn)),status="old",action="read",iostat=rc)
       if(rc/=0)then
-        call ESMF_LogSetError(rcToCheck=ESMF_RC_FILE_OPEN, &
-          msg="Failed to open namelist file 'tectonic_file'", &
-          line=__LINE__,file=__FILE__)
-        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        print*,'Failed to open tectonic file'
+        call mpi_finalize(rc)
       endif
 
       if(udwFlag)then
@@ -179,28 +172,36 @@ contains
           m=m+1
           if(p>1.and.p<nx+2.and.k>1.and.k<ny+2)then
             if(udwFlag)then
-              read(iu,*)n,rDisp(surfID(n))
+              if(disp3d)then
+                read(iu,*)n,rDisp(surfID(n),1:3)
+              else
+                read(iu,*)n,rDisp(surfID(n),1)
+              endif
             else
-              read(iu,*)rDisp(m)
+              if(disp3d)then
+                read(iu,*)rDisp(m,1:3)
+              else
+                read(iu,*)rDisp(m,1)
+              endif
             endif
           endif
         enddo
       enddo
       close(iu)
       ! Get the regular grid corners values
-      rDisp(1)=rDisp(nx+4)
-      rDisp(nx+2)=rDisp(2*nx+3)
-      rDisp(bnbnodes-nx-1)=rDisp(bnbnodes-2*(nx+2)+2)
-      rDisp(bnbnodes)=rDisp(bnbnodes-(nx+2)-1)
+      rDisp(1,:)=rDisp(nx+4,:)
+      rDisp(nx+2,:)=rDisp(2*nx+3,:)
+      rDisp(bnbnodes-nx-1,:)=rDisp(bnbnodes-2*(nx+2)+2,:)
+      rDisp(bnbnodes,:)=rDisp(bnbnodes-(nx+2)-1,:)
       ! Get the South/North displacement values
       id=0
       do k=1,ny+2
         do p=1,nx+2
           id=id+1
           if(k==1.and.p>1.and.p<nx+2)then
-            rDisp(id)=rDisp(id+nx+2)
+            rDisp(id,:)=rDisp(id+nx+2,:)
           elseif(k==ny+2.and.p>1.and.p<nx+2)then
-            rDisp(id)=rDisp(id-nx-2)
+            rDisp(id,:)=rDisp(id-nx-2,:)
           endif
         enddo
       enddo
@@ -210,9 +211,9 @@ contains
         do p=1,nx+2
           id=id+1
           if(p==1.and.k>1.and.k<ny+2)then
-            rDisp(id)=rDisp(id+1)
+            rDisp(id,:)=rDisp(id+1,:)
           elseif(p==nx+2.and.k>1.and.k<ny+2)then
-            rDisp(id)=rDisp(id-1)
+            rDisp(id,:)=rDisp(id-1,:)
           endif
         enddo
       enddo
@@ -223,18 +224,27 @@ contains
 
     ! Update displacement rate
     do k=1,bnbnodes
-      rvertDisp(k)=rDisp(k)/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+      if(disp3d)then
+        rhxDisp(k)=rDisp(k,1) !/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+        rhyDisp(k)=rDisp(k,2) !/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+        rvertDisp(k)=rDisp(k,3) !/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+      else
+        rvertDisp(k)=rDisp(k,1)/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+      endif
     enddo
 
     ! Define next coupling time 
-    if(disp%actual<disp%event)then
-      cpl2_time=disp_time(disp%actual+1,1)
-    else
-      cpl2_time=time_end+1000.
+    if(.not.disp3d)then
+      if(disp%actual<disp%event)then
+        cpl2_time=disp_time(disp%actual+1,1)
+      else
+        cpl2_time=time_end+1000.
+      endif
     endif
-    
+
   end subroutine displacement
   ! =====================================================================================
+
   subroutine rainfall
 
     integer::n,event_nb,iu,p,k,id,m
@@ -257,15 +267,11 @@ contains
     if(.not.allocated(rainVal)) allocate(rainVal(bnbnodes))
     rainVal=0.
     if(event_nb>0)then
-      call ESMF_UtilIOUnitGet(unit=iu,rc=rc)
-      if(ESMF_LogFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      iu=51
       open(iu,file=frainmap(event_nb),status="old",action="read",iostat=rc)
       if(rc/=0)then
-        call ESMF_LogSetError(rcToCheck=ESMF_RC_FILE_OPEN, &
-          msg="Failed to open namelist file 'rain_map_file'", &
-          line=__LINE__,file=__FILE__)
-        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        print*,'Failed to open namelist file rain map file'
+        call mpi_finalize(rc)
       endif
       id=0
       m=0

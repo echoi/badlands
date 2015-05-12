@@ -34,6 +34,7 @@
 
 module readforces
 
+  use parallel
   use FoX_sax
   use topology
   use parameters
@@ -48,6 +49,8 @@ module readforces
   logical,save::in_Sea=.false.
   logical,save::in_SeaFile=.false.
   logical,save::in_DispF=.false.
+  logical,save::in_3Dfield=.false.
+  logical,save::in_mrgd=.false.
   logical,save::in_DispNb=.false.
   logical,save::in_DispFile=.false.
   logical,save::in_DispET=.false.
@@ -63,14 +66,17 @@ module readforces
 contains
 
   ! =====================================================================================
+
   subroutine startDocument_handler
 
   end subroutine startDocument_handler
   ! =====================================================================================
+
   subroutine endDocument_handler
 
   end subroutine endDocument_handler
   ! =====================================================================================
+
   subroutine startElement_handler(namespaceURI,localname,name,atts)
 
     character(len=*),intent(in)::namespaceURI
@@ -102,6 +108,7 @@ contains
 
   end subroutine startElement_handler
   ! =====================================================================================
+
   subroutine endElement_handler(namespaceURI,localname,name)
 
     character(len=*),intent(in)::namespaceURI
@@ -116,6 +123,7 @@ contains
 
   end subroutine endElement_handler
   ! =====================================================================================
+
   subroutine characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -128,6 +136,7 @@ contains
     
   end subroutine characters_handler
   ! =====================================================================================
+
   subroutine SrainmapElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -136,6 +145,7 @@ contains
 
   end subroutine SrainmapElement_handler
   ! =====================================================================================
+
   subroutine SrainfieldElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -146,6 +156,7 @@ contains
 
   end subroutine SrainfieldElement_handler
   ! =====================================================================================
+
   subroutine SseaElement_handler(name)
 
     character(len=*), intent(in) :: name
@@ -154,14 +165,18 @@ contains
 
   end subroutine SseaElement_handler
   ! =====================================================================================
+
   subroutine SvdispElement_handler(name)
 
     character(len=*),intent(in)::name
 
+    if (name=='fields_3D') in_3Dfield=.true.
+    if (name=='merge_dist') in_mrgd=.true.
     if (name=='interval_nb') in_DispNb=.true.
 
   end subroutine SvdispElement_handler
   ! =====================================================================================
+
   subroutine SdispElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -172,6 +187,7 @@ contains
 
   end subroutine SdispElement_handler
   ! =====================================================================================
+
   subroutine ErainmapElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -180,6 +196,7 @@ contains
 
   end subroutine ErainmapElement_handler
   ! =====================================================================================
+
   subroutine ErainfieldElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -190,6 +207,7 @@ contains
 
   end subroutine ErainfieldElement_handler
   ! =====================================================================================
+
   subroutine EseaElement_handler(name)
 
     character(len=*), intent(in) :: name
@@ -198,14 +216,18 @@ contains
 
   end subroutine EseaElement_handler
   ! =====================================================================================
+
   subroutine EvdispElement_handler(name)
 
     character(len=*),intent(in)::name
 
+    if (name=='fields_3D') in_3Dfield=.false.
+    if (name=='merge_dist') in_mrgd=.false.
     if (name=='interval_nb') in_DispNb=.false.
 
   end subroutine EvdispElement_handler
   ! =====================================================================================
+
   subroutine EdispElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -216,6 +238,7 @@ contains
 
   end subroutine EdispElement_handler
   ! =====================================================================================
+
   subroutine rainmap_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -229,6 +252,7 @@ contains
 
   end subroutine rainmap_characters_handler
   ! =====================================================================================
+
   subroutine rainfield_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -245,6 +269,7 @@ contains
 
   end subroutine rainfield_characters_handler
   ! =====================================================================================
+
   subroutine sea_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -256,11 +281,16 @@ contains
 
     end subroutine sea_characters_handler
   ! =====================================================================================
+
   subroutine vdisp_characters_handler(chars)
 
     character(len=*),intent(in)::chars
-
-    if(in_DispNb)then
+   
+    if(in_3Dfield)then
+      disp3d=.true.
+    elseif(in_mrgd)then
+      call rts(chars,disp%mindist)
+    elseif(in_DispNb)then
       call rts(chars,disp%event)
       allocate(fgeodyn(disp%event))
       allocate(disp_time(disp%event,2))
@@ -268,6 +298,7 @@ contains
 
   end subroutine vdisp_characters_handler
   ! =====================================================================================
+
   subroutine disp_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -282,24 +313,25 @@ contains
 
   end subroutine disp_characters_handler
   ! =====================================================================================
+  
   subroutine forces_parser
 
     type(xml_t)::xf
 
+    disp3d=.false.
     rainn=0
     dispn=0
     rain_event=0
     if(.not.udwFlag)disp%event=0
     gsea%sealevel=.false.
     gsea%actual_sea=0.
+    disp%mindist=0.0
 
     ! Open file
     call open_xml_file(xf,xmlfile,rc)
     if(rc/=0)then
-      call ESMF_LogSetError(rcToCheck=ESMF_RC_FILE_OPEN, &
-        msg="Failed to open namelist file 'XmL_input_file'", &
-        line=__LINE__,file=__FILE__)
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      print*,'Failed to open XmL input file'
+      call mpi_finalize(rc)
     endif
 
     ! Parser 

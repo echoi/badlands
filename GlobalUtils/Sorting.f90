@@ -53,9 +53,10 @@ module sorting
 contains
 
   ! =====================================================================================
+
   recursive subroutine quick_sort(list,order)
 
-    real(ESMF_KIND_R8),dimension(:),intent(inout)::list
+    real(kind=8),dimension(:),intent(inout)::list
     integer,dimension(:),intent(inout)::order
 
     call quick_sort_rec(1,size(list))
@@ -63,13 +64,14 @@ contains
     contains
 
       ! =====================================================================================
+
       recursive subroutine quick_sort_rec(left_end,right_end)
 
         integer,intent(in)::left_end,right_end
 
         ! Local variables
         integer::i,j,itemp
-        real(ESMF_KIND_R8)::reference,temp
+        real(kind=8)::reference,temp
         integer,parameter::max_simple_sort_size=6
 
         if(right_end<left_end+max_simple_sort_size)then
@@ -110,13 +112,14 @@ contains
 
       end subroutine quick_sort_rec
       ! =====================================================================================
+      
       subroutine interchange_sort(left_end,right_end)
 
         integer,intent(in)::left_end,right_end
 
         !  Local variables
         integer::i,j,itemp
-        real(ESMF_KIND_R8)::temp
+        real(kind=8)::temp
 
         do i=left_end,right_end-1
           do j=i+1,right_end

@@ -43,9 +43,9 @@ module meshPartition
 
   ! Data Recursive Coordinate Bisection (RCB)
   integer::numGlobObjs,numLocObjs
-  integer(ESMF_KIND_I4),dimension(:),allocatable::zolt_part
+  integer,dimension(:),allocatable::zolt_part
   integer(ZOLTAN_INT),dimension(:),allocatable::zGID
-  real(ESMF_KIND_R4),dimension(:),allocatable::zolX,zolY
+  real,dimension(:),allocatable::zolX,zolY
 
   ! Zoltan data to store 
   logical::changes
@@ -59,18 +59,19 @@ module meshPartition
 contains
 
   ! =====================================================================================
+
   subroutine StructureGridPart
   
     logical::column_partition
     
     integer::k,e,p,id,extra,partNb,partelems
 
-    integer(ESMF_KIND_I4),dimension(npets)::partDim
-    integer(ESMF_KIND_I4),dimension(nbelm)::elementPet
-    integer(ESMF_KIND_I4),dimension(bnbnodes)::nodeDefine
+    integer,dimension(npets)::partDim
+    integer,dimension(nbelm)::elementPet
+    integer,dimension(bnbnodes)::nodeDefine
      
-    real(ESMF_KIND_R8)::elem_center
-    real(ESMF_KIND_R8),dimension(npets)::maxCoord
+    real(kind=8)::elem_center
+    real(kind=8),dimension(npets)::maxCoord
 
     column_partition=.false.
     if(nx>ny)column_partition=.true.
@@ -114,9 +115,9 @@ contains
         enddo loopface
       enddo
     endif
-    call ESMF_VMBroadcast(vm=vm,bcstData=partDim,count=npets,rootPet=0,rc=rc)
-    call ESMF_VMBroadcast(vm=vm,bcstData=maxCoord,count=npets,rootPet=0,rc=rc)
-    call ESMF_VMBroadcast(vm=vm,bcstData=elementPet,count=nbelm,rootPet=0,rc=rc)
+    call mpi_bcast(partDim,npets,mpi_integer,0,badlands_world,rc)
+    call mpi_bcast(maxCoord,npets,mpi_double_precision,0,badlands_world,rc)
+    call mpi_bcast(elementPet,nbelm,mpi_integer,0,badlands_world,rc)
 
     if(.not.column_partition)then
       spartN=partDim(pet_id+1)*(nx+2)
@@ -184,6 +185,7 @@ contains
 
   end subroutine StructureGridPart 
   ! =====================================================================================
+
   subroutine UnstructureGridPart
   
     integer(Zoltan_INT)::ierr
@@ -205,6 +207,7 @@ contains
 
   end subroutine UnstructureGridPart 
   ! =====================================================================================
+
   subroutine allocateObjects
 
     integer::i,currIndx
@@ -236,13 +239,14 @@ contains
 
   end subroutine allocateObjects
   ! =====================================================================================  
+
   subroutine define_partition
 
-    integer(ESMF_KIND_I4)::partAssign(numGlobObjs)
-    integer(ESMF_KIND_I4)::allPartAssign(numGlobObjs)
-    integer(ESMF_KIND_I4)::parts(numLocObjs)
-    integer::i,p,id,k,nid
-    integer(ESMF_KIND_I4),dimension(:),allocatable::upartIDpts,upartIDelem,uIDpts !,uIDptsI
+    integer::partAssign(numGlobObjs)
+    integer::allPartAssign(numGlobObjs)
+    integer::parts(numLocObjs)
+    integer::i,p,id
+    integer,dimension(:),allocatable::upartIDpts,upartIDelem,uIDpts 
 
     do i=1,numLocObjs,1
        parts(i)=pet_id
@@ -259,28 +263,24 @@ contains
     do i=1,numLocObjs
        partAssign(zGID(i))=parts(i)
     enddo
-    call ESMF_VMReduce(vm=vm,sendData=partAssign,recvData=allPartAssign,count=numGlobObjs,&
-      reduceflag=ESMF_REDUCE_MAX,rootPet=0,rc=rc)
+    call mpi_allreduce(partAssign,allPartAssign,numGlobObjs,mpi_integer,mpi_max,badlands_world,rc)
 
     if(pet_id==0)then
        do i=1,numGlobObjs
           zolt_part(i)=allPartAssign(i)
        enddo
     endif
-    call ESMF_VMBroadcast(vm=vm,bcstData=zolt_part,count=numGlobObjs,rootPet=0,rc=rc)
+    call mpi_bcast(zolt_part,numGlobObjs,mpi_integer,0,badlands_world,rc)
     
     ! Defined the unstructured mesh partition parameters
     upartE=0
     upartN=0
-!     upartI=0
     if(allocated(upartIDelem)) deallocate(upartIDelem) 
     if(allocated(upartIDpts)) deallocate(upartIDpts) 
     if(allocated(uIDpts)) deallocate(uIDpts) 
-!     if(allocated(uIDptsI)) deallocate(uIDptsI) 
     if(allocated(uownEID)) deallocate(uownEID) 
-    allocate(upartIDpts(dnodes),uIDpts(dnodes),upartIDelem(delem),uownEID(delem)) !,uIDpts(dnodes)
+    allocate(upartIDpts(dnodes),uIDpts(dnodes),upartIDelem(delem),uownEID(delem)) 
     upartIDpts=-1
-!     uIDptsI=-1
     uIDpts=-1
     do i=1,delem
       upartIDelem(i)=zolt_part(i)
@@ -320,48 +320,22 @@ contains
     unodeLID=-1
     p=0
     id=0
-!     upartI=upartN
     do i=1,dnodes
       if(uIDpts(i)==pet_id)then 
         p=p+1
         unodeID(p)=i
         unodeLID(i)=p
         uownedID(p)=upartIDpts(i)
-!         uIDptsI(i)=pet_id
         if(uownedID(p)==pet_id)id=id+1
-        ! Find neighboring points
-!         do k=1,delaunayVertex(i)%ngbNb
-!           nid=delaunayVertex(i)%ngbID(k)
-!           if(nid>0)then
-!             if(uIDpts(nid)/=pet_id)then 
-!               if(uIDptsI(nid)/=pet_id)upartI=upartI+1
-!               uIDptsI(nid)=pet_id
-!             endif
-!           endif
-!         enddo
       endif
     enddo
     uOwnedNode=id
 
-    ! Get coordinates for interpolation function
-!     if(allocated(unodeIDI)) deallocate(unodeIDI) 
-!     if(allocated(IcoordX)) deallocate(IcoordX) 
-!     if(allocated(IcoordY)) deallocate(IcoordY) 
-!     if(allocated(IcoordZ)) deallocate(IcoordZ) 
-!     allocate(unodeIDI(upartI),IcoordX(upartI),IcoordY(upartI),IcoordZ(upartI))
-!     p=0
-!     id=0
-!     do i=1,dnodes
-!       if(uIDptsI(i)==pet_id)then 
-!         p=p+1
-!         unodeIDI(p)=i
-!       endif
-!     enddo
-
-    deallocate(uIDpts,upartIDpts,upartIDelem) !uIDptsI,upartIDpts,upartIDelem)
+    deallocate(uIDpts,upartIDpts,upartIDelem)
 
   end subroutine define_partition
   ! =====================================================================================  
+
   subroutine RCBPartition
 
     ! Local variables
@@ -391,6 +365,7 @@ contains
 
   end subroutine RCBPartition
   ! =====================================================================================
+
   subroutine zoltanCleanup()
 
     integer::ierr
@@ -400,6 +375,7 @@ contains
 
   end subroutine zoltanCleanup 
   ! =====================================================================================
+
   integer function zoltNumObjs(data,ierr)
 
     ! Local declarations
@@ -411,6 +387,7 @@ contains
 
   end function zoltNumObjs 
   ! =====================================================================================
+
   subroutine zoltGetObjs(data,num_gid_entries,num_lid_entries,global_ids, & 
        local_ids,wgt_dim,obj_wgts,ierr)
 
@@ -434,6 +411,7 @@ contains
 
   end subroutine zoltGetObjs  
   ! =====================================================================================
+
   integer function zoltNumGeom(data,ierr)
 
     integer(Zoltan_INT),intent(in)::data(*)
@@ -444,6 +422,7 @@ contains
 
   end function zoltNumGeom
   ! =====================================================================================
+  
   subroutine zoltGeom(data,num_gid_entries,num_lid_entries,global_id, &
        local_id,geom_vec,ierr)
 

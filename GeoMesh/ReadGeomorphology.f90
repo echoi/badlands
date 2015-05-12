@@ -34,6 +34,7 @@
 
 module readgeomorpho
 
+  use parallel
   use FoX_sax
   use topology
   use parameters
@@ -81,14 +82,17 @@ module readgeomorpho
 contains
 
   ! =====================================================================================
+
   subroutine startDocument_handler
 
   end subroutine startDocument_handler
   ! =====================================================================================
+
   subroutine endDocument_handler
 
   end subroutine endDocument_handler
   ! =====================================================================================
+
   subroutine startElement_handler(namespaceURI,localname,name,atts)
 
     character(len=*),intent(in)::namespaceURI
@@ -118,6 +122,7 @@ contains
 
   end subroutine startElement_handler
   ! =====================================================================================
+
   subroutine endElement_handler(namespaceURI,localname,name)
 
     character(len=*),intent(in)::namespaceURI
@@ -134,6 +139,7 @@ contains
 
   end subroutine endElement_handler
   ! =====================================================================================
+
   subroutine characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -148,6 +154,7 @@ contains
     
   end subroutine characters_handler
   ! =====================================================================================
+
   subroutine SdetachmentElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -159,6 +166,7 @@ contains
 
   end subroutine SdetachmentElement_handler
   ! =====================================================================================
+
   subroutine EdetachmentElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -170,6 +178,7 @@ contains
 
   end subroutine EdetachmentElement_handler
   ! =====================================================================================
+
   subroutine StransportElement_handler(name)
 
     character(len=*), intent(in) :: name
@@ -181,6 +190,7 @@ contains
 
   end subroutine StransportElement_handler
   ! =====================================================================================
+
   subroutine EtransportElement_handler(name)
 
     character(len=*), intent(in) :: name
@@ -192,6 +202,7 @@ contains
 
   end subroutine EtransportElement_handler
   ! =====================================================================================
+
   subroutine ScapacityElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -205,6 +216,7 @@ contains
 
   end subroutine ScapacityElement_handler
   ! =====================================================================================
+
   subroutine EcapacityElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -218,6 +230,7 @@ contains
 
   end subroutine EcapacityElement_handler
   ! =====================================================================================
+
   subroutine SregolithElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -230,6 +243,7 @@ contains
 
   end subroutine SregolithElement_handler
   ! =====================================================================================
+
   subroutine EregolithElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -242,6 +256,7 @@ contains
 
   end subroutine EregolithElement_handler
   ! =====================================================================================
+
   subroutine SlineardiffElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -251,6 +266,7 @@ contains
 
   end subroutine SlineardiffElement_handler
   ! =====================================================================================
+
   subroutine ElineardiffElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -260,6 +276,7 @@ contains
 
   end subroutine ElineardiffElement_handler
   ! =====================================================================================
+
   subroutine SdepthdiffElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -271,6 +288,7 @@ contains
 
   end subroutine SdepthdiffElement_handler
   ! =====================================================================================
+
   subroutine EdepthdiffElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -282,6 +300,7 @@ contains
 
   end subroutine EdepthdiffElement_handler
   ! =====================================================================================
+
   subroutine SnlineardiffElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -292,6 +311,7 @@ contains
 
   end subroutine SnlineardiffElement_handler
   ! =====================================================================================
+
   subroutine EnlineardiffElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -302,6 +322,7 @@ contains
 
   end subroutine EnlineardiffElement_handler
   ! =====================================================================================
+
   subroutine detachment_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -318,6 +339,7 @@ contains
 
   end subroutine detachment_characters_handler
   ! =====================================================================================
+
   subroutine transport_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -334,6 +356,7 @@ contains
 
   end subroutine transport_characters_handler
   ! =====================================================================================
+
   subroutine capacity_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -354,6 +377,7 @@ contains
 
   end subroutine capacity_characters_handler
   ! =====================================================================================
+
   subroutine regolith_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -373,6 +397,7 @@ contains
 
   end subroutine regolith_characters_handler
   ! =====================================================================================
+
   subroutine lineardiff_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -385,6 +410,7 @@ contains
 
   end subroutine lineardiff_characters_handler
   ! =====================================================================================
+
   subroutine depthdiff_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -401,6 +427,7 @@ contains
 
   end subroutine depthdiff_characters_handler
   ! =====================================================================================
+
   subroutine nlineardiff_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -415,6 +442,7 @@ contains
 
   end subroutine nlineardiff_characters_handler
   ! =====================================================================================
+  
   subroutine geomorphology_parser
 
     type(xml_t)::xf
@@ -447,10 +475,8 @@ contains
     ! Open file
     call open_xml_file(xf,xmlfile,rc)
     if(rc/=0)then
-      call ESMF_LogSetError(rcToCheck=ESMF_RC_FILE_OPEN, &
-        msg="Failed to open namelist file 'XmL_input_file'", &
-        line=__LINE__,file=__FILE__)
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      print*,'Failed to open XmL input file'
+      call mpi_finalize(rc)
     endif
 
     ! Parser 

@@ -14,7 +14,7 @@ include $(CONFFILE)
 TARGET = SPM
 TARGETLIB = $(LIBDIR)/lib$(TARGET).a
 
-FSOURCES = UnderworldCpl.f90 EarthForces.f90 EarthComponent.f90
+FSOURCES = UnderworldCpl.f90 EarthForces.f90 
 
 FOBJS=$(FSOURCES:.f90=.o)
 
@@ -39,7 +39,7 @@ $(TARGETLIB): $(COBJS) $(FOBJS)
 	done
 
 %.o : %.f90
-	$(ESMF_F90COMPILER) -c $(ESMF_F90COMPILEOPTS) $(ESMF_F90COMPILEPATHS) $(ESMF_F90COMPILEFREENOCPP) $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) $< -o $@ 
+	$(BADLANDS_F) -c $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) $< -o $@ 
 	
 dust:
 	rm -fv *.bak *~ *.o *.mod *.original

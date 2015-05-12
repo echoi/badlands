@@ -3,7 +3,7 @@
 # Author      : tristan salles
 # Copyright (C) 2015 
 #
-# Description : Makefile for Coupling Component
+# Description : Makefile for CouplerUtils
 # ============================================================================
 UP=..
 TOP=$(shell pwd)/$(UP)
@@ -11,10 +11,10 @@ CONFFILE= $(TOP)/config/Makefile.inc
 
 include $(CONFFILE)
 
-TARGET = Ocean
+TARGET = CPL
 TARGETLIB = $(LIBDIR)/lib$(TARGET).a
 
-FSOURCES = CouplerComponent.f90
+FSOURCES = CouplerComponent.f90 
 
 FOBJS=$(FSOURCES:.f90=.o)
 
@@ -25,7 +25,7 @@ dist : module
 module :	
 	@echo "*************************************************"
 	@echo	
-	@echo "Build Coupler modules and library."
+	@echo "Build CPL modules and library."
 	@echo	
 	@echo "*************************************************"
 	make $(TARGETLIB)
@@ -39,7 +39,7 @@ $(TARGETLIB): $(COBJS) $(FOBJS)
 	done
 
 %.o : %.f90
-	$(ESMF_F90COMPILER) -c $(ESMF_F90COMPILEOPTS) $(ESMF_F90COMPILEPATHS) $(ESMF_F90COMPILEFREENOCPP) $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) $< -o $@ 
+	$(BADLANDS_F) -c $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) $< -o $@ 
 	
 dust:
 	rm -fv *.bak *~ *.o *.mod *.original

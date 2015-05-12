@@ -48,14 +48,15 @@ module outspm_drainage
 contains
 
   ! =====================================================================================
+
   subroutine drainage_hdf5(iter,totelems)
 
     logical::compression
 
-    integer(ESMF_KIND_I4)::id,i,k,p,lid,rank,iter,totnodes,totelems,ierr,rcv
-    integer(ESMF_KIND_I4),dimension(:),allocatable::connect,drainers
+    integer::id,i,k,p,lid,rank,iter,totnodes,totelems,ierr,rcv
+    integer,dimension(:),allocatable::connect,drainers
 
-    real(ESMF_KIND_R8),dimension(:),allocatable::nodes,facc,cID,stNb
+    real(kind=8),dimension(:),allocatable::nodes,facc,cID,stNb
 
     character(len=128)::text,file
 
@@ -302,11 +303,12 @@ contains
 
   end subroutine drainage_hdf5
   ! =====================================================================================
+
   subroutine drainage_xmf(iter)
 
     type(xmlf_t)::xf
 
-    integer(ESMF_KIND_I4)::iter,totnodes,totelems,k,ierr
+    integer::iter,totnodes,totelems,k,ierr
 
     character(len=128)::str,file,filename,filename1,filename2
     character(len=128)::stg,filename3,filename4
@@ -478,6 +480,7 @@ contains
 
   end subroutine drainage_xmf
   ! =====================================================================================
+  
   subroutine visualise_drainage_changes(iter)
 
     ! Parameters Declaration

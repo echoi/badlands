@@ -34,24 +34,25 @@
 
 module external_forces
 
-  use ESMF
   use parallel  
   use hydroUtil
   use parameters
 
   implicit none
 
+  logical::disp3d
+
   ! Number of rain events 
-  integer(ESMF_KIND_I4)::rain_event
+  integer::rain_event
 
   ! Rain event files
   character(len=128),dimension(:),allocatable::frainmap
 
   ! Rain event starting and ending time
-  real(ESMF_KIND_R8),dimension(:),allocatable::rain_tstart,rain_tend
+  real(kind=8),dimension(:),allocatable::rain_tstart,rain_tend
 
   ! Precipitation
-  real(ESMF_KIND_R8),dimension(:),allocatable::precipitation
+  real(kind=8),dimension(:),allocatable::precipitation
 
   ! Sea-level fluctuation file
   character(len=128)::seafile
@@ -63,39 +64,41 @@ module external_forces
     ! Number of sea fluctuation events
     integer::event
     ! Old sea level value
-    real(ESMF_KIND_R8)::last_sea
+    real(kind=8)::last_sea
     ! Actual sea level value
-    real(ESMF_KIND_R8)::actual_sea
+    real(kind=8)::actual_sea
   end type sea_fluc
   type(sea_fluc)::gsea
 
   ! Sea-level elevation data
-  real(ESMF_KIND_R8),dimension(:,:),allocatable::sealvl
+  real(kind=8),dimension(:,:),allocatable::sealvl
 
   !> Sea-level parameters
   type sl_par
     ! Lower sea-level elevation
-    real(ESMF_KIND_R8)::sea1
+    real(kind=8)::sea1
     ! Upper sea-level elevation
-    real(ESMF_KIND_R8)::sea2
+    real(kind=8)::sea2
     ! Lower sea-level time
-    real(ESMF_KIND_R8)::time1
+    real(kind=8)::time1
     ! Upper sea-level time
-    real(ESMF_KIND_R8)::time2
+    real(kind=8)::time2
     ! Simulation current time
-    real(ESMF_KIND_R8)::tsim
+    real(kind=8)::tsim
   end type sl_par
 
   !> Geodynamic type
   type geodyn
     ! Actual displacement event
-    integer(ESMF_KIND_I4)::actual
+    integer::actual
     ! Displacements event numbers
-    integer(ESMF_KIND_I4)::event
+    integer::event
+    ! Minimum distance between points for merging
+    real(kind=8)::mindist
     ! Time from last displacement call
-    real(ESMF_KIND_R8)::lastdisp
+    real(kind=8)::lastdisp
     ! Time elapsed between current and previous displacement time
-    real(ESMF_KIND_R8)::disptime
+    real(kind=8)::disptime
   end type geodyn
   type(geodyn)::disp,vdisp
 
@@ -103,36 +106,33 @@ module external_forces
   character(len=128),dimension(:),allocatable::fgeodyn
 
   ! Geodynamic event time
-  real(ESMF_KIND_R8),dimension(:,:),allocatable::disp_time,vdisp_time
+  real(kind=8),dimension(:,:),allocatable::disp_time,vdisp_time
 
   ! Geodynamic event time
-  integer(ESMF_KIND_I4),dimension(:),allocatable::disp_fill,vdisp_fill
+  integer,dimension(:),allocatable::disp_fill,vdisp_fill
 
   ! Regular grid field arrays
-  real(ESMF_KIND_R8),dimension(:),allocatable::rtectoZ,rvertDisp,rainVal,rDisp
+  real(kind=8),dimension(:),allocatable::rtectoZ,rvertDisp,rainVal,rhxDisp,rhyDisp
+  real(kind=8),dimension(:,:),allocatable::rDisp
 
   ! Vertical displacement rate on unstructured grid
-  real(ESMF_KIND_R8),dimension(:),allocatable::tvertDisp
+  real(kind=8),dimension(:),allocatable::tvertDisp
 
 contains
 
   ! =====================================================================================
+
   subroutine read_sealevel_file
 
     integer::iu,nbsea,k,i,i2,ios
     
     character(len=128)::line
 
-    call ESMF_UtilIOUnitGet(unit=iu,rc=rc)
-    if(ESMF_LogFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
+    iu=42
     open(iu,file=seafile,status="old",action="read",iostat=rc)
     if(rc/=0)then
-      call ESMF_LogSetError(rcToCheck=ESMF_RC_FILE_OPEN, &
-        msg="Failed to open namelist file 'sea_level_input_file'", &
-        line=__LINE__,file=__FILE__)
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      if(pet_id==0)print*,'ERROR: failed to open sealevel file'
+      call mpi_finalize(rc)
     endif
 
     ! Determine total number of sea level records
@@ -158,19 +158,13 @@ contains
       read(line(1:i2),*,iostat=ios)(sealvl(i,k),i=1,2)
       if(ios/=0)then
         if(pet_id==0)print*,'ERROR: reading sea level file at line:',k
-        call ESMF_LogSetError(rcToCheck=ESMF_RC_VAL_WRONG, &
-          msg="Reading sea level fluctuations file ", &
-          line=__LINE__,file=__FILE__)
-        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        call mpi_finalize(rc)
       endif
       if(k>1)then
         if(sealvl(1,k)<=sealvl(1,k-1))then
           if(pet_id==0)print*,'ERROR: in sea level file value at line',k
           if(pet_id==0)print*,'the time is not defined in increasing order'
-          call ESMF_LogSetError(rcToCheck=ESMF_RC_VAL_WRONG, &
-            msg="Time ordering for sea level fluctuations file ", &
-            line=__LINE__,file=__FILE__)
-          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          call mpi_finalize(rc)
         endif
       endif
     enddo
@@ -184,6 +178,7 @@ contains
 
   end subroutine read_sealevel_file
   ! =====================================================================================
+
   subroutine eustatism
 
     integer::i
@@ -214,10 +209,11 @@ contains
 
   end subroutine eustatism
   ! =====================================================================================
+  
   function sealvl_interpolation(sl_param) result(slinterpol)
 
     type(sl_par)::sl_param
-    real(ESMF_KIND_R8)::slinterpol
+    real(kind=8)::slinterpol
 
     slinterpol=(sl_param%tsim-sl_param%time1)/(sl_param%time2-sl_param%time1)
     slinterpol=slinterpol*(sl_param%sea2-sl_param%sea1)+sl_param%sea1
