@@ -20,7 +20,7 @@ TARGETLIB = $(LIBDIR)/lib$(TARGET).a
 
 FSOURCES = $(FTREE)/kdtree.f90 $(FTREE)/kdtree2.f90 $(FTREE)/Orderpack.f90 \
 	$(FTREE)/Orderpack2.f90 $(FINTE)/Bilinear.f90 $(FINTE)/Bivariate.f90 ReadTopology.f90 \
-	ReadGeomorphology.f90 ReadForces.f90 VisualiseGeo.f90 Geometry.f90
+	ReadGeomorphology.f90 ReadForces.f90 VisualiseGeo.f90 Restart.f90 Geometry.f90 
 
 CSOURCES = $(FTRIA)/triangle.c $(FTRIA)/TriangleCall.c
 

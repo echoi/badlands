@@ -297,7 +297,6 @@ contains
     endif
 
     if(disp%event>0.and.cpl2_time<=simulation_time)then 
-
       if(udwFlag)then
         call delaunayInterpolant
         call SurfaceVTK
@@ -323,14 +322,9 @@ contains
     real(kind=8),dimension(2)::txy
     real(kind=8),dimension(3)::txb,tyb,tzb
     real(kind=8),dimension(2,dnodes)::Fd1
-!     real(kind=8),dimension(:,:),allocatable::Fdatat
 
     type(kdtree2),pointer::Ftree1
     type(kdtree2_result),dimension(2)::FRslt1
-
-
-!     type(kdtree2),pointer::Ftreet
-!     type(kdtree2_result),dimension(2)::FRsltt
 
     type(kdtree2),pointer::Ftree2
     type(kdtree2_result),dimension(12)::FRslt2
@@ -407,25 +401,6 @@ contains
         endif 
       enddo
       call kdtree2_destroy(Ftree1)
-
-!       if(allocated(Fdatat)) deallocate(Fdatat)
-!       allocate(Fdatat(2,new_nodes))
-!       do k=1,new_nodes
-!         Fdatat(1,k)=record(k,1)
-!         Fdatat(2,k)=record(k,2)
-!       enddo
-!       Ftreet=>kdtree2_create(Fdatat,sort=.true.,rearrange=.true.)
-
-!       do k=1,new_nodes
-!         txy(1)=record(k,1)
-!         txy(2)=record(k,2)
-!         if(txy(1)>minx+2.*dx.and.txy(1)<maxx-2.*dx.and. &
-!           txy(2)>miny+2.*dx.and.txy(2)<maxy-2.*dx)then
-!           call kdtree2_n_nearest(Ftreet,txy,nn=2,results=FRsltt)
-!           if(sqrt(FRsltt(2)%dis)<disp%mindist)print*,'eddeff',k,txy,sqrt(FRsltt(2)%dis)
-!         endif
-!       enddo
-!       call kdtree2_destroy(Ftreet)
 
       ! Delete the previous delaunay grid
       call UnstructuredMeshDestroy
@@ -657,15 +632,15 @@ contains
     if(allocated(rcvsendID)) deallocate(rcvsendID)
     if(allocated(watercell)) deallocate(watercell)
     if(allocated(receivers)) deallocate(receivers)
-    if(allocated(trueCatch)) deallocate(trueCatch)
     if(allocated(discharge)) deallocate(discharge)
     if(allocated(indexArray)) deallocate(indexArray)
     if(allocated(donorCount)) deallocate(donorCount)
     if(allocated(stackOrder)) deallocate(stackOrder)
     if(allocated(sendprocID)) deallocate(sendprocID)
     if(allocated(donorsList)) deallocate(donorsList)
-    if(allocated(catchmentID)) deallocate(catchmentID)
+    if(allocated(lstackOrder)) deallocate(lstackOrder)
     if(allocated(junctionIDs)) deallocate(junctionIDs)
+    if(allocated(ljunctionIDs)) deallocate(ljunctionIDs)
     if(allocated(change_local)) deallocate(change_local)
     if(allocated(precipitation)) deallocate(precipitation)
     if(allocated(subcatchmentID)) deallocate(subcatchmentID)

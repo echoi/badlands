@@ -13,7 +13,7 @@ include $(CONFFILE)
 
 FSTG = ./Utility
 
-TARGET = GlobalUtils 
+TARGET = GlobalUtils
 TARGETLIB = $(LIBDIR)/lib$(TARGET).a
 
 FSOURCES = $(FSTG)/StringUtility.f90 GlobalClass.f90 TopologyClass.f90 \

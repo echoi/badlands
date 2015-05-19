@@ -1,12 +1,3 @@
-# ============================================================================
-ifneq ($(origin ESMFMKFILE), environment)
-$(error Environment variable ESMFMKFILE was not set.)
-endif
-#ESMFMKFILE=/home/tristan/suite/esmf/install/lib/esmf.mk
-include $(ESMFMKFILE)
-
-# ============================================================================
-
 # Executable name
 EXE=badlands 
 
@@ -16,6 +7,7 @@ PLUGLIB= libBADLANDS.so.1.0.1
 PLUGSLN= libBADLANDS.so.1
 SHARELIB= libBADLANDS.so
 BADLANDS_C = mpicc
+BADLANDS_F = mpif90
 
 # Rules to make library
 AR = ar -rcs

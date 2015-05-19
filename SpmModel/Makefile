@@ -15,7 +15,7 @@ TARGET = SPM
 TARGETLIB = $(LIBDIR)/lib$(TARGET).a
 
 FSOURCES = Hydrology.f90 VisualiseSurface.f90 VisualiseDrainage.f90 WatershedDelineation.f90 \
-	SpmHillslope.f90 Geomorphology.f90 SpmRestart.f90 
+	SpmHillslope.f90 Geomorphology.f90 
 
 FOBJS=$(FSOURCES:.f90=.o)
 

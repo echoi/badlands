@@ -1,14 +1,8 @@
 # ============================================================================
 # module swap PrgEnv-cray PrgEnv-intel
-# module load zlib esmf cray-tpsl cray-trilinos cray-hdf5-parallel fox
+# module load zlib cray-tpsl cray-trilinos cray-hdf5-parallel fox
 # ============================================================================
 export CRAYPE_LINK_TYPE=dynamic
-
-# ESMF CONFIGURATION FILE
-ESMFMKFILE=/group/partner985/SPM/esmf-gnu/lib/libO/Unicos.gfortran.64.mpi.default/esmf.mk
-include $(ESMFMKFILE)
-
-# ============================================================================
 
 # Link FOX
 FOX=/ivec/cle52/magnus/apps/PrgEnv-gnu/5.2.25/fox/4.1.2
@@ -41,16 +35,18 @@ METISLIBS =  -lmetis
 # ============================================================================
 
 # Executable name
-EXE=badlands-gnu
+EXE=badlands
 
 # C compiler
 BADLANDS_C = cc 
+BADLANDS_F = ftn
 
 # Rules to make library
 AR = ar -rcs
 
 # Fortran optimisation flags
-FCFLAGS = -O3 -cpp -fpic
+#FCFLAGS = -O3 -cpp -fpic
+FCFLAGS = -O3 -cpp -fpic -ffree-line-length-none
 #FCFLAGS= -O0 -g  -Wall -fbacktrace -lstdc++ -cpp -fcheck=bounds -finit-real=nan\
 	-ffpe-trap=zero,overflow,invalid -ffree-form -fno-common\
 	-Wtabs -Wunused-parameter -Wuninitialized  -ffree-line-length-none \

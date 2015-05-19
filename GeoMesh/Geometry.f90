@@ -46,6 +46,7 @@ module geomesh
   use parallel
   use m_mrgrnk
   use orderpack
+  use restart
 
   implicit none
 
@@ -70,7 +71,13 @@ contains
     call geomorphology_parser
     call forces_parser
     call ReadRegular
-    if(pet_id==0) call DelaunayTransform
+    if(pet_id==0)then
+      if(disp3d.and.restartFlag)then
+        call DelaunayTransformForce
+      else
+        call DelaunayTransform
+      endif
+    endif
     call mpi_barrier(badlands_world,rc)
     call ReadTriangle
     call DelaunayVoronoiDuality 
@@ -407,6 +414,86 @@ contains
     return
 
   end subroutine DelaunayTransform
+  ! =====================================================================================
+
+  subroutine DelaunayTransformForce
+
+    character(len=128)::TINCfile,OPTC,stg
+
+    integer::iu,n,p,tnb,l
+
+    call getSPM_hdf5topography3D
+
+    iu=65
+    TINfile='TIN.poly'
+    call addpath2(TINfile)
+    TINCfile='TIN.poly'
+    call addpath2(TINCfile)
+    TINCfile(len(TINfile):len(TINfile))=CHAR(0)
+    open(iu,file=TINfile,status="replace",action="write",iostat=rc)
+    if(rc/=0)then
+      print*,'Failed to open Triangle Polygon Shape File'
+      call mpi_finalize(rc)
+    endif    
+    rewind(iu)
+
+    ! A box with four points in 2D, no attributes, one boundary marker.
+    tnb=4+2*nx+2*(ny-2)+newnds
+    write(iu,'(I10,1X,3(I2,1X))') tnb,2,0,1
+    write(iu,'(I10,1X,2(F16.3,1X),I2)') 1,minx-dx,miny-dx,1
+    write(iu,'(I10,1X,2(F16.3,1X),I2)') 2,minx-dx,maxy+dx,1
+    write(iu,'(I10,1X,2(F16.3,1X),I2)') 3,maxx+dx,maxy+dx,1
+    write(iu,'(I10,1X,2(F16.3,1X),I2)') 4,maxx+dx,miny-dx,1
+
+    ! Write simulation area boundary
+    p=4
+    do n=1,nx
+       p=p+1
+       write(iu,'(I10,1X,2(F16.3,1X),I2)') p,minx+(n-1)*dx,miny,0
+       p=p+1
+       write(iu,'(I10,1X,2(F16.3,1X),I2)') p,minx+(n-1)*dx,maxy,0
+    enddo
+    do n=2,ny-1
+       p=p+1
+       write(iu,'(I10,1X,2(F16.3,1X),I2)') p,minx,miny+(n-1)*dx,0
+       p=p+1
+       write(iu,'(I10,1X,2(F16.3,1X),I2)') p,maxx,miny+(n-1)*dx,0
+    enddo
+
+    do l=1,newnds
+      p=p+1
+      write(iu,'(I10,1X,2(F16.3,1X),I2)') p,newcoord(l,1:2),0
+    enddo
+
+    ! Segments of the outer box
+    tnb=4
+    write(iu,'(I10,1X,I2)') tnb,1
+    do n=1,4
+       if(n<4)then
+          write(iu,'(I10,1X,I10,1X,I10,1X,I2)') n,n,n+1,1
+       else
+          write(iu,'(I10,1X,I10,1X,I10,1X,I2)') n,n,1,1
+       endif
+    enddo
+
+    ! Hole not present
+    write(iu,'(I10)') 0
+    close(iu)
+
+    ! Conforming Delaunay Triangulation options
+    OPTC="-q"
+    call append_nbreal(OPTC,del_angle)
+    stg="a"
+    call append_str(OPTC,stg)
+    call append_nbreal(OPTC,del_area)
+    OPTC(len(OPTC):len(OPTC))=CHAR(0)
+
+    ! C-function Triangle call (Shewchuck's algorithm)
+    call trianglegen(OPTC,TINCfile)
+
+    return
+
+  end subroutine DelaunayTransformForce
   ! =====================================================================================
 
   subroutine ReadTriangle

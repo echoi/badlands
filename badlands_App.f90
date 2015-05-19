@@ -39,7 +39,7 @@ program BADLANDS_Application
   use parallel
   use geomorpho
   use parameters
-  use spm_restart
+  use restart
 
   implicit none
 
@@ -73,7 +73,11 @@ program BADLANDS_Application
   ! Interpolation of regular grid component to unstructured one
   t1=mpi_wtime()
   if(restartFlag)then
-    call getSPM_hdf5topography
+    if(.not.disp3d)then 
+      call getSPM_hdf5topography
+    else
+      call getRestart_topography
+    endif
   else
     call bilinearTopo
   endif
@@ -108,7 +112,6 @@ program BADLANDS_Application
 
   enddo
   
-  if(pet_id==0)print*,'-------------------------'
   call mpi_finalize(rc)
   
 end program BADLANDS_Application

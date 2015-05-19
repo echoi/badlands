@@ -225,9 +225,15 @@ contains
     ! Update displacement rate
     do k=1,bnbnodes
       if(disp3d)then
-        rhxDisp(k)=rDisp(k,1) !/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
-        rhyDisp(k)=rDisp(k,2) !/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
-        rvertDisp(k)=rDisp(k,3) !/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+        if(simulation_time==time_start.and.disp_time(disp%actual,1)<time_start)then
+          rhxDisp(k)=0.0
+          rhyDisp(k)=0.0
+          rvertDisp(k)=0.0
+        else
+          rhxDisp(k)=rDisp(k,1) !/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+          rhyDisp(k)=rDisp(k,2) !/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+          rvertDisp(k)=rDisp(k,3) !/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+        endif
       else
         rvertDisp(k)=rDisp(k,1)/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
       endif
