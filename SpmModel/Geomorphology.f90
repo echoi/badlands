@@ -178,8 +178,7 @@ contains
         call visualise_surface_changes(iter)
         call visualise_drainage_changes(iter)
       endif
-      call mpi_barrier(badlands_world,rc)
-      if(pet_id==0)print*,'simulation time: ',int(time_display)
+      if(pet_id==0)print*,'simulation time: ',int(time_end)
     endif
 
     ! Update elevation for coupling component assuming infinite boundary
