@@ -162,7 +162,6 @@ contains
       call mpi_allreduce(nZ,spmZ,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
       if(stream_ero>0..or.regoProd>0.) &
         call mpi_allreduce(nH,spmH,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
-      call mpi_barrier(badlands_world,rc)
       update3d=.false.
 !       call mpi_barrier(badlands_world,rc)
 !       tt2=mpi_wtime()
@@ -171,13 +170,14 @@ contains
 !       call mpi_barrier(badlands_world,rc)
 !       time2=mpi_wtime()
 !       if(pet_id==0)print*,'time-step',time2-time1
-!       if(pet_id==0.and.simulation_time>1.2)stop
-
+!       if(pet_id==0.and.simulation_time>2.2)stop
     enddo
 
     if(simulation_time>=time_end)then
-      call visualise_surface_changes(iter)
-      call visualise_drainage_changes(iter)
+      if(time_display<=time_end)then
+        call visualise_surface_changes(iter)
+        call visualise_drainage_changes(iter)
+      endif
       call mpi_barrier(badlands_world,rc)
       if(pet_id==0)print*,'simulation time: ',int(time_display)
     endif
@@ -227,7 +227,7 @@ contains
     endif
 
     if(time_step>display_interval) time_step=display_interval
-    if(time_step>force_time.and.force_time>1.) time_step=force_time
+!     if(time_step>force_time.and.force_time>1.) time_step=force_time
     if(time_step<force_time) time_step=force_time
     
     ! Get maximum time step for stability
@@ -370,6 +370,7 @@ contains
     else
       maxtime=time_step
     endif
+
     if(Tforce==0)then
       do lid=1,localNodes
         k=localNodesGID(lid)

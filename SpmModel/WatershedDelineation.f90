@@ -110,7 +110,7 @@ contains
         jctNb=jctNb+1 
         ljunctionIDs(jctNb)=k
       else
-        if(n>1.and.strahler(k)>1)then
+        if(n>1.and.strahler(k)>1.and.mod(strahler(k),2)==0)then
           jctNb=jctNb+1 
           ljunctionIDs(jctNb)=k
         endif

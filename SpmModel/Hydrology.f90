@@ -269,8 +269,8 @@ contains
     endif
 
     ! Define the borders according to boundary definition
+    filldem=1.e6
     do k=1,dnodes
-      filldem(k)=1.e6_8
       ! On border fix DEM elevation
       if(voronoiCell(k)%border==1)then 
         spmH(k)=0.0_8
