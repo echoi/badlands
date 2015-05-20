@@ -51,7 +51,7 @@ module geomorpho
   integer::iter,idiff
 
   real(kind=8)::cpl_time,max_time
-  real(kind=8)::time1,time2
+  real(kind=8)::time1,time2,tt1,tt2
 
 contains
 
@@ -93,65 +93,48 @@ contains
       if(.not.allocated(watercell)) allocate(watercell(dnodes))
 
       ! Update borders
+      time1=mpi_wtime()
+      tt1=mpi_wtime()
       call update_grid_borders
+      call mpi_barrier(badlands_world,rc)
+      tt2=mpi_wtime()
+      if(pet_id==0)print*,'grid_borders',tt2-tt1
+      tt1=mpi_wtime()
 
-      ! From rough surface find the stream network,
-      ! this is performed on the main PET ID
-      if(pet_id==0)then
-        depressionAlgo=.false.
-        watercell=0.
-        filldem=spmZ
-        ! Find network tree based on Braun & Willet 2013
-        call define_landscape_network
-        if(perosive==1) depressionAlgo=.false.
-        ! Find drainage area
-        call compute_cumulative_discharge
-        ! Depressionless DEM required
-        if(depressionAlgo)then 
-          ! Define lake height for each local minima
-          call define_drained_water_thickness
-          ! Perform depressionless filling algo
-          call planchon_dem_fill_algorithm  
-          ! Find network tree based on Braun & Willet 2013
-          call define_landscape_network
-          ! Find drainage area
-          call compute_cumulative_discharge
-        endif
-      else
-        if(.not.allocated(receivers)) allocate(receivers(dnodes))
-        if(.not.allocated(stackOrder)) allocate(stackOrder(dnodes))
-        if(.not.allocated(discharge)) allocate(discharge(dnodes))
-      endif
+      ! Perform depressionless water filling algo
+      call planchon_dem_fill_algorithm
+      call mpi_barrier(badlands_world,rc)
+      tt2=mpi_wtime()
+      if(pet_id==0)print*,'fill compute',tt2-tt1
+      tt1=mpi_wtime()
 
-      ! Broadcast stream network dataset
-      call mpi_bcast(receivers,dnodes,mpi_integer,0,badlands_world,rc)
-      call mpi_bcast(stackOrder,dnodes,mpi_integer,0,badlands_world,rc)
-      call mpi_bcast(watercell,dnodes,mpi_double_precision,0,badlands_world,rc)
-      call mpi_bcast(filldem,dnodes,mpi_double_precision,0,badlands_world,rc)
-      call mpi_bcast(discharge,dnodes,mpi_double_precision,0,badlands_world,rc)
-
+      ! Find network tree based on Braun & Willet 2013
+      call define_landscape_network
+      call mpi_barrier(badlands_world,rc)
+      tt2=mpi_wtime()
+      if(pet_id==0)print*,'network compute',tt2-tt1
+      tt1=mpi_wtime()
+      
       ! Define subcathcment partitioning
-      if(pet_id==0)then
-        call compute_subcatchment
-      else
-        if(.not.allocated(strahler)) allocate(strahler(dnodes))
-        if(.not.allocated(subcatchmentID)) allocate(subcatchmentID(dnodes))
-      endif
-
-      ! Broadcast subcatchment dataset
-      call mpi_bcast(strahler,dnodes,mpi_integer,0,badlands_world,rc)
-      call mpi_bcast(subcatchmentID,dnodes,mpi_integer,0,badlands_world,rc)
+      call compute_subcatchment
+      call mpi_barrier(badlands_world,rc)
+      tt2=mpi_wtime()
+      if(pet_id==0)print*,'subcatch',tt2-tt1 
+      tt1=mpi_wtime()
 
       ! Define load balancing
       call bcast_loadbalancing
+      call mpi_barrier(badlands_world,rc)
+      tt2=mpi_wtime()
+      if(pet_id==0)print*,'load',tt2-tt1
 
       if(simulation_time==time_start.or.update3d) newZ=spmZ
       if(pet_id==0)print*,'Current time:',simulation_time
       
       ! Visualisation surface
       if(simulation_time>=time_display)then
-        call visualise_surface_changes(iter)
-        call visualise_drainage_changes(iter)
+!         call visualise_surface_changes(iter)
+!         call visualise_drainage_changes(iter)
         call mpi_barrier(badlands_world,rc)
         if(pet_id==0)print*,'Creating output: ',int(simulation_time)
         time_display=time_display+display_interval
@@ -159,9 +142,12 @@ contains
         newZ=spmZ
         cumDisp=0.
       endif
+      call mpi_barrier(badlands_world,rc)
+      tt1=mpi_wtime()
       
       ! Get time step size for hillslope process and stream power law
       call CFL_condition 
+
       ! Geomorphological evolution
       call geomorphic_evolution
       
@@ -178,6 +164,14 @@ contains
         call mpi_allreduce(nH,spmH,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
       call mpi_barrier(badlands_world,rc)
       update3d=.false.
+      call mpi_barrier(badlands_world,rc)
+      tt2=mpi_wtime()
+      if(pet_id==0)print*,'geomorpho',tt2-tt1
+      
+      call mpi_barrier(badlands_world,rc)
+      time2=mpi_wtime()
+      if(pet_id==0)print*,'time-step',time2-time1
+      if(pet_id==0.and.simulation_time>1.2)stop
 
     enddo
 

@@ -38,8 +38,6 @@ module hydroUtil
 
   implicit none
 
-
-
   ! Logical flag for regolith file
   logical::regofileflag
 
@@ -56,7 +54,7 @@ module hydroUtil
   integer,dimension(:,:),allocatable::donorInfo
 
   ! Nodes ordering stack
-  integer,dimension(:),allocatable::stackOrder
+  integer,dimension(:),allocatable::stackOrder,lstackOrder
 
   ! List of baselevel nodes
   integer::baseNb

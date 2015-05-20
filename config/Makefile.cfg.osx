@@ -12,10 +12,10 @@ BADLANDS_F = mpif90
 AR = ar -rcs
 
 # Fortran optimisation flags
-#FCFLAGS= -O3 -m64 -mcmodel=small -ffree-line-length-none -fopenmp -cpp
+FCFLAGS= -O3 -m64 -mcmodel=small -ffree-line-length-none -fopenmp -cpp
 #FCFLAGS= -cpp
 #FCFLAGS=-funroll-loops --param max-unroll-times=2 -cpp -ftree-vectorize -ffast-math -lstdc++ 
-FCFLAGS= -O0 -g  -Wall -fbacktrace -lstdc++ -cpp -fcheck=bounds -finit-real=nan\
+#FCFLAGS= -O0 -g  -Wall -fbacktrace -lstdc++ -cpp -fcheck=bounds -finit-real=nan\
 	-ffpe-trap=zero,overflow,invalid -ffree-form -fno-common\
 	-Wtabs -Wunused-parameter -Wuninitialized  -ffree-line-length-none \
 	-fdump-fortran-optimized -fdump-tree-original 

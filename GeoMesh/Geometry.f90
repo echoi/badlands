@@ -949,7 +949,13 @@ contains
           do p=1,tvert
             delaunayVertex(cell)%sortedHull(p)=sortedID(p)
           enddo
-        endif          
+        endif 
+
+      if(tcoordX(cell)==minx-dx.or.tcoordX(cell)==maxx+dx.or. &
+        tcoordY(cell)==miny-dx.or.tcoordY(cell)==maxy+dx)then 
+        voronoiCell(cell)%border=1
+      endif 
+
     enddo
 
     return 

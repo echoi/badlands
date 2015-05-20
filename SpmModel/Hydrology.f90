@@ -41,20 +41,12 @@ module hydrology
   use external_forces
 
   implicit none
-   
-  ! Depression algorithm
-  logical::depressionAlgo
-
-  ! Local minima number
-  integer::minimaNb,nonIsoNb
 
   ! Local arrays
-  integer,dimension(:),allocatable::intArray,allocs,donorCount,trueCatch
-  integer,dimension(:),allocatable::catchmentID,sillNb
-  integer,dimension(:,:),allocatable::sillGID 
+  integer,dimension(:),allocatable::intArray,allocs,donorCount,partStack
   
   real(kind=8),dimension(:),allocatable::cumDisp,watercell
-  real(kind=8),dimension(:),allocatable::nZ,nH,change_local,filldem,sillMax
+  real(kind=8),dimension(:),allocatable::nZ,nH,change_local,filldem
   
 contains
 
@@ -62,114 +54,115 @@ contains
 
   subroutine define_landscape_network
 
-    integer::k,p,j,lowestID,maxtree,success
+    integer,dimension(npets)::disps
+    integer,dimension(npets+1)::stpStack
+    integer::k,p,j,lowestID,success,partnb,extra
 
+    if(.not.allocated(partStack)) allocate(partStack(npets))
     if(.not.allocated(receivers)) allocate(receivers(dnodes))
-    if(.not.allocated(trueCatch)) allocate(trueCatch(dnodes))
-    if(.not.allocated(baselist)) allocate(baselist(dnodes))
+    if(.not.allocated(stackOrder)) allocate(stackOrder(dnodes))
+    if(.not.allocated(lstackOrder)) allocate(lstackOrder(dnodes))
     if(.not.allocated(donorCount)) allocate(donorCount(dnodes))
-    donorCount=0
-    receivers=-1
-    baselist=-1
-    trueCatch=-1
-    baseNb=0
+    if(.not.allocated(discharge)) allocate(discharge(dnodes))
 
+    receivers=-1
+    discharge=0.
+    watercell=0
+    do j=1,upartN
+      k=unodeID(j)
+      watercell(k)=filldem(k)-spmZ(k)
+      receivers(k)=k
+      lowestID=k
+      do p=1,delaunayVertex(k)%ngbNb
+        if(delaunayVertex(k)%ngbID(p)>0)then
+          if(filldem(delaunayVertex(k)%ngbID(p))<filldem(lowestID))lowestID=delaunayVertex(k)%ngbID(p)
+        endif
+      enddo
+      receivers(k)=lowestID
+      discharge(k)=precipitation(k)*voronoiCell(k)%area 
+    enddo
+    call mpi_allreduce(mpi_in_place,receivers,dnodes,mpi_integer,mpi_max,badlands_world,rc)
+    call mpi_allreduce(mpi_in_place,watercell,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
+    call mpi_allreduce(mpi_in_place,discharge,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
+
+    baseNb=0
+    if(.not.allocated(baselist)) allocate(baselist(dnodes))
+    baselist=-1
+    donorCount=0
     do k=1,dnodes
-       receivers(k)=k
-       lowestID=k
-       do p=1,delaunayVertex(k)%ngbNb
-          if(delaunayVertex(k)%ngbID(p)>0)then
-            if(filldem(delaunayVertex(k)%ngbID(p))<filldem(lowestID))lowestID=delaunayVertex(k)%ngbID(p)
-          endif
-       enddo
-       receivers(k)=lowestID
        ! Baselevel
        if(receivers(k)==k)then
           baseNb=baseNb+1
           baselist(baseNb)=k
        endif
-    enddo
-
-    do k=1,dnodes
       donorCount(receivers(k))=donorCount(receivers(k))+1
     enddo
 
     ! Index of donors number
     if(.not.allocated(indexArray)) allocate(indexArray(dnodes+1))
     indexArray=0
-    maxtree=0
+    maxrcvs=0
     indexArray(dnodes+1)=dnodes+1
     do k=dnodes,1,-1
        indexArray(k)=indexArray(k+1)-donorCount(k) 
-       maxtree=max(maxtree,indexArray(k+1)-indexArray(k))       
+       maxrcvs=max(maxrcvs,indexArray(k+1)-indexArray(k))       
     enddo
-    maxrcvs=maxtree
 
     ! List of donors
+    if(.not.allocated(allocs)) allocate(allocs(dnodes))
     if(.not.allocated(intArray)) allocate(intArray(dnodes))
     if(.not.allocated(donorsList)) allocate(donorsList(dnodes))
+    allocs=-1
     intArray=0
+    lstackOrder=-1
     do k=1,dnodes
        donorsList(indexArray(receivers(k))+intArray(receivers(k)))=k
        intArray(receivers(k))=intArray(receivers(k))+1
     enddo
 
-    ! Get the donor information array
-    if(allocated(donorInfo))deallocate(donorInfo)
-    allocate(donorInfo(dnodes,maxtree))
-    donorInfo=0
-    do k=1,dnodes
-       do p=1,indexArray(k+1)-indexArray(k)
-          donorInfo(k,p)=donorsList(indexArray(k)+p-1)
-       enddo
-    enddo
+    ! Base level partitioning
+    stpStack=0
+    partStack=0
+    if(baseNb<=npets)then
+      p=pet_id+1
+      partStack(p)=0 
+      if(p<=baseNb)partStack(p)=1
+      stpStack(p+1)=stpStack(p)+partStack(p)
+    else
+      if(pet_id==0)then
+        partnb=int(baseNb/npets)
+        extra=mod(baseNb,npets)
+        do j=0,npets-1
+          partStack(j+1)=partnb
+          if(j<extra) partStack(j+1)=partStack(j+1)+1
+          stpStack(j+2)=stpStack(j+1)+partStack(j+1)
+        enddo
+      endif
+      call mpi_bcast(stpStack,npets+1,mpi_integer,0,badlands_world,rc)
+    endif
 
     ! Build the ordering stack
-    if(.not.allocated(catchmentID)) allocate(catchmentID(dnodes))
-    if(.not.allocated(stackOrder)) allocate(stackOrder(dnodes))
-    if(.not.allocated(allocs)) allocate(allocs(dnodes))
-
-    if(allocated(sillGID)) deallocate(sillGID)
-    if(allocated(sillMax)) deallocate(sillMax)
-    if(allocated(sillNb)) deallocate(sillNb)
-    allocate(sillGID(baseNb,dnodes))
-    allocate(sillNb(baseNb))
-    allocate(sillMax(baseNb))
-
-    allocs=-1
     j=0
-    stackOrder=-1
-    catchmentID=0
-    minimaNb=0
-    nonIsoNb=0
-    sillNb=0
-!     sillGID=0
-    sillMax=-1.e6
-
-    do p=1,baseNb
+    do p=stpStack(pet_id+1)+1,stpStack(pet_id+2) 
       allocs=-1
       k=baselist(p)
       j=j+1
-      stackOrder(j)=k
+      lstackOrder(j)=k
       allocs(k)=0
-      catchID=k
-      sillNb(p)=0
-      minimaNb=minimaNb+1 
-      catchID=-k
-      if(voronoiCell(k)%border<1) depressionAlgo=.true.
-      if(catchID>0)then
-        nonIsoNb=nonIsoNb+1
-        trueCatch(nonIsoNb)=catchID
-      endif
-      catchmentID(k)=catchID
-      if(catchID<0)then
-        sillMax(p)=max(sillMax(p),filldem(p))
-        sillNb(p)=sillNb(p)+1
-        sillGID(p,sillNb(p))=k
-      endif
       success=addtostack(p,k,j)
     enddo
-    
+      
+    ! Get ordered stack from catchment ID partitioning
+    partStack=0
+    call mpi_allgather(j,1,mpi_integer,partStack,1,mpi_integer,badlands_world,rc)
+    disps=0
+    do p=1,npets-1
+      disps(p+1)=disps(p)+partStack(p)
+    enddo
+    call mpi_allgatherv(lstackOrder,j,mpi_integer,stackOrder,partStack,disps,mpi_integer,badlands_world,rc)
+
+    return
+
   end subroutine define_landscape_network
   ! =====================================================================================
 
@@ -182,14 +175,8 @@ contains
       if((allocs(donorsList(n))==-1))then
         donor=donorsList(n)
         stackID=stackID+1
-        stackOrder(stackID)=donor
+        lstackOrder(stackID)=donor
         allocs(donor)=0
-        catchmentID(donor)=catchID
-        if(catchID<0)then
-          sillNb(base)=sillNb(base)+1
-          sillGID(base,sillNb(base))=donor
-          sillMax(base)=max(sillMax(base),filldem(base))
-        endif
         success=addtostack(base,donor,stackID)
       endif
     enddo 
@@ -199,164 +186,47 @@ contains
   end function addtostack
   ! =====================================================================================
 
-  subroutine define_drained_water_thickness
-
-    integer::c,q,cID,n,p,no,k,nid,qo
-    integer,dimension(:),allocatable::ptOrder,minimaOrder,maximaOrder
-
-    real(kind=8)::vol,totvol,hstep,height,maxheight,dh
-    real(kind=8),dimension(:),allocatable::fz
-    ! Order minima from top to bottom
-    if(allocated(maximaOrder)) deallocate(maximaOrder)
-    if(allocated(minimaOrder)) deallocate(minimaOrder)
-    if(allocated(fz)) deallocate(fz)
-    allocate(maximaOrder(baseNb))
-    allocate(minimaOrder(baseNb))
-    allocate(fz(baseNb))
-
-    maximaOrder=-1
-    do q=1,baseNb
-      c=baselist(q)
-      minimaOrder(q)=q
-      if(catchmentID(c)<0)then
-        fz(q)=spmZ(-catchmentID(c))
-      else
-        fz(q)=-1.e5-real(q)
-      endif
-    enddo
-    call quick_sort(fz,minimaOrder)
-    p=0
-    do q=baseNb,1,-1
-      p=p+1
-      maximaOrder(p)=minimaOrder(q)
-    enddo
-    do qo=1,baseNb
-      ! Get the highest isolated catchment
-      q=maximaOrder(qo)
-      c=baselist(q)
-      if(catchmentID(c)<0)then
-        ! Define catchment parameters
-        cID=catchmentID(c)
-        vol=0.
-        hstep=0.1
-        height=spmZ(-cID)
-        maxheight=sillMax(q)-spmZ(-cID)
-        totvol=discharge(-cID)*(1.0-infiltration_evaporation) 
-
-        ! Sort catchment points by increasing elevations
-        if(allocated(ptOrder)) deallocate(ptOrder)
-        if(allocated(fz)) deallocate(fz)
-        allocate(ptOrder(sillNb(q)))
-        allocate(fz(sillNb(q)))
-        ptOrder=-1
-        if(sillNb(q)>1)then
-          do n=1,sillNb(q)
-            p=sillGID(q,n)
-            fz(n)=spmZ(p)
-            ptOrder(n)=n
-          enddo
-          call quick_sort(fz,ptOrder)
-        else
-          ptOrder(1)=1
-        endif
-        ! Loop through the nodes to distribute volume of water until:
-        ! 1- the volume has been totally distributed
-        ! 2- the water flows to another catchment
-        do while(vol<totvol.and.height<maxheight) 
-          height=height+hstep
-          watercell(-cID)=watercell(-cID)+hstep
-          vol=vol+hstep*voronoiCell(-cID)%area
-
-          do no=2,sillNb(q)
-            n=ptOrder(no)
-            p=sillGID(q,n)
-            ! Add water to cell
-            if(spmZ(p)+watercell(p)<=height)then
-              dh=height-spmZ(p)-watercell(p) 
-              watercell(p)=watercell(p)+dh
-              vol=vol+dh*voronoiCell(p)%area
-            endif
-
-            if(watercell(p)>0.)then
-              do k=1,delaunayVertex(p)%ngbNb
-                nid=delaunayVertex(p)%ngbID(k)
-                ! Neighbor nodes in a different catchment
-                if(nid>0)then
-                  if(spmZ(nid)<spmZ(p)+watercell(p).and. &
-                    catchmentID(nid)/=cID) goto 18
-                endif
-              enddo
-            endif
-          enddo
-        enddo
-18 continue      
-      endif
-    enddo
-
-  end subroutine define_drained_water_thickness
-  ! =====================================================================================
-
   subroutine planchon_dem_fill_algorithm
 
     logical::flag
-    integer::p,k,cID 
+    integer::p,k,l
 
-    real(kind=8)::step 
-
-    ! Update DEM borders elevation values
-    step=0.0001
-    filldem=1.e6_8
-    do k=1,dnodes
-      cID=catchmentID(k)
-      if(cID<0)then
-        if(watercell(-cID)<fh.and.Cerodibility>0.)then
-          watercell(k)=spmZ(-cID)+fh-spmZ(k)
-        endif
-      endif
-      
-      if(watercell(k)<0.) watercell(k)=0.
-      
-      ! On border fix DEM elevation for filling calculation
-      if(tcoordX(k)==minx-dx.or.tcoordX(k)==maxx+dx.or.tcoordY(k)==miny-dx &
-        .or.tcoordY(k)==maxy+dx)then 
-        filldem(k)=spmZ(k)+watercell(k)
-      endif
-    enddo
-
-    ! Now find the sinks and fill them using Planchon's method
-    flag=.true.
-    do while(flag)
-      flag=.false.
-      do k=1,dnodes
-        if(tcoordX(k)>minx-dx.and.tcoordX(k)<maxx+dx.and.tcoordY(k)>miny-dx &
-          .and.tcoordY(k)<maxy+dx.and.filldem(k)>spmZ(k))then
-          ! Loop through the neighbors
-          do p=1,delaunayVertex(k)%ngbNb
-            if(delaunayVertex(k)%ngbID(p)>0)then
-              ! In case delaunay elevation greater than neighbor's ones
-              if(spmZ(k)>=filldem(delaunayVertex(k)%ngbID(p))+step)then
-                filldem(k)=spmZ(k)
-              ! Otherwise this is a sink and we perform sink filling
-              else
-                if(filldem(k)>filldem(delaunayVertex(k)%ngbID(p))+step)then
-                  filldem(k)=filldem(delaunayVertex(k)%ngbID(p))+step
-                  if(filldem(k)-spmZ(k)>fh.and.Cerodibility>0.)then 
-                    filldem(k)=spmZ(k)+fh
-                  else
-                    flag=.true.
+    real(kind=8)::step
+    
+    ! Find the sinks and fill them using Planchon's method
+    if(pet_id==0)then
+      flag=.true.
+      step=1.e-4_8
+      do while(flag)
+        flag=.false.
+        do k=1,dnodes
+          if(voronoiCell(k)%border/=1.and.filldem(k)>spmZ(k))then
+            ! Loop through the neighbors
+            do p=1,delaunayVertex(k)%ngbNb
+              l=delaunayVertex(k)%ngbID(p)
+              if(l>0)then
+                ! In case delaunay elevation greater than neighbor's ones
+                if(spmZ(k)>=filldem(l)+step)then
+                  filldem(k)=spmZ(k)
+                ! Otherwise this is a sink and we perform sink filling
+                else
+                  if(filldem(k)>filldem(l)+step)then
+                    filldem(k)=filldem(l)+step
+                    if(filldem(k)-spmZ(k)>fh)then 
+                      filldem(k)=spmZ(k)+fh
+                    else
+                      flag=.true.
+                    endif
                   endif
                 endif
               endif
-            endif
-          enddo
-        endif
+            enddo
+          endif
+        enddo
       enddo
-    enddo
-
-    if(Cerodibility==0.)then
-      watercell=filldem-spmZ
     endif
-
+    call mpi_bcast(filldem,dnodes,mpi_double_precision,0,badlands_world,rc)    
+    
     return
 
   end subroutine planchon_dem_fill_algorithm
@@ -400,11 +270,10 @@ contains
 
     ! Define the borders according to boundary definition
     do k=1,dnodes
+      filldem(k)=1.e6_8
       ! On border fix DEM elevation
       if(voronoiCell(k)%border==1)then 
-
         spmH(k)=0.0_8
-
         ! In case there is an outlet
         if(outlet/=0)then
           if(voronoiCell(k)%btype==outlet)then
@@ -574,7 +443,8 @@ contains
             endif
           endif
         endif
-
+        ! Update DEM borders elevation values
+        filldem(k)=spmZ(k)
       endif
     enddo
 

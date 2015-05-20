@@ -42,10 +42,11 @@ module watershed
 
   implicit none
 
-  integer::junctionsNb
-  integer,dimension(:),allocatable::rcvNb 
+  integer,dimension(:),allocatable::rcvNb
   integer,dimension(:,:),allocatable::rcvIDs
-  integer,dimension(:),allocatable::junctionIDs
+
+  integer::junctionsNb,jctNb
+  integer,dimension(:),allocatable::junctionIDs,ljunctionIDs
   integer,dimension(:),allocatable::partition
 
   integer,dimension(:),allocatable::options
@@ -56,58 +57,39 @@ contains
 
   ! =====================================================================================
 
-  subroutine compute_cumulative_discharge
-
-    integer::k,rcv 
-    
-    if(.not.allocated(discharge)) allocate(discharge(dnodes))
-
-    discharge=0.
-
-    if(.not.allocated(rcvNb)) allocate(rcvNb(dnodes))
-    if(.not.allocated(rcvIDs)) allocate(rcvIDs(dnodes,maxrcvs*2))
-
-    rcvNb=0
-    rcvIDs=0
-
-    ! Compute local discharge 
-    do k=1,dnodes
-      discharge(k)=precipitation(k)*voronoiCell(k)%area 
-    enddo
-
-    ! Compute drainage area and receivers IDs
-    do k=dnodes,1,-1
-      rcv=receivers(stackOrder(k))
-      ! Drainage
-      if(rcv/=stackOrder(k))then
-        discharge(rcv)=discharge(rcv)+discharge(stackOrder(k))
-      endif
-      ! Receivers
-      rcvNb(rcv)=rcvNb(rcv)+1
-      rcvIDs(rcv,rcvNb(rcv))=stackOrder(k)
-    enddo
-
-  end subroutine compute_cumulative_discharge
-  ! =====================================================================================
-
   subroutine compute_subcatchment
-  
-    integer::id,k,n,p,s,maxs,subcatchID
+    
+    integer::id,k,n,p,s,maxs,jcts(npets),disp(npets),disps(npets+1)
 
     if(.not.allocated(strahler)) allocate(strahler(dnodes))
     if(.not.allocated(subcatchmentID)) allocate(subcatchmentID(dnodes))
     if(.not.allocated(junctionIDs)) allocate(junctionIDs(dnodes))
-
-    strahler=0
-    junctionsNb=0
+    if(.not.allocated(ljunctionIDs)) allocate(ljunctionIDs(dnodes))
     
-    subcatchID=0
-    junctionIDs=0
+    if(.not.allocated(rcvNb)) allocate(rcvNb(dnodes))
+    if(.not.allocated(rcvIDs)) allocate(rcvIDs(dnodes,maxrcvs*2))
+    rcvNb=0
+    rcvIDs=0
 
+    ! Compute cumulative discharge
+    do id=partStack(pet_id+1),1,-1
+      k=lstackOrder(id)
+      p=receivers(k)
+      ! Receivers
+      rcvNb(p)=rcvNb(p)+1
+      rcvIDs(p,rcvNb(p))=k
+      if(p/=k) discharge(p)=discharge(p)+discharge(k)  
+    enddo
+
+    call mpi_allreduce(mpi_in_place,discharge,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
+    
     ! Compute Strahler stream order
-    do id=dnodes,1,-1
+    strahler=0
+    jctNb=0
+    ljunctionIDs=0
+    do id=partStack(pet_id+1),1,-1
       maxs=0
-      k=stackOrder(id)
+      k=lstackOrder(id)
       ! outlet
       n=0
       do p=1,rcvNb(k)
@@ -123,35 +105,52 @@ contains
       enddo
       if(n==1)strahler(k)=maxs
       if(n>1)strahler(k)=maxs+1
+
       if(receivers(k)==k)then
-        junctionsNb=junctionsNb+1 
-        junctionIDs(junctionsNb)=id
+        jctNb=jctNb+1 
+        ljunctionIDs(jctNb)=k
       else
-        if(n>1)then
-          junctionsNb=junctionsNb+1 
-          junctionIDs(junctionsNb)=id
+        if(n>1.and.strahler(k)>1)then
+          jctNb=jctNb+1 
+          ljunctionIDs(jctNb)=k
         endif
       endif
     enddo
 
+    call mpi_allreduce(mpi_in_place,strahler,dnodes,mpi_integer,mpi_max,badlands_world,rc)
+    call mpi_allreduce(jctNb,junctionsNb,1,mpi_integer,mpi_sum,badlands_world,rc)
+    call mpi_allgather(jctNb,1,mpi_integer,jcts,1,mpi_integer,badlands_world,rc)
+    disp=0
+    disps=0
+    do p=1,npets
+      if(p<npets) disp(p+1)=disp(p)+jcts(p)
+      disps(p+1)=disps(p)+jcts(p)
+    enddo 
+    junctionIDs=0
+    call mpi_allgatherv(ljunctionIDs,jctNb,mpi_integer,junctionIDs,jcts,disp,mpi_integer,badlands_world,rc)
+
+    ! Count nodes per subcatchment 
+    if(allocated(subcatchNb)) deallocate(subcatchNb)
+    allocate(subcatchNb(junctionsNb))
+    subcatchNb=0
     subcatchmentID=-1
-    do n=1,junctionsNb
-      s=stackOrder(junctionIDs(n))
+    id=0
+    do n=disps(pet_id+1)+1,disps(pet_id+2)
+      id=id+1
+      s=ljunctionIDs(id)
       subcatchmentID(s)=n
+      subcatchNb(n)=subcatchNb(n)+1
       p=addtosubcatch(s,n)
     enddo
 
-    if(allocated(subcatchNb)) deallocate(subcatchNb)
-    allocate(subcatchNb(junctionsNb))
-
-    ! Count nodes per subcatchment and store layers information
-    subcatchNb=0
-    do id=1,dnodes
-      subcatchNb(subcatchmentID(id))=subcatchNb(subcatchmentID(id))+1
-    enddo
-
+    call mpi_allreduce(mpi_in_place,junctionIDs,dnodes,mpi_integer,mpi_max,badlands_world,rc)
+    call mpi_allreduce(mpi_in_place,subcatchNb,junctionsNb,mpi_integer,mpi_max,badlands_world,rc)
+    call mpi_allreduce(mpi_in_place,subcatchmentID,dnodes,mpi_integer,mpi_max,badlands_world,rc)
+    
     ! Perform subcatchment load-balancing and partitioning
-    call metis_loadbalancing
+    if(pet_id==0)call metis_loadbalancing
+
+    return
 
   end subroutine compute_subcatchment
   ! =====================================================================================
@@ -166,6 +165,7 @@ contains
       s=rcvIDs(k,n)
       if(subcatchmentID(s)==-1)then
         subcatchmentID(s)=catchID
+        subcatchNb(catchID)=subcatchNb(catchID)+1
         success=addtosubcatch(s,catchID)
       endif
     enddo 
@@ -192,62 +192,62 @@ contains
     allocate(connectsNb(junctionsNb+1),connects(junctionsNb+1,junctionsNb+1))
     connectsNb=0
 
-      do s=1,junctionsNb+1
-        if(s<=junctionsNb)then
-          id=stackOrder(junctionIDs(s))
-          k=receivers(id)
-          l=subcatchmentID(k)
-          vwgt(s)=subcatchNb(s)
-        else
-          l=s
-          vwgt(s)=1
-        endif
-        ! Declare tree connection parameters
-        if(l/=s)then
-          connectsNb(s)=connectsNb(s)+1
-          connectsNb(l)=connectsNb(l)+1      
-          connects(s,connectsNb(s))=l
-          connects(l,connectsNb(l))=s
-        ! Link to the top root 
-        elseif(s<=junctionsNb)then
-          l=junctionsNb+1
-          connectsNb(s)=connectsNb(s)+1
-          connectsNb(l)=connectsNb(l)+1      
-          connects(s,connectsNb(s))=l
-          connects(l,connectsNb(l))=s
-        endif
+    do s=1,junctionsNb+1
+      if(s<=junctionsNb)then
+        id=junctionIDs(s)
+        k=receivers(id)
+        l=subcatchmentID(k)
+        vwgt(s)=subcatchNb(s)
+      else
+        l=s
+        vwgt(s)=1
+      endif
+      ! Declare tree connection parameters
+      if(l/=s)then
+        connectsNb(s)=connectsNb(s)+1
+        connectsNb(l)=connectsNb(l)+1      
+        connects(s,connectsNb(s))=l
+        connects(l,connectsNb(l))=s
+      ! Link to the top root 
+      elseif(s<=junctionsNb)then
+        l=junctionsNb+1
+        connectsNb(s)=connectsNb(s)+1
+        connectsNb(l)=connectsNb(l)+1      
+        connects(s,connectsNb(s))=l
+        connects(l,connectsNb(l))=s
+      endif
+    enddo
+
+    ! Define the metis graph data structure CRS
+    CRSadj=1
+    do s=2,junctionsNb+2
+      CRSadj(s)=CRSadj(s-1)+connectsNb(s-1)
+    enddo
+
+    CRSadjncy=0
+    k=1
+    do p=1,junctionsNb+1
+      do l=1,connectsNb(p)
+        CRSadjncy(k)=connects(p,l)
+        k=k+1
       enddo
+    enddo
 
-      ! Define the metis graph data structure CRS
-      CRSadj=1
-      do s=2,junctionsNb+2
-        CRSadj(s)=CRSadj(s-1)+connectsNb(s-1)
-      enddo
+    ! Metis option numbering
+    allocate(options(0:40))
+    call METIS_SetDefaultOptions(options)
+    options(17)=1
 
-      CRSadjncy=0
-      k=1
-      do p=1,junctionsNb+1
-        do l=1,connectsNb(p)
-          CRSadjncy(k)=connects(p,l)
-          k=k+1
-        enddo
-      enddo
+    ! Nullify pointers
+    vsize=>null()
+    adjwgt=>null() 
+    tpwgts=>null()
+    ubvec=>null()
 
-      ! METIS_OPTION_NUMBERING
-      allocate(options(0:40))
-      call METIS_SetDefaultOptions(options)
-      options(17)=1
-
-      ! Nullify pointers
-      vsize=>null()
-      adjwgt=>null() 
-      tpwgts=>null()
-      ubvec=>null()
-
-      ! K-way metis partitioning
-      partition=1
-      if(npets>1) call METIS_PartGraphKway(junctionsNb+1,1,CRSadj,CRSadjncy,vwgt,vsize,adjwgt,npets,tpwgts,ubvec,options,objval,partition) 
-      deallocate(options)
+    ! K-way metis partitioning
+    partition=1
+    if(npets>1) call METIS_PartGraphKway(junctionsNb+1,1,CRSadj,CRSadjncy,vwgt,vsize,adjwgt,npets,tpwgts,ubvec,options,objval,partition) 
+    deallocate(options)
 
     ! Cleaning process
     nullify(vsize,adjwgt,tpwgts,ubvec)
@@ -260,7 +260,6 @@ contains
     integer::s,id,k,p
 
     ! Broadcast partitioning
-    call mpi_bcast(junctionsNb,1,mpi_integer,0,badlands_world,rc)
     if(pet_id/=0)then
       if(allocated(partition)) deallocate(partition)
       allocate(partition(junctionsNb+1))
@@ -269,14 +268,6 @@ contains
     
     if(.not.allocated(subcatchmentProc)) allocate(subcatchmentProc(dnodes))
     subcatchmentProc=-1
-
-    ! Define for each partition local nodes and their global IDs
-    localNodes=0
-    do k=1,dnodes
-      subcatchmentProc(k)=partition(subcatchmentID(k))-1 
-      if(pet_id==subcatchmentProc(k))localNodes=localNodes+1
-    enddo
-    call mpi_bcast(maxrcvs,1,mpi_integer,0,badlands_world,rc)
 
     ! Define local and inter-processor communications
     if(.not.allocated(sendprocID)) allocate(sendprocID(dnodes))
@@ -287,14 +278,19 @@ contains
     rcvprocID=-1
     if(.not.allocated(rcvsendID)) allocate(rcvsendID(dnodes,maxrcvs))
     rcvsendID=-1
-    if(allocated(localNodesGID)) deallocate(localNodesGID)
-    allocate(localNodesGID(localNodes))
+    if(.not.allocated(localNodesGID)) allocate(localNodesGID(dnodes))
 
+    ! Define for each partition local nodes and their global IDs
     s=1
-    drainOde=localNodes
+    drainOde=0
+    localNodes=0
     do k=1,dnodes
       p=stackOrder(k) 
       id=receivers(p)
+      subcatchmentProc(p)=partition(subcatchmentID(p))-1 
+      subcatchmentProc(id)=partition(subcatchmentID(id))-1 
+      subcatchmentProc(k)=partition(subcatchmentID(k))-1 
+      if(pet_id==subcatchmentProc(k))localNodes=localNodes+1
       ! Inter-partition nodes variables
       if(subcatchmentProc(p)/=subcatchmentProc(id))then
         sendprocID(p)=subcatchmentProc(id)
@@ -308,6 +304,7 @@ contains
         s=s+1
       endif
     enddo
+    drainOde=drainOde+localNodes
 
   end subroutine bcast_loadbalancing
   ! =====================================================================================
