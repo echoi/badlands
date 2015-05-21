@@ -316,7 +316,7 @@ contains
 
   subroutine mvSpmGrid
 
-    integer::k,id,rmvID(dnodes),n,l,pts(3),onodes
+    integer::k,id,rmvID(dnodes),n,l,h,pts(3),onodes,tt
     real(kind=8)::nx,ny,d1,d2,d3,w1,w2,w3
 
     real(kind=8),dimension(2)::txy
@@ -336,22 +336,93 @@ contains
       if(allocated(nhz)) deallocate(nhz)
       if(allocated(record)) deallocate(record)
       allocate(nhx(dnodes),nhy(dnodes),nhz(dnodes),record(dnodes,2))
-
+ 
       ! Apply the displacement to delaunay points
       do k=1,dnodes
-        if(tcoordX(k)>minx+dx.and.tcoordX(k)<maxx-dx.and. &
-          tcoordY(k)>miny+dx.and.tcoordY(k)<maxy-dx)then
+        if(tcoordX(k)>minx.and.tcoordX(k)<maxx.and. &
+          tcoordY(k)>miny.and.tcoordY(k)<maxy)then
           nhx(k)=tcoordX(k)+disp_hx(k)
           nhy(k)=tcoordY(k)+disp_hy(k)
           nhz(k)=tcoordZ(k)+tvertDisp(k)
         else
           nhx(k)=tcoordX(k)
           nhy(k)=tcoordY(k)
-          nhz(k)=tcoordZ(k)+tvertDisp(k)
         endif
         Fd1(1,k)=nhx(k)
         Fd1(2,k)=nhy(k)
       enddo
+
+      tt=0
+      rmvID=-1
+      do k=1,dnodes
+        if(tcoordX(k)==minx.or.tcoordX(k)==maxx.or. &
+          tcoordY(k)==miny.or.tcoordY(k)==maxy)then
+          n=0
+          d1=0.
+          do id=1,delaunayVertex(k)%ngbNb
+            l=delaunayVertex(k)%ngbID(id)
+            if(l>0)then
+              if(tcoordX(l)>minx.and.tcoordX(l)<maxx.and. &
+                tcoordY(l)>miny.and.tcoordY(l)<maxy)then
+                n=n+1
+                d1=d1+nhz(l)
+              endif
+            endif
+          enddo
+          if(n>=1)then
+            nhz(k)=d1/n
+          else
+            tt=tt+1
+            rmvID(tt)=k
+          endif
+        endif
+      enddo
+
+      do h=1,tt
+        k=rmvID(h)
+        n=0
+        d1=0.
+        do id=1,delaunayVertex(k)%ngbNb
+          l=delaunayVertex(k)%ngbID(id)
+          if(l>0)then
+            if(tcoordX(l)>minx-dx.and.tcoordX(l)<maxx+dx.and. &
+              tcoordY(l)>miny-dx.and.tcoordY(l)<maxy+dx)then
+              n=n+1
+              d1=d1+nhz(l)
+            endif
+          endif
+        enddo
+        if(n>=1)then
+          nhz(k)=d1/n
+        else
+          print*,'problem de merde1',k,delaunayVertex(k)%ngbNb
+          print*,tcoordX(k),tcoordY(k)
+        endif
+      enddo
+      
+      do k=1,dnodes
+        if(tcoordX(k)==minx-dx.and.tcoordX(k)==maxx+dx.and. &
+          tcoordY(k)==miny-dx.and.tcoordY(k)==maxy+dx)then
+          n=0
+          d1=0.
+          do id=1,delaunayVertex(k)%ngbNb
+            l=delaunayVertex(k)%ngbID(id)
+            if(l>0)then
+              if(tcoordX(l)>minx-dx.and.tcoordX(l)<maxx+dx.and. &
+                tcoordY(l)>miny-dx.and.tcoordY(l)<maxy+dx)then
+                n=n+1
+                d1=d1+nhz(l)
+              endif
+            endif
+          enddo
+          if(n>=1)then
+            nhz(k)=d1/n
+          else
+            print*,'problem de merde2',k,delaunayVertex(k)%ngbNb
+          endif
+        endif
+      enddo
+      
       Ftree1=>kdtree2_create(Fd1,sort=.true.,rearrange=.true.)
 
       onodes=dnodes
@@ -406,7 +477,6 @@ contains
       call UnstructuredMeshDestroy
       ! Clean geomorphic arrays
       call cleanGeomorpho
-
       ! Create the new grid
       call remesher
 
@@ -643,6 +713,7 @@ contains
     if(allocated(ljunctionIDs)) deallocate(ljunctionIDs)
     if(allocated(change_local)) deallocate(change_local)
     if(allocated(precipitation)) deallocate(precipitation)
+    if(allocated(localNodesGID)) deallocate(localNodesGID)
     if(allocated(subcatchmentID)) deallocate(subcatchmentID)
     if(allocated(subcatchmentProc)) deallocate(subcatchmentProc)
 
