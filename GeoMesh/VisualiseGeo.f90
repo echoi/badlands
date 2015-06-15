@@ -419,7 +419,7 @@ contains
     call xml_AddNewLine(xf)
 
     do i=1,dnodes
-       if(voronoiCell(i)%border==0 .and. voronoiCell(i)%vertexNb>0)then
+       if(voronoiCell(i)%border==0.and.voronoiCell(i)%vertexNb>0)then
           str='3 '
           call append_nb2(str,voronoiCell(i)%vertexNb)
           do k=1,voronoiCell(i)%vertexNb

@@ -58,6 +58,7 @@ contains
     logical::found
 
 !     real(kind=8)::time1,time2
+    totgrn=0
     update3d=.false.
     inquire(file=xmlfile,exist=found)
     if(.not.found)then
@@ -838,11 +839,6 @@ contains
           voronoiCell(cell)%area=voronoiCell(cell)%area+0.5_8*abs(area)
         enddo
 
-        ! Count voronoi cells and vertices (used for output only)
-        if(voronoiCell(cell)%vertexNb>0)then 
-          vcellIN=vcellIN+1
-          velemIN=velemIN+voronoiCell(cell)%vertexNb
-        endif
       endif
 
     enddo
@@ -955,6 +951,13 @@ contains
         tcoordY(cell)==miny-dx.or.tcoordY(cell)==maxy+dx)then 
         voronoiCell(cell)%border=1
       endif 
+
+
+      ! Count voronoi cells and vertices (used for output only)
+      if(voronoiCell(cell)%border==0.and.voronoiCell(cell)%vertexNb>0)then
+        vcellIN=vcellIN+1
+        velemIN=velemIN+voronoiCell(cell)%vertexNb
+      endif
 
     enddo
 

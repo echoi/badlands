@@ -34,19 +34,20 @@
 
 program BADLANDS_Application
 
+  use restart
   use geomesh
   use coupling
   use parallel
   use geomorpho
+  use stratmorph
   use parameters
-  use restart
+  use strata_evol
 
   implicit none
 
   integer::opt
   real(kind=8)::t1,t2
   
-
   ! start up MPI
   call mpi_init(rc)
   call mpi_comm_size(badlands_world,npets,rc)
@@ -65,6 +66,7 @@ program BADLANDS_Application
   ! Define simulation meshes
   t1=mpi_wtime()
   call GeoMesher
+  call StrataGen
   t2=mpi_wtime()
   if(pet_id==0)print*,'-------------------------'
   if(pet_id==0)print*,'BADLANDS Grid Components Initialized (s) ',t2-t1
@@ -103,8 +105,12 @@ program BADLANDS_Application
 
     ! Based on precipitation rate and displacement field compute landscape and geomorphological
     ! evolution using the SPM model
-    t1=mpi_wtime()
-    call geomorphology
+    t1=mpi_wtime() 
+    if(totgrn>0)then
+      call stratgeomorph
+    else
+      call geomorphology
+    endif
     t2=mpi_wtime()
     if(pet_id==0)print*,'-------------------------'
     if(pet_id==0)print*,'BADLANDS Surface Process Model (s) ',t2-t1

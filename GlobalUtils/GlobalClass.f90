@@ -57,6 +57,9 @@ module parameters
   ! Grid / Coupler Component Names
 !   character(len=128)::ocean,spm,earth
 
+  ! Number of total grains
+  integer::totgrn
+
   ! Simulation directories and file names
   character(len=128)::regularfile,outdir,xmlfile
   character(len=128)::outdir1,outdir2,runfiles,outputs

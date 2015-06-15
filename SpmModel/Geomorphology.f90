@@ -143,6 +143,8 @@ contains
         cumDisp=0.
       endif
 !       call mpi_barrier(badlands_world,rc)
+!       call mpi_finalize(rc)
+!       stop
 !       tt1=mpi_wtime()
       
       ! Get time step size for hillslope process and stream power law
@@ -163,6 +165,7 @@ contains
       if(stream_ero>0..or.regoProd>0.) &
         call mpi_allreduce(nH,spmH,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
       update3d=.false.
+      stop
 !       call mpi_barrier(badlands_world,rc)
 !       tt2=mpi_wtime()
 !       if(pet_id==0)print*,'geomorpho',tt2-tt1

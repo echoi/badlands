@@ -44,6 +44,7 @@ module coupling
   use hydrology
   use underworld
   use earthforces
+  use stratal_class
   use external_forces
   use kdtree2_module
   use kdtree2_precision_module
@@ -213,6 +214,33 @@ contains
   end subroutine bilinearDisp
   ! =====================================================================================
 
+  subroutine bilinearDispS
+
+    integer::k,p,id
+    real,dimension(lsnb)::uxpart,uypart,uval
+
+    id=0
+    do k=1,ny+2
+      do p=1,nx+2
+        id=id+1
+        bilinearV(p,k)=real(rvertDisp(id))
+      enddo
+    enddo
+
+    do k=1,lsnb
+      id=lnID(k)
+      uxpart(k)=real(stcoord(id,1))
+      uypart(k)=real(stcoord(id,2))
+    enddo
+
+    call interpolate_grid_bilinear(nx+2,bilinearX,ny+2,bilinearY,bilinearV,lsnb,uxpart,uypart,uval)    
+    svertDisp=uval
+    
+    return
+
+  end subroutine bilinearDispS
+  ! =====================================================================================
+
   subroutine bilinearGrid
 
     ! Get rainfall and displacement
@@ -229,8 +257,11 @@ contains
       call displacement
     endif    
 
-    if(disp%event>0) call bilinearDisp
-    
+    if(disp%event>0)then 
+      call bilinearDisp
+      if(totgrn>0) call bilinearDispS
+    endif
+
     ! Define coupling time for geodynamic
     if(disp%event==0) cpl2_time=time_end+1000.
 
@@ -306,6 +337,7 @@ contains
       else
         call displacement
         call bilinearDisp
+        if(totgrn>0) call bilinearDispS
       endif
     endif
 

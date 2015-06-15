@@ -9,7 +9,7 @@ CONFFILE= $(TOP)/config/Makefile.inc
 
 include $(CONFFILE)
 
-DIRMODS= GlobalUtils GeoMesh SpmModel EarthModel CouplerUtils
+DIRMODS= GlobalUtils GeoMesh SpmModel SubStrat EarthModel CouplerUtils
 
 #OceanModel EarthModel  CouplerModel
 
