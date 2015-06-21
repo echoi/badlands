@@ -81,7 +81,6 @@ contains
     ! Define paramaters
     if(simulation_time==time_start.or.update3d)then
       if(simulation_time==time_start) iter=0
-      call connectStrata2TIN
       ! Build active layer
       call buildActiveLayer
       spmZ=tcoordZ
@@ -90,6 +89,7 @@ contains
       idiff=0
       if(simulation_time==time_start) time_step=0. 
       if(simulation_time==time_start) time_display=time_start
+      if(simulation_time==time_start) time_strata=time_start
       if(Cefficiency>0..or.stream_ero>0.) Tforce=1
     endif
 
@@ -119,11 +119,16 @@ contains
       if(simulation_time==time_start.or.update3d) newZ=spmZ
       if(pet_id==0)print*,'Current time:',simulation_time
       
+      ! Add stratigraphic layer
+      if(simulation_time>=time_strata)then
+        if(time_strata<=time_end) layNb=layNb+1
+        time_strata=time_strata+time_layer
+      endif
+
       ! Visualisation surface
       if(simulation_time>=time_display)then
         call visualise_surface_changes(iter)
         call visualise_drainage_changes(iter)
-        layNb=layNb+1
         call visualise_strata(iter)
         call mpi_barrier(badlands_world,rc)
         if(pet_id==0)print*,'Creating output: ',int(simulation_time)
@@ -132,6 +137,7 @@ contains
         newZ=spmZ
         cumDisp=0.
       endif
+
       ! Get time step size for hillslope process and stream power law
       call CFL_conditionS 
 
@@ -145,24 +151,25 @@ contains
       ! Apply displacement
       if(disp%event>0.and..not.disp3d)then 
         call compute_vertical_displacement
-!         call compute_stratal_displacement
+        call compute_stratal_displacement
       endif
 
       ! Merge local geomorphic evolution      
       call mpi_allreduce(nZ,spmZ,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
 
       ! Merge local stratigraphic evolution     
-      call mpi_allreduce(nth,alay_dthick,dnodes,mpi_double_precision,mpi_max,badlands_world,rc) 
+      call mpi_allreduce(nth,alay_thick,dnodes,mpi_double_precision,mpi_max,badlands_world,rc) 
       
       do ks=1,totgrn
         tsed(1:dnodes)=nsed(1:dnodes,ks)
         call mpi_allreduce(tsed,gsed,dnodes,mpi_double_precision,mpi_max,badlands_world,rc) 
-        alay_dsed(1:dnodes,ks)=gsed(1:dnodes)
+        alay_sed(1:dnodes,ks)=gsed(1:dnodes)
       enddo    
 
       ! Update stratigraphic layer
       call update_stratigraphy_layer
       update3d=.false.
+!       print*,time_step
 !       stop
 
     enddo
@@ -171,7 +178,6 @@ contains
       if(time_display<=time_end)then
         call visualise_surface_changes(iter)
         call visualise_drainage_changes(iter)
-        layNb=layNb+1
         call visualise_strata(iter)
       endif
       if(pet_id==0)print*,'simulation time: ',int(time_end)
@@ -231,6 +237,7 @@ contains
     ! Check time-step in relation to coupling time
     if(simulation_time+time_step>cpl_time) time_step=cpl_time-simulation_time+1.e-4
     if(simulation_time+time_step>time_display) time_step=time_display-simulation_time+1.e-4
+    if(simulation_time+time_step>time_strata) time_step=time_strata-simulation_time+1.e-4
     if(simulation_time+time_step>time_end) time_step=time_end-simulation_time+1.e-4
       
   end subroutine CFL_conditionS
@@ -280,23 +287,16 @@ contains
         ! Stream Power Law (detachment-limited) - bedrock incision
         SPL=0.
         Qs1=0.
-!         if(Cerodibility>0.) call detachmentlimitedS(id,rcv,distance,diffH,SPL,Qs1)
-
+        call detachmentlimitedS(id,distance,diffH,SPL,Qs1)
+        
         ! Detachment-limited condition
-        if(Cerodibility>0.)then
-          do ks=1,totgrn
-            Qs_inS(rcv,ks)=Qs_inS(rcv,ks)+Qs1(ks)
-          enddo
-        endif
+        do ks=1,totgrn
+          Qs_inS(rcv,ks)=Qs_inS(rcv,ks)+Qs1(ks)
+        enddo
+        
         do ks=1,totgrn
           if(perosive==1.and.SPL(ks)>0.) SPL(ks)=0.
           change_localS(id,ks)=SPL(ks)+LDL(ks)
-!           if(abs(change_localS(id,ks))<3)then
-!           else
-!             print*,ks,id,change_localS(id,ks)
-!             print*,sediments(1)%diffm,sediments(1)%diffa
-!             stop
-!           endif
         enddo
 
       else
@@ -330,16 +330,14 @@ contains
         th=0.0
         do ks=1,totgrn
           th=th+change_localS(id,ks)
+          if(change_localS(id,ks)<0)then
+            mtime=-alay_sed(id,ks)/change_localS(id,ks)
+            maxtime=min(maxtime,mtime)
+          endif
         enddo
         if(tcoordX(id)<minx.or.tcoordX(id)>maxx.or.tcoordY(id)<miny &
             .or.tcoordY(id)>maxy) change_localS(id,1:totgrn)=0.
 
-        if(th<0.)then
-          mtime=-active_thick/th
-          maxtime=min(maxtime,mtime)
-        endif
-!         if(lid==44)print*,change_localS(id,1),th,-active_thick/th
-        
         if(rcv==id.and.th>0..and.voronoiCell(id)%btype<0)then 
           if(watercell(id)==0.)then
             maxh=0.
@@ -354,21 +352,19 @@ contains
           else
             mtime=watercell(id)/th
             maxtime=min(maxtime,mtime)
-          endif
+          endif 
         endif
 
       enddo
     endif
     call mpi_allreduce(maxtime,dt,1,mpi_double_precision,mpi_min,badlands_world,rc)
     time_step=dt   
-!     print*,time_step
     if(time_step<force_time) time_step=force_time
 
     ! Perform elevation and regolith evolution
     do lid=1,localNodes
       id=localNodesGID(lid)
       k=stackOrder(id) 
-      rcv=receivers(k)
       if(voronoiCell(k)%border==0)then 
         if(tcoordX(k)==minx.and.bounds(3)==0)change_local(k)=0. 
         if(tcoordX(k)==maxx.and.bounds(4)==0)change_local(k)=0.
@@ -378,100 +374,164 @@ contains
         th=0.0
         do ks=1,totgrn
           th=th+time_step*change_localS(k,ks)
-          nsed(k,ks)=alay_dsed(k,ks)+time_step*change_localS(k,ks)
-          if(nsed(k,ks)<0.0)then
-            print*,'fefefe',lid,k,ks,alay_dsed(k,ks),time_step,change_localS(k,ks),nsed(k,ks)
+          nsed(k,ks)=alay_sed(k,ks)+time_step*change_localS(k,ks)
+          if(abs(nsed(k,ks))<1.e-6)then 
+            if(nsed(k,ks)>0.) th=th-nsed(k,ks)
+            nsed(k,ks)=0.
+          endif
+          if(nsed(k,ks)<-1.e-6)then
+            nsed(k,ks)=0.
+            th=th-time_step*change_localS(k,ks)-alay_sed(k,ks)
           endif
         enddo
         nZ(k)=spmZ(k)+th
-        nth(k)=alay_dthick(k)+th
-        if(nth(k)<0.0)then
-          print*,'fafafa',lid,k,nth(k),alay_dthick(k),th
-          stop
+        nth(k)=alay_thick(k)+th
+        if(nth(k)<1.e-6)then
+          nth(k)=0.
+          nsed(k,1:totgrn)=0.
+          nZ(k)=spmZ(k)-alay_thick(k)
         endif
       endif
     enddo
 
-
   end subroutine geomorphic_evolutionS
   ! =====================================================================================
 
-!   subroutine detachmentlimitedS(id,rcv,distance,maxh,ST,Qs)
+  subroutine detachmentlimitedS(id,distance,maxh,ST,Qs)
 
-!     integer::id,rcv
-!     real(kind=8)::ST,dh,distance,Qs,maxh
+    integer::id,rcv,ks,eroOn
+    real(kind=8),dimension(totgrn)::ST,Qs,frac,eroh
+    real(kind=8)::dh,distance,maxh,vh
+
 
     ! Stream Power Law (detachment-limited) - bedrock incision
-!     dh=0.95*(spmZ(id)-spmZ(rcv))
-!     if(dh<0.001)dh=0.
-!     ST=0.
-!     if(rcv/=id.and.dh>0.)then
-!       if(watercell(id)<0.001.and.spmZ(id)>=gsea%actual_sea)&    
-!         ST=-Cerodibility*(discharge(id))**spl_m*(dh/distance)**spl_n
-!     endif
+    rcv=receivers(id)
+    dh=0.95*(spmZ(id)-spmZ(rcv))
+    if(dh<0.001)dh=0.
+    ST=0.
+    eroOn=0
+    eroh=0.
 
-!     ! Stability criteria for deposition solutions
-!     if(ST==0..and.perosive==0)then
-!       if(maxh>0..and.spmZ(id)<gsea%actual_sea)then
-!         if(Tforce==0)then
-!           if(Qs_in(id)*max_time/voronoiCell(id)%area<maxh)then
-!             ST=Qs_in(id)/voronoiCell(id)%area
-!             Qs=0.
-!           else
-!             ST=maxh/max_time
-!             max_time=min(max_time,maxh/ST)
-!             Qs=Qs_in(id)-ST*voronoiCell(id)%area
-!           endif
-!         else
-!           if(Qs_in(id)*time_step/voronoiCell(id)%area<maxh)then
-!             ST=Qs_in(id)/voronoiCell(id)%area
-!             Qs=0.
-!           else
-!             ST=maxh/time_step
-!             Qs=Qs_in(id)-ST*voronoiCell(id)%area
-!           endif
-!         endif
-!       ! Fill depression 
-!       elseif(watercell(id)>0.0001.and.rcv/=id)then
-!         dh=0.95*watercell(id)
-!         if(Tforce==0)then
-!           if(Qs_in(id)*max_time/voronoiCell(id)%area<dh)then
-!             ST=Qs_in(id)/voronoiCell(id)%area
-!             Qs=0.
-!           else
-!             ST=dh/max_time
-!             max_time=min(max_time,dh/ST)
-!             Qs=Qs_in(id)-ST*voronoiCell(id)%area
-!           endif
-!         else
-!           if(Qs_in(id)*time_step/voronoiCell(id)%area<dh)then
-!             ST=Qs_in(id)/voronoiCell(id)%area
-!             Qs=0.
-!           else
-!             ST=dh/time_step 
-!             Qs=Qs_in(id)-ST*voronoiCell(id)%area
-!           endif
-!         endif
-!       elseif(rcv==id)then
-!         ST=Qs_in(id)/voronoiCell(id)%area
-!         Qs=0.
-!       else
-!         Qs=Qs_in(id)
-!       endif
-!     ! For purely erosive case
-!     elseif(ST==0..and.perosive==1)then
-!       Qs=Qs_in(id)
-!     ! Stability criteria for erosion solutions
-!     elseif(ST<0.)then
-!       if(Tforce==0)then
-!         if(-ST*max_time>spmZ(id)-spmZ(rcv)) max_time=min(max_time,-0.99*(spmZ(id)-spmZ(rcv))/ST)
-!       else
-!         if(-ST*time_step>spmZ(id)-spmZ(rcv)) ST=-0.95*(spmZ(id)-spmZ(rcv))/time_step
-!       endif
-!       Qs=-ST*voronoiCell(id)%area+Qs_in(id)
-!     endif
+    ! Volumic fraction of each sediment class present in the bed
+    frac(1:totgrn)=alay_sed(id,1:totgrn)/alay_thick(id)
+  
+    ! In case erosion occurs
+    if(rcv/=id.and.dh>0..and.watercell(id)<1.e-6.and.spmZ(id)>=gsea%actual_sea)then
+      ! If next vertex is potentially erosional
+      if(watercell(rcv)<1.e-6)then
+        eroOn=1
+        vh=min(dh,alay_thick(id))
+        do ks=1,totgrn
+          eroh(ks)=frac(ks)*vh
+          ST(ks)=-frac(ks)*sediments(ks)%ero*(discharge(id))**spl_m*(dh/distance)**spl_n
+        enddo
+      ! Limit erosion to the elevation difference between current node and lake level
+      else
+        vh=min(0.99*(spmZ(id)-(watercell(rcv)+spmZ(rcv))),alay_thick(id))
+        if(vh>0.)then
+          eroOn=1
+          do ks=1,totgrn
+            eroh(ks)=frac(ks)*vh
+            ST(ks)=-frac(ks)*sediments(ks)%ero*(discharge(id))**spl_m*(dh/distance)**spl_n
+          enddo
+        endif
+      endif
+    endif
 
-!   end subroutine detachmentlimitedS
+    ! Stability criteria for deposition solutions
+    if(eroOn==0.and.perosive==0)then
+
+      ! Marine
+      if(maxh>0..and.spmZ(id)<gsea%actual_sea)then
+
+        if(Tforce==0)then
+          lp1: do ks=1,totgrn
+            if(Qs_inS(id,ks)*max_time/voronoiCell(id)%area<maxh)then
+              ST(ks)=Qs_inS(id,ks)/voronoiCell(id)%area
+              Qs(ks)=0.
+              maxh=maxh-Qs_inS(id,ks)*max_time/voronoiCell(id)%area
+            else
+              ST(ks)=maxh/max_time
+              Qs(ks)=Qs_inS(id,ks)-ST(ks)*voronoiCell(id)%area
+              maxh=0.
+            endif
+            if(maxh<1.e-6) exit lp1
+          enddo lp1
+
+        else
+          lp2: do ks=1,totgrn
+            if(Qs_inS(id,ks)*time_step/voronoiCell(id)%area<maxh)then
+              ST(ks)=Qs_inS(id,ks)/voronoiCell(id)%area
+              Qs(ks)=0.
+              maxh=maxh-Qs_inS(id,ks)*time_step/voronoiCell(id)%area
+            else
+              ST(ks)=maxh/time_step
+              Qs(ks)=Qs_inS(id,ks)-ST(ks)*voronoiCell(id)%area
+              maxh=0.
+            endif
+            if(maxh<1.e-6) exit lp2
+          enddo lp2
+        endif
+
+      ! Fill depression 
+      elseif(watercell(id)>0.0001.and.rcv/=id)then
+        dh=watercell(id)
+        if(Tforce==0)then
+          lp3: do ks=1,totgrn
+            if(Qs_inS(id,ks)*max_time/voronoiCell(id)%area<dh)then
+              ST(ks)=Qs_inS(id,ks)/voronoiCell(id)%area
+              Qs(ks)=0.
+              dh=dh-Qs_inS(id,ks)*max_time/voronoiCell(id)%area
+            else
+              ST(ks)=dh/max_time
+              Qs(ks)=Qs_inS(id,ks)-ST(ks)*voronoiCell(id)%area
+              dh=0.
+            endif
+            if(dh<1.e-6) exit lp3
+          enddo lp3
+        else
+          lp4: do ks=1,totgrn
+            if(Qs_inS(id,ks)*time_step/voronoiCell(id)%area<dh)then
+              ST(ks)=Qs_inS(id,ks)/voronoiCell(id)%area
+              Qs(ks)=0.
+              dh=dh-Qs_inS(id,ks)*time_step/voronoiCell(id)%area
+            else
+              ST(ks)=dh/time_step 
+              Qs(ks)=Qs_inS(id,ks)-ST(ks)*voronoiCell(id)%area
+              dh=0.
+            endif
+            if(dh<1.e-6) exit lp4
+          enddo lp4
+        endif
+
+      elseif(rcv==id)then
+        ST(1:totgrn)=Qs_inS(id,1:totgrn)/voronoiCell(id)%area
+        Qs=0.
+
+      else
+        Qs(1:totgrn)=Qs_inS(id,1:totgrn)
+      endif
+
+    ! For purely erosive case
+    elseif(eroOn==0.and.perosive==1)then
+      Qs(1:totgrn)=Qs_inS(id,1:totgrn)
+
+    ! Stability criteria for erosion solution
+    elseif(eroOn==1)then
+      if(Tforce==0)then
+        do ks=1,totgrn
+          if(-ST(ks)*max_time>eroh(ks)) max_time=min(max_time,-eroh(ks)/ST(ks))
+          Qs(ks)=-ST(ks)*voronoiCell(id)%area+Qs_inS(id,ks)
+        enddo
+      else
+        do ks=1,totgrn
+          if(-ST(ks)*time_step>eroh(ks)) ST(ks)=-eroh(ks)/time_step
+          Qs(ks)=-ST(ks)*voronoiCell(id)%area+Qs_inS(id,ks)
+        enddo
+      endif
+    endif
+
+  end subroutine detachmentlimitedS
   ! =====================================================================================
 
 end module stratmorph

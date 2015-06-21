@@ -165,7 +165,7 @@ contains
       if(stream_ero>0..or.regoProd>0.) &
         call mpi_allreduce(nH,spmH,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
       update3d=.false.
-      stop
+!       stop
 !       call mpi_barrier(badlands_world,rc)
 !       tt2=mpi_wtime()
 !       if(pet_id==0)print*,'geomorpho',tt2-tt1
@@ -407,7 +407,6 @@ contains
     do lid=1,localNodes
       id=localNodesGID(lid)
       k=stackOrder(id) 
-      rcv=receivers(k)
       if(voronoiCell(k)%border==0)then 
         if(tcoordX(k)==minx.and.bounds(3)==0)change_local(k)=0. 
         if(tcoordX(k)==maxx.and.bounds(4)==0)change_local(k)=0.

@@ -59,6 +59,7 @@ module readforces
   logical,save::in_RainGrid=.false.
   logical,save::in_RainNb=.false.
   logical,save::in_RainMFile=.false.
+  logical,save::in_RainMVal=.false.
   logical,save::in_RainET=.false.
   logical,save::in_RainST=.false.
   logical,save::in_rain=.false.
@@ -151,6 +152,7 @@ contains
     character(len=*),intent(in)::name
 
     if(name=='rain_file') in_RainMFile=.true.
+    if(name=='rain_value') in_RainMVal=.true.
     if(name=='rain_start') in_RainST=.true.
     if(name=='rain_end') in_RainET=.true.
 
@@ -202,6 +204,7 @@ contains
     character(len=*),intent(in)::name
 
     if(name=='rain_file') in_RainMFile=.false.
+    if(name=='rain_value') in_RainMVal=.false.
     if(name=='rain_start') in_RainST=.false.
     if(name=='rain_end') in_RainET=.false.
 
@@ -246,6 +249,8 @@ contains
     if(in_RainNb)then
       call rts(chars,rain_event)
       allocate(frainmap(rain_event))
+      allocate(frainval(rain_event))
+      frainval=-1
       allocate(rain_tend(rain_event))
       allocate(rain_tstart(rain_event))
     endif
@@ -259,6 +264,9 @@ contains
 
     if(in_RainMFile)then
       frainmap(rainn)=chars
+    endif
+    if(in_RainMVal)then
+      call rts(chars,frainval(rainn))
     endif
     if(in_RainST) then
       call rts(chars,rain_tstart(rainn))

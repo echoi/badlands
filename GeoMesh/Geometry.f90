@@ -1423,6 +1423,7 @@ contains
     if(allocated(rvertDisp))deallocate(rvertDisp)
     if(allocated(rainVal))deallocate(rainVal)
     if(allocated(frainmap))deallocate(frainmap)
+    if(allocated(frainval))deallocate(frainval)
     if(allocated(rain_tstart))deallocate(rain_tstart)
     if(allocated(rain_tend))deallocate(rain_tend)
     if(allocated(fgeodyn))deallocate(fgeodyn)

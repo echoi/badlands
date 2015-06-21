@@ -46,6 +46,7 @@ module external_forces
   integer::rain_event
 
   ! Rain event files
+  real(kind=8),dimension(:),allocatable::frainval
   character(len=128),dimension(:),allocatable::frainmap
 
   ! Rain event starting and ending time
