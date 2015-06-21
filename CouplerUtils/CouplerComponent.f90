@@ -44,7 +44,7 @@ module coupling
   use hydrology
   use underworld
   use earthforces
-  use stratal_class
+  !use stratal_class
   use external_forces
   use kdtree2_module
   use kdtree2_precision_module
@@ -217,7 +217,7 @@ contains
   subroutine bilinearDispS
 
     integer::k,p,id
-    real,dimension(lsnb)::uxpart,uypart,uval
+    !real,dimension(lsnb)::uxpart,uypart,uval
 
     id=0
     do k=1,ny+2
@@ -227,14 +227,14 @@ contains
       enddo
     enddo
 
-    do k=1,lsnb
-      id=lnID(k)
-      uxpart(k)=real(stcoord(id,1))
-      uypart(k)=real(stcoord(id,2))
-    enddo
+    !do k=1,lsnb
+    !  id=lnID(k)
+    !  uxpart(k)=real(stcoord(id,1))
+    !  uypart(k)=real(stcoord(id,2))
+    !enddo
 
-    call interpolate_grid_bilinear(nx+2,bilinearX,ny+2,bilinearY,bilinearV,lsnb,uxpart,uypart,uval)    
-    svertDisp=uval
+    !call interpolate_grid_bilinear(nx+2,bilinearX,ny+2,bilinearY,bilinearV,lsnb,uxpart,uypart,uval)    
+    !svertDisp=uval
     
     return
 
