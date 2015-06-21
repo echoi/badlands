@@ -41,7 +41,7 @@ program BADLANDS_Application
   use geomorpho
   use stratmorph
   use parameters
-  use strata_evol
+  !use strata_evol
 
   implicit none
 
@@ -66,7 +66,7 @@ program BADLANDS_Application
   ! Define simulation meshes
   t1=mpi_wtime()
   call GeoMesher
-  call StrataGen
+  !call StrataGen
   t2=mpi_wtime()
   if(pet_id==0)print*,'-------------------------'
   if(pet_id==0)print*,'BADLANDS Grid Components Initialized (s) ',t2-t1
@@ -106,11 +106,11 @@ program BADLANDS_Application
     ! Based on precipitation rate and displacement field compute landscape and geomorphological
     ! evolution using the SPM model
     t1=mpi_wtime() 
-    if(totgrn>0)then
-      call stratgeomorph
-    else
+    !if(totgrn>0)then
+    !  call stratgeomorph
+    !else
       call geomorphology
-    endif
+    !endif
     t2=mpi_wtime()
     if(pet_id==0)print*,'-------------------------'
     if(pet_id==0)print*,'BADLANDS Surface Process Model (s) ',t2-t1
