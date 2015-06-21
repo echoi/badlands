@@ -39,7 +39,7 @@ program BADLANDS_Application
   use coupling
   use parallel
   use geomorpho
-  use stratmorph
+  !use stratmorph
   use parameters
   !use strata_evol
 
