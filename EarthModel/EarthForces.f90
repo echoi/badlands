@@ -274,52 +274,56 @@ contains
     rainVal=0.
     if(event_nb>0)then
       iu=51
-      open(iu,file=frainmap(event_nb),status="old",action="read",iostat=rc)
-      if(rc/=0)then
-        print*,'Failed to open namelist file rain map file'
-        call mpi_finalize(rc)
-      endif
-      id=0
-      m=0
-      do k=1,ny+2
-        do p=1,nx+2
-          m=m+1
-          if(p>1.and.p<nx+2.and.k>1.and.k<ny+2)then
+      if(frainval(event_nb)<0.)then
+        open(iu,file=frainmap(event_nb),status="old",action="read",iostat=rc)
+        if(rc/=0)then
+          print*,'Failed to open namelist file rain map file'
+          call mpi_finalize(rc)
+        endif
+        id=0
+        m=0
+        do k=1,ny+2
+          do p=1,nx+2
+            m=m+1
+            if(p>1.and.p<nx+2.and.k>1.and.k<ny+2)then
+              id=id+1
+              read(iu,*)rainVal(m)
+            endif
+          enddo
+        enddo
+        close(iu)
+        ! Get the regular grid corners values
+        rainVal(1)=rainVal(nx+4)
+        rainVal(nx+2)=rainVal(2*nx+3)
+        rainVal(bnbnodes-nx-1)=rainVal(bnbnodes-2*(nx+2)+2)
+        rainVal(bnbnodes)=rainVal(bnbnodes-(nx+2)-1)
+        ! Get the South/North rain values
+        id=0
+        do k=1,ny+2
+          do p=1,nx+2
             id=id+1
-            read(iu,*)rainVal(m)
-          endif
+            if(k==1.and.p>1.and.p<nx+2)then
+              rainVal(id)=rainVal(id+nx+2)
+            elseif(k==ny+2.and.p>1.and.p<nx+2)then
+              rainVal(id)=rainVal(id-nx-2)
+            endif
+          enddo
         enddo
-      enddo
-      close(iu)
-      ! Get the regular grid corners values
-      rainVal(1)=rainVal(nx+4)
-      rainVal(nx+2)=rainVal(2*nx+3)
-      rainVal(bnbnodes-nx-1)=rainVal(bnbnodes-2*(nx+2)+2)
-      rainVal(bnbnodes)=rainVal(bnbnodes-(nx+2)-1)
-      ! Get the South/North rain values
-      id=0
-      do k=1,ny+2
-        do p=1,nx+2
-          id=id+1
-          if(k==1.and.p>1.and.p<nx+2)then
-            rainVal(id)=rainVal(id+nx+2)
-          elseif(k==ny+2.and.p>1.and.p<nx+2)then
-            rainVal(id)=rainVal(id-nx-2)
-          endif
+        ! Get the East/West rain values
+        id=0
+        do k=1,ny+2
+          do p=1,nx+2
+            id=id+1
+            if(p==1.and.k>1.and.k<ny+2)then
+              rainVal(id)=rainVal(id+1)
+            elseif(p==nx+2.and.k>1.and.k<ny+2)then
+              rainVal(id)=rainVal(id-1)
+            endif
+          enddo
         enddo
-      enddo
-      ! Get the East/West rain values
-      id=0
-      do k=1,ny+2
-        do p=1,nx+2
-          id=id+1
-          if(p==1.and.k>1.and.k<ny+2)then
-            rainVal(id)=rainVal(id+1)
-          elseif(p==nx+2.and.k>1.and.k<ny+2)then
-            rainVal(id)=rainVal(id-1)
-          endif
-        enddo
-      enddo
+      else
+        rainVal=frainval(event_nb)
+      endif
     endif
 
   end subroutine rainfall

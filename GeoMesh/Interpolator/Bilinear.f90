@@ -36,8 +36,8 @@ module bilinear
 
   implicit none
 
-  real(kind=8),parameter::epsilon=0.001
-  real(kind=8),parameter::epsilon2=0.001*0.001
+  real(kind=8),parameter::epsilon=0.1
+  real(kind=8),parameter::epsilon2=0.1*0.1
   
 contains
 
@@ -247,7 +247,32 @@ contains
 
   end subroutine distanceSquarePt2Segment
   ! =====================================================================================
-    
+  
+  subroutine is_point_in_triangle(xy,xb,yb,l)
+
+    integer,intent(inout)::l
+
+    real(kind=8),intent(in)::xy(2),xb(3),yb(3)
+    real(kind=8)::xa,ya,det0,det1,det2
+
+    l=0
+    xa=xy(1)
+    ya=xy(2)
+    det0=(xb(2)-xb(1))*(ya-yb(1))-(yb(2)-yb(1))*(xa-xb(1))
+    det1=(xb(3)-xb(2))*(ya-yb(2))-(yb(3)-yb(2))*(xa-xb(2))
+    det2=(xb(1)-xb(3))*(ya-yb(3))-(yb(1)-yb(3))*(xa-xb(3))
+
+    if(det0>=0.and.det1>=0.and.det2>=0)then
+      l=1
+    elseif(det0<=0.and.det1<=0.and.det2<=0)then
+      l=1
+    endif
+
+    return
+
+  end subroutine is_point_in_triangle
+  ! =====================================================================================
+
   subroutine insideTriangle(xy,xb,yb,l)
         
     integer::l

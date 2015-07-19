@@ -48,9 +48,11 @@ module stratal_read
 
   logical,save::in_Strata=.false.
   logical,save::in_strat=.false.
-  logical,save::in_sdx=.false.
   logical,save::in_Sedi=.false.
   logical,save::in_sed=.false.
+  logical,save::in_sedmc=.false.
+  logical,save::in_sednc=.false.
+  logical,save::in_sedero=.false.
   logical,save::in_sedNb=.false.
   logical,save::in_dia=.false.
   logical,save::in_dens=.false.
@@ -135,6 +137,8 @@ contains
     character(len=*),intent(in)::name
 
     if(name=='sed_nb') in_sedNb=.true.
+    if(name=='spl_mc') in_sedmc=.true.
+    if(name=='spl_nc') in_sednc=.true.
 
   end subroutine SsedElement_handler
   ! =====================================================================================
@@ -145,6 +149,7 @@ contains
 
     if(name=='dia') in_dia=.true.
     if(name=='dens') in_dens=.true.
+    if(name=='Cero') in_sedero=.true.
     if(name=='diffa') in_diffa=.true.
     if(name=='diffm') in_diffm=.true.
 
@@ -155,7 +160,6 @@ contains
 
     character(len=*),intent(in)::name
 
-    if(name=='strat_dx') in_sdx=.true.
     if(name=='layer_time') in_laytime=.true.
     if(name=='active_lay_thick') in_laythick=.true.
     if(name=='layer_nb') in_laynb=.true.
@@ -178,6 +182,8 @@ contains
     character(len=*),intent(in)::name
 
     if(name=='sed_nb') in_sedNb=.false.
+    if(name=='spl_mc') in_sedmc=.false.
+    if(name=='spl_nc') in_sednc=.false.
 
   end subroutine EsedElement_handler
   ! =====================================================================================
@@ -188,6 +194,7 @@ contains
 
     if(name=='dia') in_dia=.false.
     if(name=='dens') in_dens=.false.
+    if(name=='Cero') in_sedero=.false.
     if(name=='diffa') in_diffa=.false.
     if(name=='diffm') in_diffm=.false.
 
@@ -198,7 +205,6 @@ contains
 
     character(len=*),intent(in)::name
 
-    if(name=='strat_dx') in_sdx=.false.
     if(name=='layer_time') in_laytime=.false.
     if(name=='active_lay_thick') in_laythick=.false.
     if(name=='layer_nb') in_laynb=.false.
@@ -224,6 +230,12 @@ contains
        call rts(chars,totgrn)
        allocate(sediments(totgrn))
     endif
+    if(in_sedmc)then
+       call rts(chars,spl_m)
+    endif
+    if(in_sednc)then
+       call rts(chars,spl_n)
+    endif
 
   end subroutine sed_characters_handler
   ! =====================================================================================
@@ -234,9 +246,19 @@ contains
 
     if(in_dia) then
        call rts(chars,sediments(sedn)%dia)
+       if(sedn>1)then
+        if(sediments(sedn)%dia>sediments(sedn-1)%dia)then
+          print*,'Sediment classes should be defined in decreasing size order'
+          call mpi_finalize(rc)
+          stop
+        endif
+       endif
     endif
     if(in_dens)then
        call rts(chars,sediments(sedn)%dens)
+    endif
+    if(in_sedero) then
+       call rts(chars,sediments(sedn)%ero)
     endif
     if(in_diffa) then
        call rts(chars,sediments(sedn)%diffa)
@@ -252,9 +274,6 @@ contains
 
     character(len=*),intent(in)::chars
 
-    if(in_sdx)then
-       call rts(chars,sdx)
-    endif
     if(in_laytime)then
        call rts(chars,time_layer)
     endif
@@ -288,13 +307,13 @@ contains
 
   subroutine stratal_parser
 
+    integer::stp
     type(xml_t)::xf
 
     sedn=0
     ilay=0
     stratn=0
     totgrn=0
-    sdx=dx*0.1_8
     active_thick=1.0_8
     time_layer=display_interval
 
@@ -317,6 +336,14 @@ contains
     call close_xml_t(xf)
 
     if(time_layer>display_interval) time_layer=display_interval
+    if(mod(display_interval,time_layer)>0.)then
+      stp=int(display_interval/time_layer)
+      if(stp>0)then  
+        time_layer=display_interval/real(stp,8)
+      else
+        time_layer=display_interval
+      endif
+    endif
 
   end subroutine stratal_parser
   ! =====================================================================================

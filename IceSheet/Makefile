@@ -3,7 +3,7 @@
 # Author      : tristan salles
 # Copyright (C) 2015
 #
-# Description : Makefile for EarthModel
+# Description : Makefile for Ice Sheet Model
 # ============================================================================
 UP=..
 TOP=$(shell pwd)/$(UP)
@@ -11,10 +11,10 @@ CONFFILE= $(TOP)/config/Makefile.inc
 
 include $(CONFFILE)
 
-TARGET = SPM
+TARGET = ICE
 TARGETLIB = $(LIBDIR)/lib$(TARGET).a
 
-FSOURCES = UnderworldCpl.f90 EarthForces.f90 IsostaticFlexure.f90
+FSOURCES = IceModel.f90 
 
 FOBJS=$(FSOURCES:.f90=.o)
 
@@ -25,12 +25,12 @@ dist : module
 module :	
 	@echo "*************************************************"
 	@echo	
-	@echo "Build Earth modules and library."
+	@echo "Build IceSheet modules and library."
 	@echo	
 	@echo "*************************************************"
 	make $(TARGETLIB)
 	
-$(TARGETLIB): $(COBJS) $(FOBJS)
+$(TARGETLIB): $(FOBJS)
 	cp *.o $(OBJDIR)
 	for f in *.mod ; do   \
     	if [ -f $$f ]; then \

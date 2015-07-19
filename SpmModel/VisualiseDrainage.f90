@@ -54,7 +54,7 @@ contains
     logical::compression
 
     integer::id,i,k,p,lid,rank,iter,totnodes,totelems,ierr,rcv
-    integer,dimension(:),allocatable::connect,drainers
+    integer,dimension(:),allocatable::connect,drainers,connectg
 
     real(kind=8),dimension(:),allocatable::nodes,facc,cID,stNb
 
@@ -86,6 +86,7 @@ contains
     allocate(stNb(totnodes))
     allocate(drainers(totnodes))
     allocate(connect(2*totnodes))
+    allocate(connectg(2*totnodes))
     if(.not.allocated(dglbID)) allocate(dglbID(dnodes))
 
     ! Create nodes arrays
@@ -161,6 +162,8 @@ contains
                         if(totnodes*2<totelems)print*,'Problem when writing drainage hdf5 files'
                         connect(id)=k
                         connect(id+1)=dglbID(rcv)
+                        connectg(id)=i
+                        connectg(id+1)=rcv
                         id=id+2
                     endif
                 endif
@@ -187,6 +190,32 @@ contains
     
     ! Write the dataset collectively
     call h5dwrite_f(dset_id,h5t_native_integer,connect(1:totelems*2),dims,rc)
+    call h5pclose_f(plist_id,rc)
+
+    ! Close the dataset
+    call h5dclose_f(dset_id,rc)
+    call h5sclose_f(filespace,rc)
+
+    ! Global connectivity
+    dims(1)=2
+    dims(2)=totelems
+    rank=2
+    call h5screate_simple_f(rank,dims,filespace,rc)
+    text=''
+    text="/globconnect"
+
+    ! Create property list for collective dataset write
+    call h5pcreate_f(h5p_dataset_create_f,plist_id,rc)
+    call h5pset_chunk_f(plist_id,rank,dims,rc)
+    call h5pset_deflate_f(plist_id,9,rc)
+    dims(1)=1
+    dims(2)=totelems*2
+
+    ! Create the dataset with default properties
+    call h5dcreate_f(file_id,trim(text),h5t_native_integer,filespace,dset_id,rc,plist_id)
+    
+    ! Write the dataset collectively
+    call h5dwrite_f(dset_id,h5t_native_integer,connectg(1:totelems*2),dims,rc)
     call h5pclose_f(plist_id,rc)
 
     ! Close the dataset
@@ -267,6 +296,30 @@ contains
     call h5dclose_f(dset_id,ierr)
     call h5sclose_f(filespace,ierr)
     
+    ! Node global ID
+    dims(1)=1
+    dims(2)=totnodes
+    rank=2
+    call h5screate_simple_f(rank,dims,filespace,ierr)
+    text=''
+    text="/globID"
+    
+    ! Create property list for collective dataset write
+    call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
+    call h5pset_deflate_f(plist_id,9,ierr)
+    call h5pset_chunk_f(plist_id,rank,dims,ierr)
+
+    ! Create the dataset with default properties
+    call h5dcreate_f(file_id,trim(text),h5t_native_integer,filespace,dset_id,ierr,plist_id)
+
+    ! Write the dataset collectively
+    call h5dwrite_f(dset_id,h5t_native_integer,drainers,dims,ierr)
+    call h5pclose_f(plist_id,ierr)
+
+    ! Close the dataset
+    call h5dclose_f(dset_id,ierr)
+    call h5sclose_f(filespace,ierr)
+
     ! Strahler stream order
     dims(1)=1
     dims(2)=totnodes
@@ -297,7 +350,7 @@ contains
     ! Close interface
     call h5close_f(rc)
 
-    deallocate(nodes,connect,facc,stNb,drainers,cID)
+    deallocate(nodes,connect,facc,stNb,drainers,cID,connectg)
 
     return
 

@@ -3,6 +3,7 @@
 ! BADLANDS (BAsin and LAndscape Dynamics)
 !
 ! Copyright (C) 2015 Tristan Salles 
+!     The University of Sydney
 !
 ! This program is free software; you can redistribute it and/or modify it under 
 ! the terms of the GNU General Public License as published by the Free Software 
@@ -39,9 +40,9 @@ program BADLANDS_Application
   use coupling
   use parallel
   use geomorpho
-  !use stratmorph
+  use stratmorph
   use parameters
-  !use strata_evol
+  use strata_evol
 
   implicit none
 
@@ -66,7 +67,7 @@ program BADLANDS_Application
   ! Define simulation meshes
   t1=mpi_wtime()
   call GeoMesher
-  !call StrataGen
+  call StrataGen
   t2=mpi_wtime()
   if(pet_id==0)print*,'-------------------------'
   if(pet_id==0)print*,'BADLANDS Grid Components Initialized (s) ',t2-t1
@@ -90,6 +91,13 @@ program BADLANDS_Application
   if(pet_id==0)print*,'-------------------------'
 
   do while(simulation_time<time_end)
+
+    ! Perform ice sheet flow modelling
+    if(ice_dx>0.) call getIceModel
+
+    ! Perform ice sheet flow modelling
+    if(flexure) call getFlexModel
+
     ! Get the current topographic state, performs Geodynamic Evolution calculation and
     ! prepare export displacement field arrays for the SPM model
     if(simulation_time>time_start) call getEarthData
@@ -106,11 +114,11 @@ program BADLANDS_Application
     ! Based on precipitation rate and displacement field compute landscape and geomorphological
     ! evolution using the SPM model
     t1=mpi_wtime() 
-    !if(totgrn>0)then
-    !  call stratgeomorph
-    !else
+    if(totgrn>0)then
+      call stratgeomorph
+    else
       call geomorphology
-    !endif
+    endif
     t2=mpi_wtime()
     if(pet_id==0)print*,'-------------------------'
     if(pet_id==0)print*,'BADLANDS Surface Process Model (s) ',t2-t1

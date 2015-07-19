@@ -161,6 +161,33 @@ module parameters
   ! Infiltration evaporation percentage for water in lakes
   real(kind=8)::infiltration_evaporation
 
+  ! Ice Sheet parameters
+  integer::nbix,nbiy,gausskernelSize
+  real(kind=8)::ice_dt,ice_dx,ice_xo,ice_yo
+  real(kind=8),dimension(:,:),allocatable::iceZ,iceZb,iceH,iceU
+  real(kind=8),dimension(:),allocatable::iceX,iceY
+  ! Steady time step
+  real(kind=8)::ice_Tstep
+  ! Deformation constant
+  real(kind=8)::ice_deform
+  ! Sliding constant
+  real(kind=8)::ice_slide
+  ! Sliding altitude according to ELA
+  real(kind=8)::ice_Zsld
+  ! Melting rate below and above ELA
+  real(kind=8)::ice_m1,ice_m2
+
+  ! Flexural isostasy parameters
+  logical::flexure
+  integer::nbfx,nbfy
+
+  real(kind=8)::cst1,cst2,cst3,torb
+  real(kind=8)::flex_dt,flex_dx,flex_xo,flex_yo,flex_rigid
+  real(kind=8)::mean_sediment_density,mean_mantle_density,sea_water_density
+
+  real(kind=8),dimension(:,:),allocatable::load,prevload,flexZ,flexDisp,flexSed
+  real(kind=8),dimension(:),allocatable::flexX,flexY,sedloader
+
 contains
   
   ! =====================================================================================

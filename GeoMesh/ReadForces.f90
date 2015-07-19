@@ -59,9 +59,28 @@ module readforces
   logical,save::in_RainGrid=.false.
   logical,save::in_RainNb=.false.
   logical,save::in_RainMFile=.false.
+  logical,save::in_RainMVal=.false.
   logical,save::in_RainET=.false.
   logical,save::in_RainST=.false.
   logical,save::in_rain=.false.
+  logical,save::in_Ice=.false.
+  logical,save::in_icedx=.false.
+  logical,save::in_kernel=.false.
+  logical,save::in_icedt=.false.
+  logical,save::in_icedeform=.false.
+  logical,save::in_iceslide=.false.
+  logical,save::in_iceZsld=.false.
+  logical,save::in_iceTstep=.false.
+  logical,save::in_iceero=.false.
+  logical,save::in_m1=.false.
+  logical,save::in_m2=.false.
+  logical,save::in_ELAfile=.false.
+  logical,save::in_flex=.false.
+  logical,save::in_flexdt=.false.
+  logical,save::in_flexdx=.false.
+  logical,save::in_flexseddens=.false.
+  logical,save::in_flexrigid=.false.
+  logical,save::in_mantledens=.false.
 
 contains
 
@@ -106,6 +125,14 @@ contains
     endif
     if(in_rain) call SrainfieldElement_handler(name)
 
+    ! Ice element
+    if(name=='struct_ice')in_Ice=.true.
+    if(in_Ice) call SiceElement_handler(name)
+
+    ! Flexure element
+    if(name=='struct_flex')in_flex=.true.
+    if(in_flex) call SflexElement_handler(name)
+
   end subroutine startElement_handler
   ! =====================================================================================
 
@@ -120,6 +147,8 @@ contains
     call EdispElement_handler(name)
     call ErainmapElement_handler(name)
     call ErainfieldElement_handler(name)
+    call EiceElement_handler(name)
+    call EflexElement_handler(name)
 
   end subroutine endElement_handler
   ! =====================================================================================
@@ -133,6 +162,8 @@ contains
     if(in_disp) call disp_characters_handler(chars)
     if(in_RainGrid) call rainmap_characters_handler(chars)
     if(in_rain) call rainfield_characters_handler(chars)
+    if(in_Ice) call ice_characters_handler(chars)
+    if(in_flex) call flex_characters_handler(chars)
     
   end subroutine characters_handler
   ! =====================================================================================
@@ -151,6 +182,7 @@ contains
     character(len=*),intent(in)::name
 
     if(name=='rain_file') in_RainMFile=.true.
+    if(name=='rain_value') in_RainMVal=.true.
     if(name=='rain_start') in_RainST=.true.
     if(name=='rain_end') in_RainET=.true.
 
@@ -164,6 +196,38 @@ contains
     if (name=='ocean_file') in_SeaFile=.true.
 
   end subroutine SseaElement_handler
+  ! =====================================================================================
+
+  subroutine SiceElement_handler(name)
+
+    character(len=*),intent(in)::name
+
+    if(name=='ice_dx') in_icedx=.true.
+    if(name=='ice_dt') in_icedt=.true.
+    if(name=='gauss_kernel') in_kernel=.true.
+    if(name=='deformCst') in_icedeform=.true.
+    if(name=='slideCst') in_iceslide=.true.
+    if(name=='slideZ_ELA') in_iceZsld=.true.
+    if(name=='ice_Tstep') in_iceTstep=.true.
+    if(name=='ELA_file') in_ELAfile=.true.
+    if(name=='melt1_ELA') in_m1=.true.
+    if(name=='melt2_ELA') in_m2=.true.
+    if(name=='ice_ero') in_iceero=.true.
+
+  end subroutine SiceElement_handler
+  ! =====================================================================================
+
+  subroutine SflexElement_handler(name)
+
+    character(len=*),intent(in)::name
+
+    if(name=='flex_dx') in_flexdx=.true.
+    if(name=='flex_dt') in_flexdt=.true.
+    if(name=='sed_dens') in_flexseddens=.true.
+    if(name=='mantle_dens') in_mantledens=.true.
+    if(name=='flex_rigid') in_flexrigid=.true.
+
+  end subroutine SflexElement_handler
   ! =====================================================================================
 
   subroutine SvdispElement_handler(name)
@@ -202,6 +266,7 @@ contains
     character(len=*),intent(in)::name
 
     if(name=='rain_file') in_RainMFile=.false.
+    if(name=='rain_value') in_RainMVal=.false.
     if(name=='rain_start') in_RainST=.false.
     if(name=='rain_end') in_RainET=.false.
 
@@ -215,6 +280,38 @@ contains
     if (name=='ocean_file') in_SeaFile=.false.
 
   end subroutine EseaElement_handler
+  ! =====================================================================================
+
+  subroutine EiceElement_handler(name)
+
+    character(len=*),intent(in)::name
+
+    if(name=='ice_dx') in_icedx=.false.
+    if(name=='ice_dt') in_icedt=.false.
+    if(name=='gauss_kernel') in_kernel=.false.
+    if(name=='deformCst') in_icedeform=.false.
+    if(name=='slideCst') in_iceslide=.false.
+    if(name=='slideZ_ELA') in_iceZsld=.false.
+    if(name=='ice_Tstep') in_iceTstep=.false.
+    if(name=='ELA_file') in_ELAfile=.false.
+    if(name=='melt1_ELA') in_m1=.false.
+    if(name=='melt2_ELA') in_m2=.false.
+    if(name=='ice_ero') in_iceero=.false.
+
+  end subroutine EiceElement_handler
+  ! =====================================================================================
+
+  subroutine EflexElement_handler(name)
+
+    character(len=*),intent(in)::name
+
+    if(name=='flex_dx') in_flexdx=.false.
+    if(name=='flex_dt') in_flexdt=.false.
+    if(name=='sed_dens') in_flexseddens=.false.
+    if(name=='mantle_dens') in_mantledens=.false.
+    if(name=='flex_rigid') in_flexrigid=.false.
+
+  end subroutine EflexElement_handler
   ! =====================================================================================
 
   subroutine EvdispElement_handler(name)
@@ -246,6 +343,8 @@ contains
     if(in_RainNb)then
       call rts(chars,rain_event)
       allocate(frainmap(rain_event))
+      allocate(frainval(rain_event))
+      frainval=-1
       allocate(rain_tend(rain_event))
       allocate(rain_tstart(rain_event))
     endif
@@ -259,6 +358,9 @@ contains
 
     if(in_RainMFile)then
       frainmap(rainn)=chars
+    endif
+    if(in_RainMVal)then
+      call rts(chars,frainval(rainn))
     endif
     if(in_RainST) then
       call rts(chars,rain_tstart(rainn))
@@ -279,7 +381,59 @@ contains
       gsea%sealevel=.true.
     endif
 
-    end subroutine sea_characters_handler
+  end subroutine sea_characters_handler
+  ! =====================================================================================
+
+  subroutine ice_characters_handler(chars)
+
+    character(len=*),intent(in)::chars
+
+    if(in_icedx)then
+      call rts(chars,ice_dx)
+    elseif(in_icedt)then
+      call rts(chars,ice_dt)
+    elseif(in_kernel)then
+      call rts(chars,gausskernelSize)
+    elseif(in_icedeform)then
+      call rts(chars,ice_deform)
+    elseif(in_iceslide)then
+      call rts(chars,ice_slide)
+    elseif(in_iceZsld)then
+      call rts(chars,ice_Zsld)
+    elseif(in_iceTstep)then
+      call rts(chars,ice_Tstep)
+    elseif(in_ELAfile)then
+      elafile=chars
+      gela%ela=.true.
+    elseif(in_m1)then
+      call rts(chars,ice_m1)
+    elseif(in_m2)then
+      call rts(chars,ice_m2)
+    elseif(in_iceero)then
+      call rts(chars,IceEro)
+    endif
+
+  end subroutine ice_characters_handler
+  ! =====================================================================================
+
+  subroutine flex_characters_handler(chars)
+
+    character(len=*),intent(in)::chars
+
+    if(in_flexdx)then
+      flexure=.true.
+      call rts(chars,flex_dx)
+    elseif(in_flexdt)then
+      call rts(chars,flex_dt)
+    elseif(in_flexseddens)then
+      call rts(chars,mean_sediment_density)
+    elseif(in_mantledens)then
+      call rts(chars,mean_mantle_density)
+    elseif(in_flexrigid)then
+      call rts(chars,flex_rigid)
+    endif
+
+  end subroutine flex_characters_handler
   ! =====================================================================================
 
   subroutine vdisp_characters_handler(chars)
@@ -317,6 +471,7 @@ contains
   subroutine forces_parser
 
     type(xml_t)::xf
+    real(kind=8)::temp
 
     disp3d=.false.
     rainn=0
@@ -326,6 +481,18 @@ contains
     gsea%sealevel=.false.
     gsea%actual_sea=0.
     disp%mindist=0.0
+    gausskernelSize=2
+    ice_dx=0.0
+    gela%ela=.false.
+    gela%actual_ela=2000.
+    ice_m1=0.01
+    ice_m2=0.01
+    ice_dt=0.1
+    ice_Tstep=0.
+    ice_Zsld=-200.
+    IceEro=0.001
+    flex_dx=0.0
+    flexure=.false.
 
     ! Open file
     call open_xml_file(xf,xmlfile,rc)
@@ -346,6 +513,23 @@ contains
     call close_xml_t(xf)
 
     if(gsea%sealevel) call read_sealevel_file
+    if(gela%ela) call read_ELA_file
+    if(ice_m1<ice_m2)then
+      temp=ice_m1
+      ice_m1=ice_m2
+      ice_m2=temp
+    endif
+    if(ice_dx>0.)then
+      cpl3_time=time_start
+    else
+      cpl3_time=time_end+1000.0
+    endif
+
+    if(flexure)then
+      cpl4_time=time_start
+    else
+      cpl4_time=time_end+1000.0
+    endif
 
   end subroutine forces_parser
   ! =====================================================================================

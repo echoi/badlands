@@ -46,6 +46,7 @@ module external_forces
   integer::rain_event
 
   ! Rain event files
+  real(kind=8),dimension(:),allocatable::frainval
   character(len=128),dimension(:),allocatable::frainmap
 
   ! Rain event starting and ending time
@@ -53,6 +54,45 @@ module external_forces
 
   ! Precipitation
   real(kind=8),dimension(:),allocatable::precipitation
+
+  ! ELA (equilibrium line altitude) fluctuation file
+  character(len=128)::elafile
+
+  !> ELA fluctuations type
+  type ela_fluc
+    ! Flag for ELA fluctuations
+    logical::ela
+    ! Number of ELA events
+    integer::event
+    ! Old ELA value
+    real(kind=8)::last_ela
+    ! Actual ELA value
+    real(kind=8)::actual_ela
+  end type ela_fluc
+  type(ela_fluc)::gela
+
+  ! ELA data
+  real(kind=8),dimension(:,:),allocatable::elaval
+
+  ! Ice flow velocity
+  real(kind=8),dimension(:),allocatable::ice_V
+
+  ! Ice flow thickness
+  real(kind=8),dimension(:),allocatable::ice_H
+
+  !> ELA parameters
+  type ela_par
+    ! Lower ELA
+    real(kind=8)::ela1
+    ! Upper ELA
+    real(kind=8)::ela2
+    ! Lower ELA time
+    real(kind=8)::time1
+    ! Upper ELA time
+    real(kind=8)::time2
+    ! Simulation current time
+    real(kind=8)::tsim
+  end type ela_par
 
   ! Sea-level fluctuation file
   character(len=128)::seafile
@@ -113,10 +153,18 @@ module external_forces
 
   ! Regular grid field arrays
   real(kind=8),dimension(:),allocatable::rtectoZ,rvertDisp,rainVal,rhxDisp,rhyDisp
+  real(kind=8),dimension(:),allocatable::rsedthick,rsedlastthick
+
   real(kind=8),dimension(:,:),allocatable::rDisp
 
   ! Vertical displacement rate on unstructured grid
   real(kind=8),dimension(:),allocatable::tvertDisp
+
+  ! Flexural isostasy rate on unstructured grid
+  real(kind=8),dimension(:),allocatable::tflex
+
+  ! Sedimnt thickness on unstructured grid
+  real(kind=8),dimension(:),allocatable::sedthick,lastsedthick
 
 contains
 
@@ -219,6 +267,105 @@ contains
     slinterpol=slinterpol*(sl_param%sea2-sl_param%sea1)+sl_param%sea1
 
   end function sealvl_interpolation
+  ! =====================================================================================
+
+  subroutine read_ELA_file
+
+    integer::iu,nbela,k,i,i2,ios
+    
+    character(len=128)::line
+
+    iu=42
+    open(iu,file=elafile,status="old",action="read",iostat=rc)
+    if(rc/=0)then
+      if(pet_id==0)print*,'ERROR: failed to open ELA file'
+      call mpi_finalize(rc)
+    endif
+
+    ! Determine total number of ELA records
+    nbela=0
+    do 
+      read(iu,*,iostat=rc,end=30)line
+       nbela=nbela+1
+    enddo 
+30 continue    
+    rewind(iu)
+
+    ! Define the number of events and allocate array
+    gela%event=nbela
+    if(allocated(elaval)) deallocate(elaval)
+    allocate(elaval(2,nbela))
+    ! Read ELA
+    do k=1,gela%event
+      read(iu,'(a128)',iostat=ios,end=60)line
+      i2=len_trim(line)
+      if(line(i2:i2)==char(13))then
+        i2=i2-1
+      endif
+      read(line(1:i2),*,iostat=ios)(elaval(i,k),i=1,2)
+      if(ios/=0)then
+        if(pet_id==0)print*,'ERROR: reading ELA file at line:',k
+        call mpi_finalize(rc)
+      endif
+      if(k>1)then
+        if(elaval(1,k)<=elaval(1,k-1))then
+          if(pet_id==0)print*,'ERROR: in ELA file value at line',k
+          if(pet_id==0)print*,'the time is not defined in increasing order'
+          call mpi_finalize(rc)
+        endif
+      endif
+    enddo
+60 close(iu)
+
+    gela%last_ela=2000.0
+    gela%actual_ela=2000.0
+
+    ! Update the ELA value
+    call ELA_flux
+
+  end subroutine read_ELA_file
+  ! =====================================================================================
+
+  subroutine ELA_flux
+
+    integer::i
+    type(ela_par)::e_param
+
+    gela%last_ela=gela%actual_ela
+    i=1
+    ! Find time for the considered event
+    do
+      if(i>gela%event)exit
+      if(simulation_time<elaval(1,i))exit
+      e_param%time1=elaval(1,i)
+      e_param%ela1=elaval(2,i)
+      i=i+1
+    enddo
+
+    ! Linear interpolation of ELA based on current time
+    if(i<=gela%event)then
+      e_param%time2=elaval(1,i)
+      e_param%ela2=elaval(2,i)
+      e_param%tsim=simulation_time
+      gela%actual_ela=ELA_interpolation(e_param)
+    ! If event greater than max defined allocate with last value
+    else
+      gela%actual_ela=e_param%ela1
+      e_param%time2=elaval(1,i-1)
+    endif
+
+  end subroutine ELA_flux
+  ! =====================================================================================
+  
+  function ELA_interpolation(e_param) result(einterpol)
+
+    type(ela_par)::e_param
+    real(kind=8)::einterpol
+
+    einterpol=(e_param%tsim-e_param%time1)/(e_param%time2-e_param%time1)
+    einterpol=einterpol*(e_param%ela2-e_param%ela1)+e_param%ela1
+
+  end function ELA_interpolation
   ! =====================================================================================
 
 end module external_forces

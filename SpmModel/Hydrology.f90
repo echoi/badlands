@@ -485,6 +485,38 @@ contains
   end subroutine DeriveTrianglePlanes
   ! =====================================================================================
 
+  subroutine DeriveTrianglePlanesSed(x,y,id1,id2,id3,sh)
+
+    integer::id1,id2,id3
+    real(kind=8)::s,x,y,sh
+
+    real(kind=8),dimension(3)::d1,d2,n
+    real(kind=8),dimension(4)::plane
+
+    d1(1)=tcoordX(id2)-tcoordX(id1)
+    d1(2)=tcoordY(id2)-tcoordY(id1)
+    d1(3)=sedthick(id2)-sedthick(id1)
+
+    d2(1)=tcoordX(id3)-tcoordX(id1)
+    d2(2)=tcoordY(id3)-tcoordY(id1)
+    d2(3)=sedthick(id3)-sedthick(id1)
+
+    n(1)=d2(2)*d1(3)-d2(3)*d1(2)
+    n(2)=d2(3)*d1(1)-d2(1)*d1(3)
+    n(3)=d2(1)*d1(2)-d2(2)*d1(1)
+
+    s=1.0/sqrt(n(1)*n(1)+n(2)*n(2)+n(3)*n(3))
+
+    plane(1)=n(1)*s
+    plane(2)=n(2)*s
+    plane(3)=n(3)*s
+    plane(4)= -(plane(1)*tcoordX(id1)+plane(2)*tcoordY(id1)+plane(3)*sedthick(id1))
+
+    sh=-(plane(1)*x+plane(2)*y+plane(4))/plane(3)
+
+  end subroutine DeriveTrianglePlanesSed
+  ! =====================================================================================
+
   subroutine DeriveTrianglePlanes2(xy,xa,ya,za,z)
 
     real(kind=8),dimension(2)::xy

@@ -41,6 +41,7 @@ module outspm_surface
   use FoX_wxml
   use hydroUtil
   use hydrology
+  use external_forces
   
   implicit none
 
@@ -54,9 +55,9 @@ contains
 
     logical::compression
 
-    integer::id,i,k,p,rank,iter,totnodes,totelems,ierr
+    integer::id,i,j,k,p,rank,iter,totnodes,totelems,ierr
     integer,dimension(:),allocatable::connect
-    real(kind=8),dimension(:),allocatable::nodes,facc,dz,rego,cID,nID,sl
+    real(kind=8),dimension(:),allocatable::nodes,facc,dz,cumdz,rego,cID,nID,sl,coldU,coldH,sedflex
 
     character(len=128)::text,file
 
@@ -83,12 +84,17 @@ contains
 
     allocate(nodes(3*totnodes))
     allocate(dz(totnodes))
+    allocate(cumdz(totnodes))
     allocate(rego(totnodes))
     allocate(facc(totnodes))
     allocate(cID(totnodes))
     allocate(nID(totnodes))
     allocate(sl(totnodes))
     allocate(connect(3*totelems))
+    if(ice_dx>0.)then
+      allocate(coldU(totnodes))
+      allocate(coldH(totnodes))
+    endif
 
     ! Create nodes arrays
     id=1
@@ -107,15 +113,32 @@ contains
         rego(k)=0.0 
        else
         facc(k)=discharge(i)
-        dz(k)=spmZ(i)-newZ(i)-cumDisp(k)
         if(watercell(i)<0.)then
-            rego(k)=0. !spmH(i)
+            rego(k)=0. 
         else
-            rego(k)=watercell(i) !spmH(i)
+            rego(k)=watercell(i) 
         endif
        endif
-       cID(k)=real(subcatchmentID(i))
-       sl(k)=gsea%actual_sea
+       if(tcoordX(i)>minx.and.tcoordX(i)<maxx &
+          .and.tcoordY(i)>miny.and.tcoordY(i)<maxy)then
+          cumdz(k)=sedthick(i)-100000.
+          dz(k)=sedthick(i)-lastsedthick(i)
+       else
+          cumdz(k)=0.
+          dz(k)=0.0
+       endif
+       cID(k)=tflex(i) !real(subcatchmentID(i))
+       sl(k)=gsea%actual_sea !tflex(i)
+       if(ice_dx>0.)then
+        if(tcoordX(i)>minx.and.tcoordX(i)<maxx &
+            .and.tcoordY(i)>miny.and.tcoordY(i)<maxy)then
+          coldU(k)=ice_V(i)
+          coldH(k)=ice_H(i)
+        else
+          coldU(k)=0.0
+          coldH(k)=0.0
+        endif
+       endif
        nID(k)=real(i)
        id=id+3
     enddo
@@ -242,6 +265,30 @@ contains
     call h5dclose_f(dset_id,ierr)
     call h5sclose_f(filespace,ierr)
 
+    ! Cumulative change
+    dims(1)=1
+    dims(2)=totnodes
+    rank=2
+    call h5screate_simple_f(rank,dims,filespace,ierr)
+    text=''
+    text="/cumdz"
+    
+    ! Create property list for collective dataset write
+    call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
+    call h5pset_deflate_f(plist_id,9,ierr)
+    call h5pset_chunk_f(plist_id,rank,dims,ierr)
+
+    ! Create the dataset with default properties
+    call h5dcreate_f(file_id,trim(text),h5t_native_double,filespace,dset_id,ierr,plist_id)
+
+    ! Write the dataset collectively
+    call h5dwrite_f(dset_id,h5t_native_double,cumdz,dims,ierr)
+    call h5pclose_f(plist_id,ierr)
+
+    ! Close the dataset
+    call h5dclose_f(dset_id,ierr)
+    call h5sclose_f(filespace,ierr)
+
     ! Elevation change
     dims(1)=1
     dims(2)=totnodes
@@ -265,6 +312,41 @@ contains
     ! Close the dataset
     call h5dclose_f(dset_id,ierr)
     call h5sclose_f(filespace,ierr)
+
+    ! Flexural thickness
+    if(flexure)then
+      dims(1)=1
+      dims(2)=(nbfx+2)*(nbfy+2)
+      rank=2
+      call h5screate_simple_f(rank,dims,filespace,ierr)
+      text=''
+      text="/flex"
+      allocate(sedflex(dims(2)))
+      p=0
+      do j=1,nbfy+2
+        do i=1,nbfx+2
+          p=p+1
+          sedflex(p)=prevload(i,j)
+        enddo
+      enddo
+
+      ! Create property list for collective dataset write
+      call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
+      call h5pset_deflate_f(plist_id,9,ierr)
+      call h5pset_chunk_f(plist_id,rank,dims,ierr)
+
+      ! Create the dataset with default properties
+      call h5dcreate_f(file_id,trim(text),h5t_native_double,filespace,dset_id,ierr,plist_id)
+
+      ! Write the dataset collectively
+      call h5dwrite_f(dset_id,h5t_native_double,sedflex,dims,ierr)
+      call h5pclose_f(plist_id,ierr)
+
+      ! Close the dataset
+      call h5dclose_f(dset_id,ierr)
+      call h5sclose_f(filespace,ierr)
+    
+    endif
 
     ! Catchment ID
     dims(1)=1
@@ -314,6 +396,56 @@ contains
     call h5dclose_f(dset_id,ierr)
     call h5sclose_f(filespace,ierr)
 
+    if(ice_dx>0.)then
+      ! Ice thickness
+      dims(1)=1
+      dims(2)=totnodes
+      rank=2
+      call h5screate_simple_f(rank,dims,filespace,ierr)
+      text=''
+      text="/iceH"
+      
+      ! Create property list for collective dataset write
+      call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
+      call h5pset_deflate_f(plist_id,9,ierr)
+      call h5pset_chunk_f(plist_id,rank,dims,ierr)
+
+      ! Create the dataset with default properties
+      call h5dcreate_f(file_id,trim(text),h5t_native_double,filespace,dset_id,ierr,plist_id)
+
+      ! Write the dataset collectively
+      call h5dwrite_f(dset_id,h5t_native_double,coldH,dims,ierr)
+      call h5pclose_f(plist_id,ierr)
+
+      ! Close the dataset
+      call h5dclose_f(dset_id,ierr)
+      call h5sclose_f(filespace,ierr)
+
+      ! Ice flow
+      dims(1)=1
+      dims(2)=totnodes
+      rank=2
+      call h5screate_simple_f(rank,dims,filespace,ierr)
+      text=''
+      text="/iceU"
+      
+      ! Create property list for collective dataset write
+      call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
+      call h5pset_deflate_f(plist_id,9,ierr)
+      call h5pset_chunk_f(plist_id,rank,dims,ierr)
+
+      ! Create the dataset with default properties
+      call h5dcreate_f(file_id,trim(text),h5t_native_double,filespace,dset_id,ierr,plist_id)
+
+      ! Write the dataset collectively
+      call h5dwrite_f(dset_id,h5t_native_double,coldU,dims,ierr)
+      call h5pclose_f(plist_id,ierr)
+
+      ! Close the dataset
+      call h5dclose_f(dset_id,ierr)
+      call h5sclose_f(filespace,ierr)
+    endif
+    
     ! Regolith depth
     if(regoProd>0.)then
         dims(1)=1
@@ -359,7 +491,7 @@ contains
     integer::ierr
     integer::iter,totnodes,totelems,k
     character(len=128)::str,stg,filename,filename1,filename2,file,filename3
-    character(len=128)::filename4,filename5,filename6
+    character(len=128)::filename4,filename5,filename6,filename7,filename8,filename9
 
     call spm_hdf5(iter)
 
@@ -416,6 +548,9 @@ contains
             filename4=filename
             filename5=filename
             filename6=filename
+            filename7=filename
+            filename8=filename
+            filename9=filename
             str=':/connectivity'
             call append_str(filename,str)
             str=':/vertices'
@@ -430,6 +565,12 @@ contains
             call append_str(filename5,str)
             str=':/sl'
             call append_str(filename6,str)
+            str=':/iceH'
+            call append_str(filename7,str)
+            str=':/iceU'
+            call append_str(filename8,str)
+            str=':/cumdz'
+            call append_str(filename9,str)
 
             ! Block begin
             call xml_NewElement(xf,"Grid")
@@ -486,6 +627,23 @@ contains
             call xml_EndElement(xf,"DataItem")
             call xml_EndElement(xf,"Attribute") 
 
+            ! Cumulative elevation change
+            call xml_NewElement(xf,"Attribute")
+            call xml_AddAttribute(xf,"Type","Scalar")
+            call xml_AddAttribute(xf,"Center","Node")
+            call xml_AddAttribute(xf,"Name","Cumulative elevation change")
+            call xml_NewElement(xf,"DataItem")
+            call xml_AddAttribute(xf,"Format","HDF")
+            call xml_AddAttribute(xf,"NumberType","Float")
+            call xml_AddAttribute(xf,"Precision","4")
+            str=' '
+            call append_nb2(str,totnodes)
+            call append_nb2(str,1)
+            call xml_AddAttribute(xf,"Dimensions",trim(str))
+            call xml_AddCharacters(xf,trim(filename9))
+            call xml_EndElement(xf,"DataItem")
+            call xml_EndElement(xf,"Attribute") 
+
             ! Elevation change
             call xml_NewElement(xf,"Attribute")
             call xml_AddAttribute(xf,"Type","Scalar")
@@ -537,8 +695,44 @@ contains
             call xml_EndElement(xf,"DataItem")
             call xml_EndElement(xf,"Attribute") 
 
+            if(ice_dx>0.)then
+              ! Ice thickness
+              call xml_NewElement(xf,"Attribute")
+              call xml_AddAttribute(xf,"Type","Scalar")
+              call xml_AddAttribute(xf,"Center","Node")
+              call xml_AddAttribute(xf,"Name","Ice thickness")
+              call xml_NewElement(xf,"DataItem")
+              call xml_AddAttribute(xf,"Format","HDF")
+              call xml_AddAttribute(xf,"NumberType","Float")
+              call xml_AddAttribute(xf,"Precision","4")
+              str=' '
+              call append_nb2(str,totnodes)
+              call append_nb2(str,1)
+              call xml_AddAttribute(xf,"Dimensions",trim(str))
+              call xml_AddCharacters(xf,trim(filename7))
+              call xml_EndElement(xf,"DataItem")
+              call xml_EndElement(xf,"Attribute") 
+
+              ! Ice flow velocity
+              call xml_NewElement(xf,"Attribute")
+              call xml_AddAttribute(xf,"Type","Scalar")
+              call xml_AddAttribute(xf,"Center","Node")
+              call xml_AddAttribute(xf,"Name","Ice flow velocity")
+              call xml_NewElement(xf,"DataItem")
+              call xml_AddAttribute(xf,"Format","HDF")
+              call xml_AddAttribute(xf,"NumberType","Float")
+              call xml_AddAttribute(xf,"Precision","4")
+              str=' '
+              call append_nb2(str,totnodes)
+              call append_nb2(str,1)
+              call xml_AddAttribute(xf,"Dimensions",trim(str))
+              call xml_AddCharacters(xf,trim(filename8))
+              call xml_EndElement(xf,"DataItem")
+              call xml_EndElement(xf,"Attribute") 
+            endif
+
             ! Regolith depth
-                if(regoProd>0.)then
+            if(regoProd>0.)then
                 call xml_NewElement(xf,"Attribute")
                 call xml_AddAttribute(xf,"Type","Scalar")
                 call xml_AddAttribute(xf,"Center","Node")

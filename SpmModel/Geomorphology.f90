@@ -51,6 +51,7 @@ module geomorpho
   integer::iter,idiff
 
   real(kind=8)::cpl_time,max_time
+  real(kind=8),dimension(:),allocatable::sedchange
 !   real(kind=8)::time1,time2,tt1,tt2
 
 contains
@@ -68,7 +69,9 @@ contains
     if(.not.allocated(spmH)) allocate(spmH(dnodes))
     if(.not.allocated(Qs_in)) allocate(Qs_in(dnodes))
     if(.not.allocated(cumDisp)) allocate(cumDisp(upartN))
+    if(.not.allocated(sedchange)) allocate(sedchange(dnodes))
     if(.not.allocated(change_local)) allocate(change_local(dnodes))
+    if(.not.allocated(lastsedthick)) allocate(lastsedthick(dnodes))
    
     ! Define paramaters
     if(simulation_time==time_start.or.update3d)then
@@ -77,6 +80,7 @@ contains
       if(stream_ero>0.) spmH=bed_sed_interface
       spmZ=tcoordZ
       cumDisp=0.
+      lastsedthick=sedthick
       CFL_diffusion=display_interval
       idiff=0
       if(simulation_time==time_start) time_step=0. 
@@ -85,6 +89,8 @@ contains
     endif
 
     cpl_time=min(cpl1_time,cpl2_time)
+    cpl_time=min(cpl_time,cpl3_time)
+    cpl_time=min(cpl_time,cpl4_time)
     cpl_time=min(cpl_time,time_end)
 
     do while(simulation_time<cpl_time+0.001)
@@ -140,6 +146,7 @@ contains
         time_display=time_display+display_interval
         iter=iter+1
         newZ=spmZ
+        lastsedthick=sedthick
         cumDisp=0.
       endif
 !       call mpi_barrier(badlands_world,rc)
@@ -162,10 +169,11 @@ contains
 
       ! Merge local geomorphic evolution      
       call mpi_allreduce(nZ,spmZ,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
+      call mpi_allreduce(sedchange,sedthick,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
       if(stream_ero>0..or.regoProd>0.) &
         call mpi_allreduce(nH,spmH,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
       update3d=.false.
-      stop
+!       stop
 !       call mpi_barrier(badlands_world,rc)
 !       tt2=mpi_wtime()
 !       if(pet_id==0)print*,'geomorpho',tt2-tt1
@@ -256,7 +264,7 @@ contains
     Qs_in=0.0
     nZ=-1.e6
     if(stream_ero>0..or.regoProd>0.) nH=-1.e6
-    change_local=-1.e6
+    sedchange=-1.e6
     r=0
     do lid=localNodes,1,-1
       k=localNodesGID(lid)
@@ -407,7 +415,6 @@ contains
     do lid=1,localNodes
       id=localNodesGID(lid)
       k=stackOrder(id) 
-      rcv=receivers(k)
       if(voronoiCell(k)%border==0)then 
         if(tcoordX(k)==minx.and.bounds(3)==0)change_local(k)=0. 
         if(tcoordX(k)==maxx.and.bounds(4)==0)change_local(k)=0.
@@ -426,7 +433,9 @@ contains
         endif
         ! Update surface
         nZ(k)=spmZ(k)+time_step*change_local(k)
-      
+        sedchange(k)=sedthick(k)+time_step*change_local(k)
+      else
+        sedchange(k)=sedthick(k)
       endif
     enddo
 

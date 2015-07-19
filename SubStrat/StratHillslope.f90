@@ -111,23 +111,18 @@ contains
       		n=delaunayVertex(id)%ngbID(p)
       		! Define neighborhood parameters
       		dh=(spmZ(n)-spmZ(id))
-!           if(dh<-active_thick) dh=-active_thick
-!           if(dh>active_thick) dh=active_thick
-          if(dh>=0.)then 
-!             dh=min(dh,alay_dthick(n))
-            diffH=min(dh,diffH)
-      		endif
+          if(dh>=0.) diffH=min(dh,diffH)
           edge=delaunayVertex(id)%voronoi_edge(p)
       		distance=delaunayVertex(id)%distance(p)
       		! Hillslope transport by linear diffusion
-          if(dh>=0.and.alay_dthick(n)>0.0)then
-            frac(1:totgrn)=alay_dsed(n,1:totgrn)/alay_dthick(n)
-          elseif(alay_dthick(id)>0.0)then
-            frac(1:totgrn)=alay_dsed(id,1:totgrn)/alay_dthick(id)
-          elseif(dh>=0..and.alay_dthick(n)==0.0)then
-            frac(1:totgrn)=alay_dsed(id,1:totgrn)/alay_dthick(id)
-          elseif(alay_dthick(id)==0.0)then
-            print*,'Ho NOoooooooO',id,n
+          if(dh>=0.and.alay_thick(n)>0.0)then
+            frac(1:totgrn)=alay_sed(n,1:totgrn)/alay_thick(n)
+          elseif(alay_thick(id)>0.0)then
+            frac(1:totgrn)=alay_sed(id,1:totgrn)/alay_thick(id)
+          elseif(dh>=0..and.alay_thick(n)==0.0)then
+            frac(1:totgrn)=alay_sed(id,1:totgrn)/alay_thick(id)
+          elseif(alay_thick(id)==0.0)then
+            print*,'Issue in multi-size sediment diffusion.',id,n
           endif
           do ks=1,totgrn
         		LDL(ks)=LDL(ks)+edge*dh*frac(ks)/distance
@@ -143,7 +138,7 @@ contains
       diffH=min(watercell(id),diffH)
     endif
     diffH=0.95*diffH
-    
+
     ! Update elevation change for each hillslope diffusion-like process
     if(spmZ(id)<gsea%actual_sea.or.watercell(id)>0.)then
       do ks=1,totgrn

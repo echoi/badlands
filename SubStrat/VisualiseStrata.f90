@@ -53,11 +53,11 @@ contains
 
     logical::compression
 
-    integer::id,idt,gid,k,i,ks,iter,totnodes,ierr,rank
+    integer::id,idt,gid,k,i,ks,p,iter,totnodes,ierr,rank,totelems
     
-    integer,dimension(:),allocatable::layID
+    integer,dimension(:),allocatable::layID,connect
 
-    real(kind=8),dimension(lsnb)::lzh
+    real(kind=8),dimension(upartN)::lzh
     real(kind=8),dimension(:),allocatable::nodes,thick,mz
     real(kind=8),dimension(:,:),allocatable::prop
 
@@ -82,22 +82,25 @@ contains
     call append_str(file,text)
     call addpath1(file)
 
-    totnodes=lsnb*layNb
+    totnodes=upartN*layNb
+    totelems=delemoo*(layNb-1)
     allocate(nodes(3*totnodes))
     allocate(prop(totnodes,totgrn))
     allocate(thick(totnodes))
     allocate(mz(totnodes))
     allocate(layID(totnodes))
+
+    allocate(connect(6*totelems))
   
     ! Create nodes arrays
     id=1 
     idt=1
-    do k=1,lsnb
-       gid=k
-       nodes(id)=lay_coord(gid,1)
-       nodes(id+1)=lay_coord(gid,2)
-       nodes(id+2)=lay_base(gid)
-       lzh(k)=lay_base(gid)
+    do k=1,upartN
+       gid=unodeID(k)
+       nodes(id)=tcoordX(gid)
+       nodes(id+1)=tcoordY(gid)
+       nodes(id+2)=lay_base(k)
+       lzh(k)=lay_base(k)
        thick(idt)=0.0_8
        prop(idt,1:totgrn)=0.0_8
        layID(idt)=0
@@ -105,27 +108,44 @@ contains
        id=id+3
        idt=idt+1
     enddo
-
+    
     do k=1,layNb-1
-      do i=1,lsnb
-        gid=i
-        nodes(id)=lay_coord(gid,1)
-        nodes(id+1)=lay_coord(gid,2)
-        thick(idt)=lay_thick(gid,k)
+      do i=1,upartN
+        gid=unodeID(i)
+        nodes(id)=tcoordX(gid)
+        nodes(id+1)=tcoordY(gid)
+        thick(idt)=lay_thick(i,k)
         nodes(id+2)=lzh(i)+thick(idt)
         lzh(i)=nodes(id+2)
         layID(idt)=k
-!         layID(idt)=delPt(lnID(i))
         mz(idt)=0.0_8
-        if(lay_thick(gid,k)>0.)then
+        if(lay_thick(i,k)>0.)then
             do ks=1,totgrn
-                prop(idt,ks)=lay_sed(gid,k,ks)/lay_thick(gid,k)
+                prop(idt,ks)=lay_sed(i,k,ks)/lay_thick(i,k)
                 mz(idt)=mz(idt)+prop(idt,ks)*sediments(ks)%dia
             enddo
+        else
+            prop(idt,1:totgrn)=0.0
         endif
-!        if(nodes(id)>4800)print*,k,lay_coord(gid,1),lay_coord(gid,2),nodes(id+2)
         id=id+3
         idt=idt+1
+      enddo
+    enddo
+
+    ! Surface - connectivity
+    id=1
+    do k=1,layNb-1
+      do p=1,delemoo
+        i=delemID(p)
+        if(elemtmask(i)==0)then
+          connect(id)=unodeLID(delmt(i,1))+(k-1)*upartN
+          connect(id+1)=unodeLID(delmt(i,2))+(k-1)*upartN
+          connect(id+2)=unodeLID(delmt(i,3))+(k-1)*upartN
+          connect(id+3)=connect(id)+upartN
+          connect(id+4)=connect(id+1)+upartN
+          connect(id+5)=connect(id+2)+upartN
+          id=id+6
+        endif
       enddo
     enddo
 
@@ -137,6 +157,30 @@ contains
     call h5pcreate_f(h5p_file_access_f,plist_id,rc)
     ! Create the file collectively.
     call h5fcreate_f(file,h5f_acc_trunc_f,file_id,rc,access_prp=plist_id)
+
+    dims(1)=6
+    dims(2)=totelems
+    rank=2
+    call h5screate_simple_f(rank,dims,filespace,rc)
+    text=''
+    text="/connectivity"
+
+    ! Create property list for collective dataset write
+    call h5pcreate_f(h5p_dataset_create_f,plist_id,rc)
+    call h5pset_chunk_f(plist_id,rank,dims,rc)
+    call h5pset_deflate_f(plist_id,9,rc)
+    dims(1)=1
+    dims(2)=totelems*6
+
+    ! Create the dataset with default properties
+    call h5dcreate_f(file_id,trim(text),h5t_native_integer,filespace,dset_id,rc,plist_id)
+    
+    ! Write the dataset collectively
+    call h5dwrite_f(dset_id,h5t_native_integer,connect,dims,rc)
+    call h5pclose_f(plist_id,rc)
+    ! Close the dataset
+    call h5dclose_f(dset_id,rc)
+    call h5sclose_f(filespace,rc)
 
     ! The Coordinates - vertices
     dims(1)=3
@@ -250,7 +294,7 @@ contains
     ! Close interface
     call h5close_f(rc)
 
-    deallocate(nodes,prop,thick,mz,layID)
+    deallocate(nodes,prop,thick,mz,layID,connect)
 
     return
 
@@ -260,21 +304,12 @@ contains
   subroutine strata_xmf(iter)
     
     type(xmlf_t)::xf
-    integer::iter,totnodes,k,ks,nX,nY,nbZ,nbX(npets),nbY(npets)
+    integer::iter,totnodes,totelems,k,ks
 
     character(len=128)::str,stg,filename,filename1,filename2,file,filename3
     character(len=128)::filename4,filename5,filename6,txt
 
     call strata_hdf5(iter)
-
-    totnodes=lsnb*layNb
-
-    nX=int((lay_coord(lsnb,1)-lay_coord(1,1))/sdx+1)
-    nY=int((lay_coord(lsnb,2)-lay_coord(1,2))/sdx+1)
-    nbZ=layNb
-        
-    call mpi_gather(nX,1,mpi_integer,nbX,1,mpi_integer,0,badlands_world,rc)
-    call mpi_gather(nY,1,mpi_integer,nbY,1,mpi_integer,0,badlands_world,rc)
 
     if(pet_id==0)then
         fstrata='StratalField'
@@ -304,6 +339,8 @@ contains
         call xml_AddAttribute(xf,"Value",time_display)
         call xml_EndElement(xf,"Time")
         do k=1,npets
+            totnodes=outnode(k)*layNb
+            totelems=outelem(k)*(layNb-1)
             filename=''
             filename=fstrata
             call noblnk(filename)
@@ -321,6 +358,8 @@ contains
             filename4=filename
             filename5=filename
             filename6=filename
+            str=':/connectivity'
+            call append_str(filename,str)
             str=':/vertices'
             call append_str(filename1,str)
             str=':/thick'
@@ -333,20 +372,43 @@ contains
             call append_str(filename5,str)
 
             ! Block begin
+!             call xml_NewElement(xf,"Grid")
+!             str='StratBlock.'
+!             call append_zero(str,iter)
+!             stg='.p'
+!             call append_str(str,stg)
+!             call append_zero(str,k-1)
+!             call xml_AddAttribute(xf,"Name",trim(str))
+!             call xml_NewElement(xf,"Topology")
+!             call xml_AddAttribute(xf,"TopologyType","3DSMesh")
+!             str=' '
+!             call append_nb2(str,nbZ)
+!             call append_nb2(str,nbY(k))
+!             call append_nb2(str,nbX(k))
+!             call xml_AddAttribute(xf,"Dimensions",trim(str))
+!             call xml_EndElement(xf,"Topology")
+
+            ! Block begin
             call xml_NewElement(xf,"Grid")
-            str='StratBlock.'
+            str='SurfBlock.'
             call append_zero(str,iter)
             stg='.p'
             call append_str(str,stg)
             call append_zero(str,k-1)
             call xml_AddAttribute(xf,"Name",trim(str))
             call xml_NewElement(xf,"Topology")
-            call xml_AddAttribute(xf,"TopologyType","3DSMesh")
+            call xml_AddAttribute(xf,"Type","Wedge")
+            call xml_AddAttribute(xf,"NumberOfElements",totelems)
+            call xml_AddAttribute(xf,"BaseOffset","1")
+            call xml_NewElement(xf,"DataItem")
+            call xml_AddAttribute(xf,"Format","HDF")
+            call xml_AddAttribute(xf,"DataType","Int")
             str=' '
-            call append_nb2(str,nbZ)
-            call append_nb2(str,nbY(k))
-            call append_nb2(str,nbX(k))
+            call append_nb2(str,totelems)
+            call append_nb2(str,6)
             call xml_AddAttribute(xf,"Dimensions",trim(str))
+            call xml_AddCharacters(xf,trim(filename))
+            call xml_EndElement(xf,"DataItem")
             call xml_EndElement(xf,"Topology")
 
             ! Geometry
@@ -357,9 +419,7 @@ contains
             call xml_AddAttribute(xf,"NumberType","Float")
             call xml_AddAttribute(xf,"Precision","8")
             str=' '
-            call append_nb2(str,nbX(k))
-            call append_nb2(str,nbY(k))
-            call append_nb2(str,nbZ)
+            call append_nb2(str,totnodes)
             call append_nb2(str,3)
             call xml_AddAttribute(xf,"Dimensions",trim(str))
             call xml_AddCharacters(xf,trim(filename1))
@@ -376,9 +436,8 @@ contains
             call xml_AddAttribute(xf,"NumberType","Float")
             call xml_AddAttribute(xf,"Precision","4")
             str=' '
-            call append_nb2(str,nbX(k))
-            call append_nb2(str,nbY(k))
-            call append_nb2(str,nbZ)
+            call append_nb2(str,totnodes)
+            call append_nb2(str,1)
             call xml_AddAttribute(xf,"Dimensions",trim(str))
             call xml_AddCharacters(xf,trim(filename2))
             call xml_EndElement(xf,"DataItem")

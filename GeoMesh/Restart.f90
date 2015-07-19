@@ -62,7 +62,7 @@ contains
 
     integer::id,i,rank,rpet,localNd,p
 
-    real(kind=8),dimension(:),allocatable::nodes,nID
+    real(kind=8),dimension(:),allocatable::nodes,nID,sedID
     real(kind=8),dimension(:,:),allocatable::prevNd
     real(kind=8)::x,y
 
@@ -115,9 +115,44 @@ contains
         call h5sget_simple_extent_dims_f(d_spc,dims,maxdims,rc)
         allocate(nodes(3*localNd))
         if(rpet==0)then
-            allocate(prevNd((restartPet+1)*localNd,3))
+            allocate(prevNd((restartPet+1)*localNd,4))
         endif
         call h5dread_f(dset_id,h5t_native_double,nodes,dims,rc)
+
+        ! The sediment pile thickness
+        text="/cumdz"
+        call h5dopen_f(file_id,trim(text),dset_id,rc)
+        call h5dget_type_f(dset_id,dtype_id,rc)
+        call h5dget_space_f(dset_id,d_spc,rc)
+        call h5sis_simple_f(d_spc,simple,rc)
+        call h5sget_simple_extent_ndims_f(d_spc,rank,rc)
+        call h5sget_simple_extent_dims_f(d_spc,dims,maxdims,rc)
+        allocate(sedID(dims(1)*dims(2)))
+        call h5dread_f(dset_id,h5t_native_double,sedID,dims,rc)
+
+        ! The last sediment pile thickness for flexure
+        if(flexure)then
+          text="/flex"
+          call h5dopen_f(file_id,trim(text),dset_id,rc)
+          call h5dget_type_f(dset_id,dtype_id,rc)
+          call h5dget_space_f(dset_id,d_spc,rc)
+          call h5sis_simple_f(d_spc,simple,rc)
+          call h5sget_simple_extent_ndims_f(d_spc,rank,rc)
+          call h5sget_simple_extent_dims_f(d_spc,dims,maxdims,rc)
+          allocate(sedloader(dims(1)*dims(2)))
+          call h5dread_f(dset_id,h5t_native_double,sedloader,dims,rc)
+        endif
+
+!         text="/flex"
+!         call h5dopen_f(file_id,trim(text),dset_id,rc)
+!         call h5dget_type_f(dset_id,dtype_id,rc)
+!         call h5dget_space_f(dset_id,d_spc,rc)
+!         call h5sis_simple_f(d_spc,simple,rc)
+!         call h5sget_simple_extent_ndims_f(d_spc,rank,rc)
+!         call h5sget_simple_extent_dims_f(d_spc,dims,maxdims,rc)
+!         allocate(sedlID(dims(1)*dims(2)))
+!         call h5dread_f(dset_id,h5t_native_double,sedlID,dims,rc)
+
         id=1
         do p=1,localNd
             i=int(nID(p))
@@ -125,6 +160,7 @@ contains
             prevNd(i,1)=nodes(id)
             prevNd(i,2)=nodes(id+1)
             prevNd(i,3)=nodes(id+2)
+            prevNd(i,4)=sedID(p)
             id=id+3
         enddo
 
@@ -138,19 +174,19 @@ contains
         ! Close interface
         call h5close_f(rc)
 
-        deallocate(nodes,nID)
+        deallocate(nodes,nID,sedID)
     enddo
 
     if(allocated(rstXYZ)) deallocate(rstXYZ)
     if(allocated(newcoord)) deallocate(newcoord)
-    allocate(rstXYZ(rstnodes,3))
+    allocate(rstXYZ(rstnodes,4))
     allocate(newcoord(rstnodes,2))
 
     newnds=0
     do id=1,rstnodes
         x=prevNd(id,1)
         y=prevNd(id,2)
-        rstXYZ(id,1:3)=prevNd(id,1:3)
+        rstXYZ(id,1:4)=prevNd(id,1:4)
         if(x>minx+dx.and.x<maxx-dx.and.y>miny+dx.and.y<maxy-dx)then
             newnds=newnds+1
             newcoord(newnds,1)=x
@@ -187,6 +223,13 @@ contains
             txy(2)=tcoordY(k)
             call kdtree2_n_nearest(Ftree,txy,nn=1,results=FRslt)
             tcoordZ(k)=rstXYZ(FRslt(1)%idx,3)
+            sedthick(k)=rstXYZ(FRslt(1)%idx,4)
+            if(tcoordX(k)>minx.and.tcoordX(k)<maxx &
+              .and.tcoordY(k)>miny.and.tcoordY(k)<maxy)then
+              sedthick(k)=sedthick(k)+100000.
+            else
+              sedthick(k)=100000.
+            endif
         enddo
         call kdtree2_destroy(Ftree)    
     endif
@@ -228,7 +271,7 @@ contains
 
     integer::id,i,rank,rpet,localNd,p
 
-    real(kind=8),dimension(:),allocatable::nodes,nID
+    real(kind=8),dimension(:),allocatable::nodes,nID,sedID,sedlID
 
     character(len=128)::text
 
@@ -278,6 +321,31 @@ contains
         allocate(nodes(3*localNd))
 
         call h5dread_f(dset_id,h5t_native_double,nodes,dims,rc)
+
+        ! The sediment pile thickness
+        text="/cumdz"
+        call h5dopen_f(file_id,trim(text),dset_id,rc)
+        call h5dget_type_f(dset_id,dtype_id,rc)
+        call h5dget_space_f(dset_id,d_spc,rc)
+        call h5sis_simple_f(d_spc,simple,rc)
+        call h5sget_simple_extent_ndims_f(d_spc,rank,rc)
+        call h5sget_simple_extent_dims_f(d_spc,dims,maxdims,rc)
+        allocate(sedID(dims(1)*dims(2)))
+        call h5dread_f(dset_id,h5t_native_double,sedID,dims,rc)
+
+        ! The last sediment pile thickness for flexure
+        if(flexure)then
+          text="/flex"
+          call h5dopen_f(file_id,trim(text),dset_id,rc)
+          call h5dget_type_f(dset_id,dtype_id,rc)
+          call h5dget_space_f(dset_id,d_spc,rc)
+          call h5sis_simple_f(d_spc,simple,rc)
+          call h5sget_simple_extent_ndims_f(d_spc,rank,rc)
+          call h5sget_simple_extent_dims_f(d_spc,dims,maxdims,rc)
+          allocate(sedloader(dims(1)*dims(2)))
+          call h5dread_f(dset_id,h5t_native_double,sedloader,dims,rc)
+        endif
+
         id=1
         do p=1,localNd
             i=int(nID(p))
@@ -286,6 +354,12 @@ contains
                 call mpi_finalize(rc)
             endif
             tcoordZ(i)=nodes(id+2)
+            if(tcoordX(i)>minx.and.tcoordX(i)<maxx &
+              .and.tcoordY(i)>miny.and.tcoordY(i)<maxy)then
+              sedthick(i)=sedID(p)+100000.
+            else
+              sedthick(i)=100000.
+            endif
             id=id+3
         enddo
 
@@ -299,7 +373,7 @@ contains
         ! Close interface
         call h5close_f(rc)
 
-        deallocate(nodes,nID)
+        deallocate(nodes,nID,sedlID,sedID)
     enddo
 
     if(allocated(bilinearX)) deallocate(bilinearX)

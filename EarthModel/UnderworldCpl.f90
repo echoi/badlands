@@ -77,7 +77,7 @@ contains
           if(n>1.and.n<nx+1.and.k>1.and.k<ny+2)then
             write(iunit,'(f12.3,1x)',advance='no')rcoordZ(m)
           elseif(n==nx+1.and.k>1.and.k<ny+2)then
-            write(iunit,'(f12.3,1x)')rtectoZ(m)
+            write(iunit,'(f12.3,1x)')rcoordZ(m)
           endif
         enddo
       enddo

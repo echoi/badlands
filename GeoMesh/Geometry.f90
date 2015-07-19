@@ -43,7 +43,6 @@ module geomesh
   use topology
   use outsurf
   use meshPartition
-  use parallel
   use m_mrgrnk
   use orderpack
   use restart
@@ -186,7 +185,10 @@ contains
     if(allocated(rainVal))deallocate(rainVal)
     if(allocated(rDisp))deallocate(rDisp)
     if(allocated(rvertDisp))deallocate(rvertDisp)
+    if(allocated(rsedthick))deallocate(rsedthick)
+    if(allocated(rsedlastthick))deallocate(rsedlastthick)
     allocate(rcoordX(bnbnodes),rcoordY(bnbnodes),rcoordZ(bnbnodes),rainVal(bnbnodes))
+    allocate(rsedthick(bnbnodes),rsedlastthick(bnbnodes))
     if(.not.disp3d)then
       allocate(rtectoZ(bnbnodes),rDisp(bnbnodes,1),rvertDisp(bnbnodes))
     else
@@ -524,11 +526,19 @@ contains
     if(allocated(tcoordY)) deallocate(tcoordY)
     if(allocated(tcoordZ)) deallocate(tcoordZ)
     if(allocated(tvertDisp)) deallocate(tvertDisp)
+    if(allocated(tflex)) deallocate(tflex)
+    if(allocated(sedthick)) deallocate(sedthick)
+    if(allocated(ice_H)) deallocate(ice_H)
+    if(allocated(ice_V)) deallocate(ice_V)
     if(allocated(precipitation)) deallocate(precipitation)
     allocate(tcoordX(dnodes),tcoordY(dnodes),tcoordZ(dnodes),tbound(dnodes))
-    allocate(precipitation(dnodes),tvertDisp(dnodes))
+    allocate(sedthick(dnodes))
+    allocate(precipitation(dnodes),tvertDisp(dnodes),tflex(dnodes),ice_V(dnodes),ice_H(dnodes))
     tcoordZ=0.0
+    tflex=0.0
     tvertDisp=0.0
+    ice_H=0.0
+    ice_V=0.0
     if(rain_event==0) precipitation=1.0
     allocate(delaunayVertex(dnodes))
     do n=1,dnodes
@@ -1390,6 +1400,10 @@ contains
     if(allocated(tcoordY))deallocate(tcoordY)
     if(allocated(tcoordZ))deallocate(tcoordZ)
     if(allocated(tvertDisp))deallocate(tvertDisp)
+    if(allocated(tflex))deallocate(tflex)
+    if(allocated(sedthick))deallocate(sedthick)
+    if(allocated(ice_V))deallocate(ice_V)
+    if(allocated(ice_H))deallocate(ice_H)
     if(allocated(vcoordX))deallocate(vcoordX)
     if(allocated(vcoordY))deallocate(vcoordY)
     if(allocated(refine_grid))deallocate(refine_grid)
@@ -1421,8 +1435,11 @@ contains
     if(allocated(rhyDisp))deallocate(rhyDisp)
     if(allocated(rhxDisp))deallocate(rhxDisp)
     if(allocated(rvertDisp))deallocate(rvertDisp)
+    if(allocated(rsedthick))deallocate(rsedthick)
+    if(allocated(rsedlastthick))deallocate(rsedlastthick)
     if(allocated(rainVal))deallocate(rainVal)
     if(allocated(frainmap))deallocate(frainmap)
+    if(allocated(frainval))deallocate(frainval)
     if(allocated(rain_tstart))deallocate(rain_tstart)
     if(allocated(rain_tend))deallocate(rain_tend)
     if(allocated(fgeodyn))deallocate(fgeodyn)
@@ -1432,6 +1449,7 @@ contains
     if(allocated(vdisp_fill))deallocate(vdisp_fill)
     if(allocated(relmt))deallocate(relmt)
     if(allocated(sealvl))deallocate(sealvl)
+    if(allocated(elaval))deallocate(elaval)
 
   end subroutine RegularGridDestroy
   ! =====================================================================================  
