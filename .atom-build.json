@@ -1,0 +1,12 @@
+{
+  "cmd": "make dist",
+  "name": "badlands build",
+  "targets": {
+    "dist": {
+      "cmd": "make dist"
+      },
+    "clobber": {
+        "cmd": "make clobber"
+      }
+  }
+}

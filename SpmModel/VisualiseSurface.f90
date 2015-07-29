@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (C) 2015 Tristan Salles
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation; either version 2 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -42,7 +42,7 @@ module outspm_surface
   use hydroUtil
   use hydrology
   use external_forces
-  
+
   implicit none
 
   character(len=128)::fspm
@@ -57,7 +57,8 @@ contains
 
     integer::id,i,j,k,p,rank,iter,totnodes,totelems,ierr
     integer,dimension(:),allocatable::connect
-    real(kind=8),dimension(:),allocatable::nodes,facc,dz,cumdz,rego,cID,nID,sl,coldU,coldH,sedflex
+    real(kind=8),dimension(:),allocatable::nodes,facc,dz,cumdz,rego,cID,nID,sl
+    real(kind=8),dimension(:),allocatable::coldU,coldH,sedflex,cumflex
 
     character(len=128)::text,file
 
@@ -80,7 +81,7 @@ contains
     call append_str(file,text)
     call addpath1(file)
     totnodes=upartN
-    totelems=delemoo   
+    totelems=delemoo
 
     allocate(nodes(3*totnodes))
     allocate(dz(totnodes))
@@ -95,28 +96,31 @@ contains
       allocate(coldU(totnodes))
       allocate(coldH(totnodes))
     endif
+    if(flexure)then
+      allocate(cumflex(totnodes))
+    endif
 
     ! Create nodes arrays
     id=1
     do k=1,totnodes
        i=unodeID(k)
        nodes(id)=tcoordX(i)
-       nodes(id+1)=tcoordY(i) 
+       nodes(id+1)=tcoordY(i)
        if(voronoiCell(i)%border==1)then
          nodes(id+2)=spmZ(voronoiCell(i)%bpoint)
        else
          nodes(id+2)=spmZ(i)
        endif
        if(voronoiCell(i)%border==1)then
-        facc(k)=0. 
+        facc(k)=0.
         dz(k)=0.0
-        rego(k)=0.0 
+        rego(k)=0.0
        else
         facc(k)=discharge(i)
         if(watercell(i)<0.)then
-            rego(k)=0. 
+            rego(k)=0.
         else
-            rego(k)=watercell(i) 
+            rego(k)=watercell(i)
         endif
        endif
        if(tcoordX(i)>minx.and.tcoordX(i)<maxx &
@@ -127,8 +131,9 @@ contains
           cumdz(k)=0.
           dz(k)=0.0
        endif
-       cID(k)=tflex(i) !real(subcatchmentID(i))
-       sl(k)=gsea%actual_sea !tflex(i)
+       if(flexure)cumflex(k)=gtflex(i)
+       cID(k)=real(subcatchmentID(i))
+       sl(k)=gsea%actual_sea
        if(ice_dx>0.)then
         if(tcoordX(i)>minx.and.tcoordX(i)<maxx &
             .and.tcoordY(i)>miny.and.tcoordY(i)<maxy)then
@@ -182,7 +187,7 @@ contains
 
     ! Create the dataset with default properties
     call h5dcreate_f(file_id,trim(text),h5t_native_integer,filespace,dset_id,rc,plist_id)
-    
+
     ! Write the dataset collectively
     call h5dwrite_f(dset_id,h5t_native_integer,connect,dims,rc)
     call h5pclose_f(plist_id,rc)
@@ -198,7 +203,7 @@ contains
     call h5screate_simple_f(rank,dims,filespace,ierr)
     text=''
     text="/nID"
-    
+
     ! Create property list for collective dataset write
     call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
     call h5pset_deflate_f(plist_id,9,ierr)
@@ -248,7 +253,7 @@ contains
     call h5screate_simple_f(rank,dims,filespace,ierr)
     text=''
     text="/facc"
-    
+
     ! Create property list for collective dataset write
     call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
     call h5pset_deflate_f(plist_id,9,ierr)
@@ -272,7 +277,7 @@ contains
     call h5screate_simple_f(rank,dims,filespace,ierr)
     text=''
     text="/cumdz"
-    
+
     ! Create property list for collective dataset write
     call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
     call h5pset_deflate_f(plist_id,9,ierr)
@@ -296,7 +301,7 @@ contains
     call h5screate_simple_f(rank,dims,filespace,ierr)
     text=''
     text="/dz"
-    
+
     ! Create property list for collective dataset write
     call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
     call h5pset_deflate_f(plist_id,9,ierr)
@@ -315,6 +320,32 @@ contains
 
     ! Flexural thickness
     if(flexure)then
+
+      ! Cumulative flexure
+      dims(1)=1
+      dims(2)=totnodes
+      rank=2
+      call h5screate_simple_f(rank,dims,filespace,ierr)
+      text=''
+      text="/cumflex"
+
+      ! Create property list for collective dataset write
+      call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
+      call h5pset_deflate_f(plist_id,9,ierr)
+      call h5pset_chunk_f(plist_id,rank,dims,ierr)
+
+      ! Create the dataset with default properties
+      call h5dcreate_f(file_id,trim(text),h5t_native_double,filespace,dset_id,ierr,plist_id)
+
+      ! Write the dataset collectively
+      call h5dwrite_f(dset_id,h5t_native_double,cumflex,dims,ierr)
+      call h5pclose_f(plist_id,ierr)
+
+      ! Close the dataset
+      call h5dclose_f(dset_id,ierr)
+      call h5sclose_f(filespace,ierr)
+
+      ! Sediment load for flexural isostasy computation
       dims(1)=1
       dims(2)=(nbfx+2)*(nbfy+2)
       rank=2
@@ -345,7 +376,6 @@ contains
       ! Close the dataset
       call h5dclose_f(dset_id,ierr)
       call h5sclose_f(filespace,ierr)
-    
     endif
 
     ! Catchment ID
@@ -355,7 +385,7 @@ contains
     call h5screate_simple_f(rank,dims,filespace,ierr)
     text=''
     text="/cID"
-    
+
     ! Create property list for collective dataset write
     call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
     call h5pset_deflate_f(plist_id,9,ierr)
@@ -379,7 +409,7 @@ contains
     call h5screate_simple_f(rank,dims,filespace,ierr)
     text=''
     text="/sl"
-    
+
     ! Create property list for collective dataset write
     call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
     call h5pset_deflate_f(plist_id,9,ierr)
@@ -404,7 +434,7 @@ contains
       call h5screate_simple_f(rank,dims,filespace,ierr)
       text=''
       text="/iceH"
-      
+
       ! Create property list for collective dataset write
       call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
       call h5pset_deflate_f(plist_id,9,ierr)
@@ -428,7 +458,7 @@ contains
       call h5screate_simple_f(rank,dims,filespace,ierr)
       text=''
       text="/iceU"
-      
+
       ! Create property list for collective dataset write
       call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
       call h5pset_deflate_f(plist_id,9,ierr)
@@ -445,7 +475,7 @@ contains
       call h5dclose_f(dset_id,ierr)
       call h5sclose_f(filespace,ierr)
     endif
-    
+
     ! Regolith depth
     if(regoProd>0.)then
         dims(1)=1
@@ -454,7 +484,7 @@ contains
         call h5screate_simple_f(rank,dims,filespace,ierr)
         text=''
         text="/reg"
-            
+
         ! Create property list for collective dataset write
         call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
         call h5pset_deflate_f(plist_id,9,ierr)
@@ -471,7 +501,7 @@ contains
         call h5dclose_f(dset_id,ierr)
         call h5sclose_f(filespace,ierr)
     endif
-    
+
     ! Close the file.
     call h5fclose_f(file_id,rc)
 
@@ -479,6 +509,7 @@ contains
     call h5close_f(rc)
 
     deallocate(nodes,connect,facc,dz,rego,cID,nID)
+    if(allocated(cumflex))deallocate(cumflex)
 
     return
 
@@ -490,7 +521,7 @@ contains
     type(xmlf_t)::xf
     integer::ierr
     integer::iter,totnodes,totelems,k
-    character(len=128)::str,stg,filename,filename1,filename2,file,filename3
+    character(len=128)::str,stg,filename,filename1,filename2,file,filename3,filename10
     character(len=128)::filename4,filename5,filename6,filename7,filename8,filename9
 
     call spm_hdf5(iter)
@@ -529,7 +560,7 @@ contains
         call xml_AddAttribute(xf,"Value",time_display)
         call xml_EndElement(xf,"Time")
         do k=1,npets
-            totnodes=outnode(k) 
+            totnodes=outnode(k)
             totelems=outelem(k)
             filename=''
             filename=fspm
@@ -551,6 +582,7 @@ contains
             filename7=filename
             filename8=filename
             filename9=filename
+            filename10=filename
             str=':/connectivity'
             call append_str(filename,str)
             str=':/vertices'
@@ -571,6 +603,8 @@ contains
             call append_str(filename8,str)
             str=':/cumdz'
             call append_str(filename9,str)
+            str=':/cumflex'
+            call append_str(filename10,str)
 
             ! Block begin
             call xml_NewElement(xf,"Grid")
@@ -625,7 +659,7 @@ contains
             call xml_AddAttribute(xf,"Dimensions",trim(str))
             call xml_AddCharacters(xf,trim(filename2))
             call xml_EndElement(xf,"DataItem")
-            call xml_EndElement(xf,"Attribute") 
+            call xml_EndElement(xf,"Attribute")
 
             ! Cumulative elevation change
             call xml_NewElement(xf,"Attribute")
@@ -642,7 +676,26 @@ contains
             call xml_AddAttribute(xf,"Dimensions",trim(str))
             call xml_AddCharacters(xf,trim(filename9))
             call xml_EndElement(xf,"DataItem")
-            call xml_EndElement(xf,"Attribute") 
+            call xml_EndElement(xf,"Attribute")
+
+            if(flexure)then
+              !Cumulative flexural isostasy
+              call xml_NewElement(xf,"Attribute")
+              call xml_AddAttribute(xf,"Type","Scalar")
+              call xml_AddAttribute(xf,"Center","Node")
+              call xml_AddAttribute(xf,"Name","Cumulative flexural isostasy")
+              call xml_NewElement(xf,"DataItem")
+              call xml_AddAttribute(xf,"Format","HDF")
+              call xml_AddAttribute(xf,"NumberType","Float")
+              call xml_AddAttribute(xf,"Precision","4")
+              str=' '
+              call append_nb2(str,totnodes)
+              call append_nb2(str,1)
+              call xml_AddAttribute(xf,"Dimensions",trim(str))
+              call xml_AddCharacters(xf,trim(filename10))
+              call xml_EndElement(xf,"DataItem")
+              call xml_EndElement(xf,"Attribute")
+            endif
 
             ! Elevation change
             call xml_NewElement(xf,"Attribute")
@@ -659,8 +712,8 @@ contains
             call xml_AddAttribute(xf,"Dimensions",trim(str))
             call xml_AddCharacters(xf,trim(filename3))
             call xml_EndElement(xf,"DataItem")
-            call xml_EndElement(xf,"Attribute") 
-            
+            call xml_EndElement(xf,"Attribute")
+
             ! Catchment ID
             call xml_NewElement(xf,"Attribute")
             call xml_AddAttribute(xf,"Type","Scalar")
@@ -676,7 +729,7 @@ contains
             call xml_AddAttribute(xf,"Dimensions",trim(str))
             call xml_AddCharacters(xf,trim(filename5))
             call xml_EndElement(xf,"DataItem")
-            call xml_EndElement(xf,"Attribute") 
+            call xml_EndElement(xf,"Attribute")
 
             ! Sea level
             call xml_NewElement(xf,"Attribute")
@@ -693,7 +746,7 @@ contains
             call xml_AddAttribute(xf,"Dimensions",trim(str))
             call xml_AddCharacters(xf,trim(filename6))
             call xml_EndElement(xf,"DataItem")
-            call xml_EndElement(xf,"Attribute") 
+            call xml_EndElement(xf,"Attribute")
 
             if(ice_dx>0.)then
               ! Ice thickness
@@ -711,7 +764,7 @@ contains
               call xml_AddAttribute(xf,"Dimensions",trim(str))
               call xml_AddCharacters(xf,trim(filename7))
               call xml_EndElement(xf,"DataItem")
-              call xml_EndElement(xf,"Attribute") 
+              call xml_EndElement(xf,"Attribute")
 
               ! Ice flow velocity
               call xml_NewElement(xf,"Attribute")
@@ -728,7 +781,7 @@ contains
               call xml_AddAttribute(xf,"Dimensions",trim(str))
               call xml_AddCharacters(xf,trim(filename8))
               call xml_EndElement(xf,"DataItem")
-              call xml_EndElement(xf,"Attribute") 
+              call xml_EndElement(xf,"Attribute")
             endif
 
             ! Regolith depth
@@ -748,7 +801,7 @@ contains
                 call xml_AddCharacters(xf,trim(filename4))
                 call xml_EndElement(xf,"DataItem")
                 call xml_EndElement(xf,"Attribute")
-            endif 
+            endif
             call xml_EndElement(xf,"Grid")
         enddo
 
@@ -763,7 +816,7 @@ contains
 
   end subroutine spm_xmf
   ! =====================================================================================
-  
+
   subroutine visualise_surface_changes(iter)
 
     ! Parameters Declaration
@@ -777,7 +830,7 @@ contains
     if(pet_id==0)then
         filename='SPMsurface_series.xdmf'
         call addpath1(filename)
-        
+
         ! Header
         call xml_OpenFile(filename,xf)
         call xml_AddDOCTYPE(xf,"Xdmf","Xdmf.dtd")
@@ -788,7 +841,7 @@ contains
         call xml_NewElement(xf,"Grid")
         call xml_AddAttribute(xf,"GridType","Collection")
         call xml_AddAttribute(xf,"CollectionType","Temporal")
-        
+
         it0=1
         ! Loop over time step
         do i=it0,iter+1
@@ -806,7 +859,7 @@ contains
             call xml_AddAttribute(xf,"xpointer","xpointer(//Xdmf/Domain/Grid)")
             call xml_EndElement(xf,"xi:include")
         enddo
-        
+
         ! Footer
         call xml_EndElement(xf,"Grid")
         call xml_EndElement(xf,"Domain")

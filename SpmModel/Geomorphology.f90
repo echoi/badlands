@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (C) 2015 Tristan Salles
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation; either version 2 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -47,7 +47,7 @@ module geomorpho
   use external_forces
 
   implicit none
-  
+
   integer::iter,idiff
 
   real(kind=8)::cpl_time,max_time
@@ -72,7 +72,7 @@ contains
     if(.not.allocated(sedchange)) allocate(sedchange(dnodes))
     if(.not.allocated(change_local)) allocate(change_local(dnodes))
     if(.not.allocated(lastsedthick)) allocate(lastsedthick(dnodes))
-   
+
     ! Define paramaters
     if(simulation_time==time_start.or.update3d)then
       if(simulation_time==time_start) iter=0
@@ -83,7 +83,7 @@ contains
       lastsedthick=sedthick
       CFL_diffusion=display_interval
       idiff=0
-      if(simulation_time==time_start) time_step=0. 
+      if(simulation_time==time_start) time_step=0.
       if(simulation_time==time_start) time_display=time_start
       if(Cefficiency>0..or.stream_ero>0.) Tforce=1
     endif
@@ -93,7 +93,7 @@ contains
     cpl_time=min(cpl_time,cpl4_time)
     cpl_time=min(cpl_time,time_end)
 
-    do while(simulation_time<cpl_time+0.001)
+    do while(simulation_time<cpl_time+0.0001)
 
       if(.not.allocated(filldem)) allocate(filldem(dnodes))
       if(.not.allocated(watercell)) allocate(watercell(dnodes))
@@ -120,12 +120,12 @@ contains
 !       tt2=mpi_wtime()
 !       if(pet_id==0)print*,'network compute',tt2-tt1
 !       tt1=mpi_wtime()
-      
+
       ! Define subcathcment partitioning
       call compute_subcatchment
 !       call mpi_barrier(badlands_world,rc)
 !       tt2=mpi_wtime()
-!       if(pet_id==0)print*,'subcatch',tt2-tt1 
+!       if(pet_id==0)print*,'subcatch',tt2-tt1
 !       tt1=mpi_wtime()
 
       ! Define load balancing
@@ -136,7 +136,7 @@ contains
 
       if(simulation_time==time_start.or.update3d) newZ=spmZ
       if(pet_id==0)print*,'Current time:',simulation_time
-      
+
       ! Visualisation surface
       if(simulation_time>=time_display)then
         call visualise_surface_changes(iter)
@@ -153,13 +153,13 @@ contains
 !       call mpi_finalize(rc)
 !       stop
 !       tt1=mpi_wtime()
-      
+
       ! Get time step size for hillslope process and stream power law
-      call CFL_condition 
+      call CFL_condition
 
       ! Geomorphological evolution
       call geomorphic_evolution
-      
+
       ! Advance time
       simulation_time=simulation_time+time_step
       ! Update sea-level
@@ -167,7 +167,7 @@ contains
       ! Apply displacement
       if(disp%event>0.and..not.disp3d) call compute_vertical_displacement
 
-      ! Merge local geomorphic evolution      
+      ! Merge local geomorphic evolution
       call mpi_allreduce(nZ,spmZ,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
       call mpi_allreduce(sedchange,sedthick,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
       if(stream_ero>0..or.regoProd>0.) &
@@ -177,7 +177,7 @@ contains
 !       call mpi_barrier(badlands_world,rc)
 !       tt2=mpi_wtime()
 !       if(pet_id==0)print*,'geomorpho',tt2-tt1
-      
+
 !       call mpi_barrier(badlands_world,rc)
 !       time2=mpi_wtime()
 !       if(pet_id==0)print*,'time-step',time2-time1
@@ -208,7 +208,7 @@ contains
 
     ! Hillslope CFL conditions
     if(simulation_time==time_start.or.idiff==0.or.Cdiffusion_d(1)>0. &
-      .or.Cdiffusion_nl(1)>0..or.CFL_diffusion<1.)then 
+      .or.Cdiffusion_nl(1)>0..or.CFL_diffusion<1.)then
       call CFLdiffusion
       CFL_diffusion=display_interval
       idiff=1
@@ -216,12 +216,12 @@ contains
     else
       time_step=CFL_diffusion
     endif
-    
+
     ! CFL factor for stream power law (bedrock incision)
     if(Cerodibility>0.)then
       do lid=1,localNodes
         p=localNodesGID(lid)
-        k=stackOrder(p) 
+        k=stackOrder(p)
         if(voronoiCell(k)%border==0)then
           id=receivers(k)
           if(k/=id)then
@@ -239,9 +239,9 @@ contains
     if(time_step>display_interval) time_step=display_interval
 !     if(time_step>force_time.and.force_time>1.) time_step=force_time
     if(time_step<force_time) time_step=force_time
-    
+
     ! Get maximum time step for stability
-    ldt=time_step    
+    ldt=time_step
     call mpi_allreduce(ldt,dt,1,mpi_double_precision,mpi_min,badlands_world,rc)
     time_step=dt
 
@@ -249,7 +249,7 @@ contains
     if(simulation_time+time_step>cpl_time) time_step=cpl_time-simulation_time+1.e-4
     if(simulation_time+time_step>time_display) time_step=time_display-simulation_time+1.e-4
     if(simulation_time+time_step>time_end) time_step=time_end-simulation_time+1.e-4
-      
+
   end subroutine CFL_condition
   ! =====================================================================================
 
@@ -268,13 +268,13 @@ contains
     r=0
     do lid=localNodes,1,-1
       k=localNodesGID(lid)
-      id=stackOrder(k) 
+      id=stackOrder(k)
 
       ! Receive child influx
       if(rcvprocNb(id)>0)then
         do p=1,rcvprocNb(id)
           call mpi_recv(Qsr,1,mpi_double_precision,rcvprocID(id,p),rcvsendID(id,p),badlands_world,stat,ierr)
-          Qs_in(id)=Qs_in(id)+Qsr 
+          Qs_in(id)=Qs_in(id)+Qsr
         enddo
       endif
 
@@ -294,17 +294,17 @@ contains
         ! Sediment Transport Law (transport-limited)
         STL=0.
         Qs2=0.
-        if(Cefficiency>0.) call transportlimited(id,rcv,distance,diffH,STL,Qs2) 
-        
+        if(Cefficiency>0.) call transportlimited(id,rcv,distance,diffH,STL,Qs2)
+
         ! Sediment Transport Capacity model
         STC=0.
         Qs3=0.
         if(stream_ero>0.) call streamcapacity(id,rcv,distance,diffH,STC,Qs3)
 
-        ! Hybrid sediment flux 
+        ! Hybrid sediment flux
         ST=0
         if(Cefficiency>0..and.Cerodibility>0..and.regoProd==0.)then
-          N_dt=2. 
+          N_dt=2.
           if(discharge(id)>0.)then
             ! Detachment-limited channel slope
             S_d=discharge(id)**(-spl_m/spl_n)*abs(tvertDisp(id)/Cerodibility)**(1/spl_n)
@@ -313,11 +313,11 @@ contains
             ! Transition number
             if(S_t/=0) N_dt=S_d/S_t
           endif
-          ! Transport-limited 
+          ! Transport-limited
           if(N_dt<=1.)then
             ST=STL
             Qs_in(rcv)=Qs_in(rcv)+Qs2
-          ! Detachment-limited 
+          ! Detachment-limited
           else
             ST=SPL
             Qs_in(rcv)=Qs_in(rcv)+Qs1
@@ -357,7 +357,7 @@ contains
           Qs_in(rcv)=Qs_in(rcv)+Qs3
         endif
         if(perosive==1.and.ST>0.) ST=0.
-        change_local(id)=ST+LDL+DDD+NDL 
+        change_local(id)=ST+LDL+DDD+NDL
       else
         change_local(id)=0.
       endif
@@ -384,11 +384,11 @@ contains
     if(Tforce==0)then
       do lid=1,localNodes
         k=localNodesGID(lid)
-        id=stackOrder(k) 
+        id=stackOrder(k)
         rcv=receivers(id)
         if(tcoordX(id)<minx.or.tcoordX(id)>maxx.or.tcoordY(id)<miny &
             .or.tcoordY(id)>maxy) change_local(id)=0.
-        if(rcv==id.and.change_local(id)>0..and.voronoiCell(id)%btype<0)then 
+        if(rcv==id.and.change_local(id)>0..and.voronoiCell(id)%btype<0)then
           if(watercell(id)==0.)then
             maxh=0.
             do q=1,delaunayVertex(id)%ngbNb
@@ -407,24 +407,24 @@ contains
       enddo
     endif
     call mpi_allreduce(maxtime,dt,1,mpi_double_precision,mpi_min,badlands_world,rc)
-    time_step=dt   
+    time_step=dt
 
     if(time_step<force_time) time_step=force_time
 
     ! Perform elevation and regolith evolution
     do lid=1,localNodes
       id=localNodesGID(lid)
-      k=stackOrder(id) 
-      if(voronoiCell(k)%border==0)then 
-        if(tcoordX(k)==minx.and.bounds(3)==0)change_local(k)=0. 
+      k=stackOrder(id)
+      if(voronoiCell(k)%border==0)then
+        if(tcoordX(k)==minx.and.bounds(3)==0)change_local(k)=0.
         if(tcoordX(k)==maxx.and.bounds(4)==0)change_local(k)=0.
         if(tcoordY(k)==miny.and.bounds(2)==0)change_local(k)=0.
         if(tcoordY(k)==maxy.and.bounds(1)==0)change_local(k)=0.
         ! Regolith formation
         if(regoProd>0.)then
           ! Soil production
-          Ps=regoProd*exp(-spmH(k)/regoDepth) 
-          ! Soil production is produced from exposed bedrock 
+          Ps=regoProd*exp(-spmH(k)/regoDepth)
+          ! Soil production is produced from exposed bedrock
           nH(k)=spmH(k)+time_step*(change_local(k)+Ps*rock_density/soil_density)
           if(nH(k)<0.)nH(k)=0.
         elseif(stream_ero>0.)then
@@ -452,7 +452,7 @@ contains
     if(dh<0.001)dh=0.
     ST=0.
     if(rcv/=id.and.dh>0.)then
-      if(watercell(id)<0.001.and.spmZ(id)>=gsea%actual_sea)&    
+      if(watercell(id)<0.001.and.spmZ(id)>=gsea%actual_sea)&
         ST=-Cerodibility*(discharge(id))**spl_m*(dh/distance)**spl_n
     endif
 
@@ -477,7 +477,7 @@ contains
             Qs=Qs_in(id)-ST*voronoiCell(id)%area
           endif
         endif
-      ! Fill depression 
+      ! Fill depression
       elseif(watercell(id)>0.0001.and.rcv/=id)then
         dh=0.95*watercell(id)
         if(Tforce==0)then
@@ -494,7 +494,7 @@ contains
             ST=Qs_in(id)/voronoiCell(id)%area
             Qs=0.
           else
-            ST=dh/time_step 
+            ST=dh/time_step
             Qs=Qs_in(id)-ST*voronoiCell(id)%area
           endif
         endif
@@ -578,7 +578,7 @@ contains
           ST=Qs_in(id)/voronoiCell(id)%area
           Qs=0.
         else
-          ST=dh/time_step 
+          ST=dh/time_step
           Qs=Qs_in(id)-ST*voronoiCell(id)%area
         endif
       elseif(rcv==id)then
@@ -601,7 +601,7 @@ contains
   end subroutine streamcapacity
   ! =====================================================================================
 
-  subroutine transportlimited(id,rcv,distance,maxh,ST,Qs) 
+  subroutine transportlimited(id,rcv,distance,maxh,ST,Qs)
 
     integer::id,rcv
     real(kind=8)::ST,distance,dh,QsOut,Qs,maxh,area
@@ -612,7 +612,7 @@ contains
     dh=0.95*(spmZ(id)-spmZ(rcv))
     if(dh<0.001)dh=0.
     area=voronoiCell(id)%area
-   
+
     if(dh>0..and.spmZ(id)>=gsea%actual_sea.and.watercell(id)<0.001.and.distance>0.)then
       QsOut=Cefficiency*(discharge(id))**stl_m*(dh/distance)**stl_n
       ! In regolith production is considered check that there is a regolith thickness
@@ -630,29 +630,29 @@ contains
         else
           Qs=QsOut
         endif
-      
+
       ! Limit erosion from relief elevation
       elseif(ST<0..and.regoProd==0..and.dh>=0.)then
-        if(-ST*time_step>dh)then 
+        if(-ST*time_step>dh)then
           ST=-dh/time_step
           Qs=Qs_in(id)-ST*area
         else
           Qs=QsOut
         endif
-    
+
       ! Limit erosion from regolith thickness or relief elevation
       elseif(ST<0..and.regoProd>0..and.dh>=0.)then
-        if(spmH(id)==0.)then 
+        if(spmH(id)==0.)then
           ST=0.
           Qs=Qs_in(id)
         elseif(maxh>0.)then
-          if(-ST*time_step>spmH(id))then 
+          if(-ST*time_step>spmH(id))then
             ST=-spmH(id)/time_step
             Qs=Qs_in(id)-ST*area
           else
             Qs=QsOut
           endif
-          if(-ST*time_step>spmZ(id)-spmZ(rcv))then 
+          if(-ST*time_step>spmZ(id)-spmZ(rcv))then
             ST=-(spmZ(id)-spmZ(rcv))/time_step
             Qs=Qs_in(id)-ST*area
           else
@@ -683,7 +683,7 @@ contains
           ST=Qs_in(id)/area
           Qs=0.
         else
-          ST=dh/time_step 
+          ST=dh/time_step
           Qs=Qs_in(id)-ST*area
         endif
       elseif(rcv==id)then

@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (C) 2015 Tristan Salles
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation; either version 2 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -52,7 +52,7 @@ module parameters
   integer::restartStep,restartPet
 
   ! Persistent Execution Threads (ID and total number)
-  integer::pet_id,npets,rc 
+  integer::pet_id,npets,rc
 
   ! Grid / Coupler Component Names
 !   character(len=128)::ocean,spm,earth
@@ -70,19 +70,19 @@ module parameters
   ! Regolith file name
   character(len=128)::regofile
 
-  ! Regular structured grid nodes on X/Y directions 
+  ! Regular structured grid nodes on X/Y directions
   integer::nx,ny
 
-  ! Regular structured grid resolution 
+  ! Regular structured grid resolution
   real(kind=8)::dx
 
-  ! Regular structured grid region extensions 
+  ! Regular structured grid region extensions
   real(kind=8)::minx,miny,maxx,maxy
 
-  ! Regular structured grid X,Y,Z coordinates 
+  ! Regular structured grid X,Y,Z coordinates
   real(kind=8),dimension(:),allocatable::coordX,coordY,coordZ
 
-  ! Regular structured grid X,Y,Z coordinates with added cells 
+  ! Regular structured grid X,Y,Z coordinates with added cells
   ! on the edges and vertical displacement
   real(kind=8),dimension(:),allocatable::rcoordX,rcoordY,rcoordZ
 
@@ -106,13 +106,13 @@ module parameters
   ! Voronoi point triangle face pt ID
   integer,dimension(:,:),allocatable::vorDel
 
-  ! Voronoi Diagram X,Y,Z coordinates 
-  real(kind=8),dimension(:),allocatable::vcoordX,vcoordY 
+  ! Voronoi Diagram X,Y,Z coordinates
+  real(kind=8),dimension(:),allocatable::vcoordX,vcoordY
 
-  ! Regular structured elements (square cells) with added cells on the edges 
+  ! Regular structured elements (square cells) with added cells on the edges
   integer,dimension(:,:),allocatable::relmt
 
-  ! Number of grid nodes owned by the processor on a given pet 
+  ! Number of grid nodes owned by the processor on a given pet
   integer::sOwnedNode,uOwnedNode
 
   ! Partition processor ID for unstructured grid
@@ -182,16 +182,16 @@ module parameters
   integer::nbfx,nbfy
 
   real(kind=8)::cst1,cst2,cst3,torb
-  real(kind=8)::flex_dt,flex_dx,flex_xo,flex_yo,flex_rigid
+  real(kind=8)::flex_dt,flex_dx,flex_xo,flex_yo,flex_rigid,comp_poro,flex_thick,comp_decay
   real(kind=8)::mean_sediment_density,mean_mantle_density,sea_water_density
 
   real(kind=8),dimension(:,:),allocatable::load,prevload,flexZ,flexDisp,flexSed
   real(kind=8),dimension(:),allocatable::flexX,flexY,sedloader
 
 contains
-  
+
   ! =====================================================================================
-  
+
   subroutine term_command(cmds)
 
     logical(4)::result

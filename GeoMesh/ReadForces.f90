@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (C) 2015 Tristan Salles
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation; either version 2 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -43,7 +43,7 @@ module readforces
   use external_forces
 
   implicit none
-  
+
   integer::dispn,rainn
 
   logical,save::in_Sea=.false.
@@ -78,8 +78,11 @@ module readforces
   logical,save::in_flex=.false.
   logical,save::in_flexdt=.false.
   logical,save::in_flexdx=.false.
+  logical,save::in_flexsedth=.false.
+  logical,save::in_flexsedporo=.false.
   logical,save::in_flexseddens=.false.
-  logical,save::in_flexrigid=.false.
+  logical,save::in_flexdecay=.false.
+  logical,save::in_flexthick=.false.
   logical,save::in_mantledens=.false.
 
 contains
@@ -164,7 +167,7 @@ contains
     if(in_rain) call rainfield_characters_handler(chars)
     if(in_Ice) call ice_characters_handler(chars)
     if(in_flex) call flex_characters_handler(chars)
-    
+
   end subroutine characters_handler
   ! =====================================================================================
 
@@ -224,8 +227,10 @@ contains
     if(name=='flex_dx') in_flexdx=.true.
     if(name=='flex_dt') in_flexdt=.true.
     if(name=='sed_dens') in_flexseddens=.true.
+    if(name=='sed_poro') in_flexsedporo=.true.
+    if(name=='comp_decay') in_flexdecay=.true.
     if(name=='mantle_dens') in_mantledens=.true.
-    if(name=='flex_rigid') in_flexrigid=.true.
+    if(name=='flex_thick') in_flexthick=.true.
 
   end subroutine SflexElement_handler
   ! =====================================================================================
@@ -308,8 +313,10 @@ contains
     if(name=='flex_dx') in_flexdx=.false.
     if(name=='flex_dt') in_flexdt=.false.
     if(name=='sed_dens') in_flexseddens=.false.
+    if(name=='comp_decay') in_flexdecay=.false.
+    if(name=='sed_poro') in_flexsedporo=.false.
     if(name=='mantle_dens') in_mantledens=.false.
-    if(name=='flex_rigid') in_flexrigid=.false.
+    if(name=='flex_thick') in_flexthick=.false.
 
   end subroutine EflexElement_handler
   ! =====================================================================================
@@ -427,10 +434,14 @@ contains
       call rts(chars,flex_dt)
     elseif(in_flexseddens)then
       call rts(chars,mean_sediment_density)
+    elseif(in_flexdecay)then
+      call rts(chars,comp_decay)
+    elseif(in_flexsedporo)then
+      call rts(chars,comp_poro)
     elseif(in_mantledens)then
       call rts(chars,mean_mantle_density)
-    elseif(in_flexrigid)then
-      call rts(chars,flex_rigid)
+    elseif(in_flexthick)then
+      call rts(chars,flex_thick)
     endif
 
   end subroutine flex_characters_handler
@@ -439,7 +450,7 @@ contains
   subroutine vdisp_characters_handler(chars)
 
     character(len=*),intent(in)::chars
-   
+
     if(in_3Dfield)then
       disp3d=.true.
     elseif(in_mrgd)then
@@ -467,7 +478,7 @@ contains
 
   end subroutine disp_characters_handler
   ! =====================================================================================
-  
+
   subroutine forces_parser
 
     type(xml_t)::xf
@@ -492,6 +503,9 @@ contains
     ice_Zsld=-200.
     IceEro=0.001
     flex_dx=0.0
+    flex_thick=10000.
+    comp_decay=4.0
+    comp_poro=0.
     flexure=.false.
 
     ! Open file
@@ -501,7 +515,7 @@ contains
       call mpi_finalize(rc)
     endif
 
-    ! Parser 
+    ! Parser
     call parse(xf, &
          startDocument_handler=startDocument_handler, &
          startElement_handler=startElement_handler, &
@@ -511,7 +525,6 @@ contains
 
     ! Close file
     call close_xml_t(xf)
-
     if(gsea%sealevel) call read_sealevel_file
     if(gela%ela) call read_ELA_file
     if(ice_m1<ice_m2)then
@@ -527,6 +540,8 @@ contains
 
     if(flexure)then
       cpl4_time=time_start
+      flex_rigid=70.e9/(12.0*0.75**2.)
+      flex_rigid=flex_rigid*flex_thick**3.
     else
       cpl4_time=time_end+1000.0
     endif

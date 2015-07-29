@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (C) 2015 Tristan Salles
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation; either version 2 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -41,7 +41,7 @@ module readtopo
   use parameters
   use FoX_common
   use external_forces
-  
+
   implicit none
 
   integer::refnb,falg
@@ -156,7 +156,7 @@ contains
     ! Time element
     if(in_timestruct) call time_characters_handler(chars)
     ! Underworld element
-    if(in_udwstruct)then 
+    if(in_udwstruct)then
       udwFlag=.true.
       call udw_characters_handler(chars)
     endif
@@ -205,7 +205,7 @@ contains
     if(name=='time_end') in_timeend=.true.
     if(name=='restart_folder') in_timerestart=.true.
     if(name=='restart_fileID') in_timefileid=.true.
-    if(name=='restart_petNb') in_procfileid=.true.    
+    if(name=='restart_petNb') in_procfileid=.true.
     if(name=='display_interval') in_displaytime=.true.
     if(name=='time_step') in_forcestep=.true.
     if(name=='limit_step') in_Tforce=.true.
@@ -264,7 +264,7 @@ contains
     if(name=='time_end') in_timeend=.false.
     if(name=='restart_folder') in_timerestart=.false.
     if(name=='restart_fileID') in_timefileid=.false.
-    if(name=='restart_petNb') in_procfileid=.false.  
+    if(name=='restart_petNb') in_procfileid=.false.
     if(name=='display_interval') in_displaytime=.false.
     if(name=='time_step') in_forcestep=.false.
     if(name=='limit_step') in_Tforce=.false.
@@ -381,7 +381,7 @@ contains
 
   end subroutine udw_characters_handler
   ! =====================================================================================
-  
+
   subroutine topology_parser
 
     type(xml_t)::xf
@@ -421,7 +421,7 @@ contains
       call mpi_finalize(rc)
     endif
 
-    ! Parser 
+    ! Parser
     call parse(xf, &
          startDocument_handler=startDocument_handler, &
          startElement_handler=startElement_handler, &
@@ -431,6 +431,8 @@ contains
 
     ! Close file
     call close_xml_t(xf)
+
+    simulation_time=time_start
 
     ! Create simulation directory
     if(pet_id==0)then

@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (C) 2015 Tristan Salles
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation; either version 2 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -80,7 +80,7 @@ contains
     endif
     call mpi_barrier(badlands_world,rc)
     call ReadTriangle
-    call DelaunayVoronoiDuality 
+    call DelaunayVoronoiDuality
     call DelaunayBorders
 !     if(pet_id==0)then
 !       call delaunay_xmf
@@ -105,7 +105,7 @@ contains
   subroutine ReadRegular
 
     logical::first
-    
+
     character(len=1)::line
 
     integer::iu,id,k,p,m,nnx,nny
@@ -176,7 +176,7 @@ contains
     nnx=nx+2
     nny=ny+2
     bnbnodes=nnx*nny
-    
+
     ! Define regular grid with additional halo
     if(allocated(rcoordX))deallocate(rcoordX)
     if(allocated(rcoordY))deallocate(rcoordY)
@@ -186,9 +186,8 @@ contains
     if(allocated(rDisp))deallocate(rDisp)
     if(allocated(rvertDisp))deallocate(rvertDisp)
     if(allocated(rsedthick))deallocate(rsedthick)
-    if(allocated(rsedlastthick))deallocate(rsedlastthick)
     allocate(rcoordX(bnbnodes),rcoordY(bnbnodes),rcoordZ(bnbnodes),rainVal(bnbnodes))
-    allocate(rsedthick(bnbnodes),rsedlastthick(bnbnodes))
+    allocate(rsedthick(bnbnodes))
     if(.not.disp3d)then
       allocate(rtectoZ(bnbnodes),rDisp(bnbnodes,1),rvertDisp(bnbnodes))
     else
@@ -294,7 +293,7 @@ contains
     if(rc/=0)then
       print*,'Failed to open Triangle Polygon Shape File'
       call mpi_finalize(rc)
-    endif    
+    endif
     rewind(iu)
 
     ! A box with four points in 2D, no attributes, one boundary marker.
@@ -437,7 +436,7 @@ contains
     if(rc/=0)then
       print*,'Failed to open Triangle Polygon Shape File'
       call mpi_finalize(rc)
-    endif    
+    endif
     rewind(iu)
 
     ! A box with four points in 2D, no attributes, one boundary marker.
@@ -517,7 +516,7 @@ contains
     if(rc/=0)then
       print*,'Failed to open namelist file Triangle Node File'
       call mpi_finalize(rc)
-    endif 
+    endif
     rewind(iu)
 
     read(iu,*) dnodes,a,b,c
@@ -527,15 +526,17 @@ contains
     if(allocated(tcoordZ)) deallocate(tcoordZ)
     if(allocated(tvertDisp)) deallocate(tvertDisp)
     if(allocated(tflex)) deallocate(tflex)
+    if(allocated(gtflex)) deallocate(gtflex)
     if(allocated(sedthick)) deallocate(sedthick)
     if(allocated(ice_H)) deallocate(ice_H)
     if(allocated(ice_V)) deallocate(ice_V)
     if(allocated(precipitation)) deallocate(precipitation)
     allocate(tcoordX(dnodes),tcoordY(dnodes),tcoordZ(dnodes),tbound(dnodes))
     allocate(sedthick(dnodes))
-    allocate(precipitation(dnodes),tvertDisp(dnodes),tflex(dnodes),ice_V(dnodes),ice_H(dnodes))
+    allocate(precipitation(dnodes),tvertDisp(dnodes),tflex(dnodes),gtflex(dnodes),ice_V(dnodes),ice_H(dnodes))
     tcoordZ=0.0
     tflex=0.0
+    gtflex=0.0
     tvertDisp=0.0
     ice_H=0.0
     ice_V=0.0
@@ -553,7 +554,7 @@ contains
     if(rc/=0)then
       print*,'Failed to open namelist file Triangle Element File'
       call mpi_finalize(rc)
-    endif 
+    endif
     rewind(iu)
 
     read(iu,*) delem,a,b
@@ -590,7 +591,7 @@ contains
     if(rc/=0)then
       print*,'Failed to open namelist file Triangle Edge File'
       call mpi_finalize(rc)
-    endif 
+    endif
     rewind(iu)
 
     read(iu,*) dedge,a
@@ -608,7 +609,7 @@ contains
     if(rc/=0)then
       print*,'Failed to open namelist file Voronoi Nodes File'
       call mpi_finalize(rc)
-    endif 
+    endif
     rewind(iu)
 
     read(iu,*) vnodes,a,b,c
@@ -616,7 +617,7 @@ contains
     if(allocated(vcoordY)) deallocate(vcoordY)
     if(allocated(mask)) deallocate(mask)
     allocate(vcoordX(vnodes),vcoordY(vnodes),mask(vnodes))
-    
+
     do n=1,vnodes
        read(iu,*) mask(n),vcoordX(n),vcoordY(n)
     enddo
@@ -636,7 +637,7 @@ contains
     if(rc/=0)then
       print*,'Failed to open namelist file Voronoi Edges File'
       call mpi_finalize(rc)
-    endif 
+    endif
     rewind(iu)
 
     read(iu,*) vedge,a
@@ -662,7 +663,7 @@ contains
 
     integer,dimension(:),allocatable::ed1,ed2,rk1,rk2
 
-    real(kind=8)::dist,area 
+    real(kind=8)::dist,area
     real(kind=8),dimension(20)::vnx,vny,tnx,tny
 
     ! Delaunay and voronoi parametrisation
@@ -720,24 +721,24 @@ contains
                 rec2=.false.
               endif
             enddo
-            if(rec.and.vedg(rk1(n),1)>0)then 
-              id=voronoiCell(cell)%vertexNb+1 
+            if(rec.and.vedg(rk1(n),1)>0)then
+              id=voronoiCell(cell)%vertexNb+1
               voronoiCell(cell)%vertexNb=id
               voronoiCell(cell)%vertexID(id)=vedg(rk1(n),1)
             endif
-            if(rec2.and.vedg(rk1(n),2)>0.and.vedg(rk1(n),2)/=vedg(rk1(n),1))then 
-              id=voronoiCell(cell)%vertexNb+1 
+            if(rec2.and.vedg(rk1(n),2)>0.and.vedg(rk1(n),2)/=vedg(rk1(n),1))then
+              id=voronoiCell(cell)%vertexNb+1
               voronoiCell(cell)%vertexNb=id
               voronoiCell(cell)%vertexID(id)=vedg(rk1(n),2)
             endif
           else
-            if(vedg(rk1(n),1)>0)then 
-              id=voronoiCell(cell)%vertexNb+1 
+            if(vedg(rk1(n),1)>0)then
+              id=voronoiCell(cell)%vertexNb+1
               voronoiCell(cell)%vertexNb=id
               voronoiCell(cell)%vertexID(id)=vedg(rk1(n),1)
             endif
-            if(vedg(rk1(n),2)>0.and.vedg(rk1(n),2)/=vedg(rk1(n),1))then 
-              id=voronoiCell(cell)%vertexNb+1 
+            if(vedg(rk1(n),2)>0.and.vedg(rk1(n),2)/=vedg(rk1(n),1))then
+              id=voronoiCell(cell)%vertexNb+1
               voronoiCell(cell)%vertexNb=id
               voronoiCell(cell)%vertexID(id)=vedg(rk1(n),2)
             endif
@@ -776,24 +777,24 @@ contains
                 rec2=.false.
               endif
             enddo
-            if(rec.and.vedg(rk2(n),1)>0)then 
-              id=voronoiCell(cell)%vertexNb+1 
+            if(rec.and.vedg(rk2(n),1)>0)then
+              id=voronoiCell(cell)%vertexNb+1
               voronoiCell(cell)%vertexNb=id
               voronoiCell(cell)%vertexID(id)=vedg(rk2(n),1)
             endif
-            if(rec2.and.vedg(rk2(n),2)>0.and.vedg(rk2(n),2)/=vedg(rk2(n),1))then 
-              id=voronoiCell(cell)%vertexNb+1 
+            if(rec2.and.vedg(rk2(n),2)>0.and.vedg(rk2(n),2)/=vedg(rk2(n),1))then
+              id=voronoiCell(cell)%vertexNb+1
               voronoiCell(cell)%vertexNb=id
               voronoiCell(cell)%vertexID(id)=vedg(rk2(n),2)
             endif
           else
-            if(vedg(rk2(n),1)>0)then 
-              id=voronoiCell(cell)%vertexNb+1 
+            if(vedg(rk2(n),1)>0)then
+              id=voronoiCell(cell)%vertexNb+1
               voronoiCell(cell)%vertexNb=id
               voronoiCell(cell)%vertexID(id)=vedg(rk2(n),1)
             endif
-            if(vedg(rk2(n),2)>0.and.vedg(rk2(n),2)/=vedg(rk2(n),1))then 
-              id=voronoiCell(cell)%vertexNb+1 
+            if(vedg(rk2(n),2)>0.and.vedg(rk2(n),2)/=vedg(rk2(n),1))then
+              id=voronoiCell(cell)%vertexNb+1
               voronoiCell(cell)%vertexNb=id
               voronoiCell(cell)%vertexID(id)=vedg(rk2(n),2)
             endif
@@ -805,7 +806,7 @@ contains
         endif
       enddo lp_ed2
 
-      ! Define the voronoi polygon as a convex hull 
+      ! Define the voronoi polygon as a convex hull
       if(voronoiCell(cell)%border==0)then
         vsort=-1
         n=voronoiCell(cell)%vertexNb
@@ -853,7 +854,7 @@ contains
 
     enddo
 
-    ! Allocate voronoi edge length to delaunay neighborhood 
+    ! Allocate voronoi edge length to delaunay neighborhood
     do cell=1,dnodes
        tsort=-1
        delaunayVertex(cell)%sortedHull=-1
@@ -955,12 +956,12 @@ contains
           do p=1,tvert
             delaunayVertex(cell)%sortedHull(p)=sortedID(p)
           enddo
-        endif 
+        endif
 
       if(tcoordX(cell)==minx-dx.or.tcoordX(cell)==maxx+dx.or. &
-        tcoordY(cell)==miny-dx.or.tcoordY(cell)==maxy+dx)then 
+        tcoordY(cell)==miny-dx.or.tcoordY(cell)==maxy+dx)then
         voronoiCell(cell)%border=1
-      endif 
+      endif
 
 
       ! Count voronoi cells and vertices (used for output only)
@@ -971,7 +972,7 @@ contains
 
     enddo
 
-    return 
+    return
 
   end subroutine DelaunayVoronoiDuality
   ! =====================================================================================
@@ -1004,7 +1005,7 @@ contains
       t=tcoordX(id0)*tcoordY(id1)-tcoordY(id0)*tcoordX(id1)+(tcoordY(id0)-tcoordY(id1))*tcoordX(id)+ &
         (tcoordX(id1)-tcoordX(id0))*tcoordY(id)
       t=t*denom
-      if(s>0.and.t>0.0.and.1.0-s-t>0.0)then 
+      if(s>0.and.t>0.0.and.1.0-s-t>0.0)then
         inside=.true.
       else
         if(distanceSquarePointToSegment(tcoordX(id0),tcoordY(id0), &
@@ -1025,7 +1026,7 @@ contains
   ! =====================================================================================
 
   function distanceSquarePointToSegment(x1,y1,x2,y2,x,y) result(dist2)
-    
+
     real(kind=8)::x1,y1,x2,y2,x,y,sqrl,sqrl2,dotprod,dist2
 
     sqrl=(x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)
@@ -1401,6 +1402,7 @@ contains
     if(allocated(tcoordZ))deallocate(tcoordZ)
     if(allocated(tvertDisp))deallocate(tvertDisp)
     if(allocated(tflex))deallocate(tflex)
+    if(allocated(gtflex))deallocate(gtflex)
     if(allocated(sedthick))deallocate(sedthick)
     if(allocated(ice_V))deallocate(ice_V)
     if(allocated(ice_H))deallocate(ice_H)
@@ -1412,7 +1414,7 @@ contains
 
   end subroutine UnstructuredMeshDestroy
   ! =====================================================================================
-  
+
   subroutine RegularGridDestroy
 
     if(allocated(bilinearX))deallocate(bilinearX)
@@ -1436,7 +1438,6 @@ contains
     if(allocated(rhxDisp))deallocate(rhxDisp)
     if(allocated(rvertDisp))deallocate(rvertDisp)
     if(allocated(rsedthick))deallocate(rsedthick)
-    if(allocated(rsedlastthick))deallocate(rsedlastthick)
     if(allocated(rainVal))deallocate(rainVal)
     if(allocated(frainmap))deallocate(frainmap)
     if(allocated(frainval))deallocate(frainval)
@@ -1452,7 +1453,7 @@ contains
     if(allocated(elaval))deallocate(elaval)
 
   end subroutine RegularGridDestroy
-  ! =====================================================================================  
+  ! =====================================================================================
 
 end module geomesh
 ! =====================================================================================

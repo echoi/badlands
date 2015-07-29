@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (C) 2015 Tristan Salles
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation; either version 2 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -44,10 +44,10 @@ module hydrology
 
   ! Local arrays
   integer,dimension(:),allocatable::intArray,allocs,donorCount,partStack
-  
+
   real(kind=8),dimension(:),allocatable::cumDisp,watercell
   real(kind=8),dimension(:),allocatable::nZ,nH,change_local,filldem
-  
+
 contains
 
   ! =====================================================================================
@@ -79,7 +79,7 @@ contains
         endif
       enddo
       receivers(k)=lowestID
-      discharge(k)=precipitation(k)*voronoiCell(k)%area 
+      discharge(k)=precipitation(k)*voronoiCell(k)%area
     enddo
     call mpi_allreduce(mpi_in_place,receivers,dnodes,mpi_integer,mpi_max,badlands_world,rc)
     call mpi_allreduce(mpi_in_place,watercell,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
@@ -104,8 +104,8 @@ contains
     maxrcvs=0
     indexArray(dnodes+1)=dnodes+1
     do k=dnodes,1,-1
-       indexArray(k)=indexArray(k+1)-donorCount(k) 
-       maxrcvs=max(maxrcvs,indexArray(k+1)-indexArray(k))       
+       indexArray(k)=indexArray(k+1)-donorCount(k)
+       maxrcvs=max(maxrcvs,indexArray(k+1)-indexArray(k))
     enddo
 
     ! List of donors
@@ -125,7 +125,7 @@ contains
     partStack=0
     if(baseNb<=npets)then
       p=pet_id+1
-      partStack(p)=0 
+      partStack(p)=0
       if(p<=baseNb)partStack(p)=1
       stpStack(p+1)=stpStack(p)+partStack(p)
     else
@@ -143,7 +143,7 @@ contains
 
     ! Build the ordering stack
     j=0
-    do p=stpStack(pet_id+1)+1,stpStack(pet_id+2) 
+    do p=stpStack(pet_id+1)+1,stpStack(pet_id+2)
       allocs=-1
       k=baselist(p)
       j=j+1
@@ -151,7 +151,7 @@ contains
       allocs(k)=0
       success=addtostack(p,k,j)
     enddo
-      
+
     ! Get ordered stack from catchment ID partitioning
     partStack=0
     call mpi_allgather(j,1,mpi_integer,partStack,1,mpi_integer,badlands_world,rc)
@@ -179,7 +179,7 @@ contains
         allocs(donor)=0
         success=addtostack(base,donor,stackID)
       endif
-    enddo 
+    enddo
 
     success=0
 
@@ -192,7 +192,7 @@ contains
     integer::p,k,l
 
     real(kind=8)::step
-    
+
     ! Find the sinks and fill them using Planchon's method
     if(pet_id==0)then
       flag=.true.
@@ -212,7 +212,7 @@ contains
                 else
                   if(filldem(k)>filldem(l)+step)then
                     filldem(k)=filldem(l)+step
-                    if(filldem(k)-spmZ(k)>fh)then 
+                    if(filldem(k)-spmZ(k)>fh)then
                       filldem(k)=spmZ(k)+fh
                     else
                       flag=.true.
@@ -225,8 +225,8 @@ contains
         enddo
       enddo
     endif
-    call mpi_bcast(filldem,dnodes,mpi_double_precision,0,badlands_world,rc)    
-    
+    call mpi_bcast(filldem,dnodes,mpi_double_precision,0,badlands_world,rc)
+
     return
 
   end subroutine planchon_dem_fill_algorithm
@@ -238,7 +238,7 @@ contains
 
     do lid=1,localNodes
       id=localNodesGID(lid)
-      k=stackOrder(id) 
+      k=stackOrder(id)
       nZ(k)=nZ(k)+tvertDisp(k)*time_step
     enddo
 
@@ -260,7 +260,7 @@ contains
       delemID=-1
       p=0
       do k=1,delem
-         if(elemtmask(k)==0.and.uownEID(k)==pet_id)then 
+         if(elemtmask(k)==0.and.uownEID(k)==pet_id)then
            delemoo=delemoo+1
            p=p+1
            delemID(p)=k
@@ -272,14 +272,14 @@ contains
     filldem=1.e6
     do k=1,dnodes
       ! On border fix DEM elevation
-      if(voronoiCell(k)%border==1)then 
+      if(voronoiCell(k)%border==1)then
         spmH(k)=0.0_8
         ! In case there is an outlet
         if(outlet/=0)then
           if(voronoiCell(k)%btype==outlet)then
             spmZ(k)=spmZ(voronoiCell(k)%bpoint)-1.0_8
           else
-             spmZ(k)=1.e6_8 
+             spmZ(k)=1.e6_8
           endif
         else
           !--------- WEST
@@ -290,7 +290,7 @@ contains
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)
             ! Wall
             elseif(bounds(3)==1)then
-              spmZ(k)=1.e6_8 
+              spmZ(k)=1.e6_8
             ! Fall
             elseif(bounds(3)==2)then
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)-1.0_8
@@ -316,7 +316,7 @@ contains
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)
             ! Wall
             elseif(bounds(3)==1)then
-              spmZ(k)=1.e6_8 
+              spmZ(k)=1.e6_8
             ! Fall
             elseif(bounds(3)==2)then
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)-1.0_8
@@ -330,7 +330,7 @@ contains
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)
             ! Wall
             elseif(bounds(4)==1)then
-              spmZ(k)=1.e6_8 
+              spmZ(k)=1.e6_8
             ! Fall
             elseif(bounds(4)==2)then
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)-1.0_8
@@ -356,7 +356,7 @@ contains
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)
             ! Wall
             elseif(bounds(4)==1)then
-              spmZ(k)=1.e6_8 
+              spmZ(k)=1.e6_8
             ! Fall
             elseif(bounds(4)==2)then
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)-1.0_8
@@ -370,7 +370,7 @@ contains
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)
             ! Wall
             elseif(bounds(2)==1)then
-              spmZ(k)=1.e6_8 
+              spmZ(k)=1.e6_8
             ! Fall
             elseif(bounds(2)==2)then
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)-1.0_8
@@ -383,7 +383,7 @@ contains
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)
             ! Wall
             elseif(bounds(2)==1)then
-              spmZ(k)=1.e6_8 
+              spmZ(k)=1.e6_8
             ! Fall
             elseif(bounds(2)==2)then
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)-1.0_8
@@ -410,7 +410,7 @@ contains
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)
             ! Wall
             elseif(bounds(1)==1)then
-              spmZ(k)=1.e6_8 
+              spmZ(k)=1.e6_8
             ! Fall
             elseif(bounds(1)==2)then
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)-1.0_8
@@ -423,7 +423,7 @@ contains
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)
             ! Wall
             elseif(bounds(1)==1)then
-              spmZ(k)=1.e6_8 
+              spmZ(k)=1.e6_8
             ! Fall
             elseif(bounds(1)==2)then
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)-1.0_8
@@ -436,7 +436,7 @@ contains
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)
             ! Wall
             elseif(bounds(1)==1)then
-              spmZ(k)=1.e6_8 
+              spmZ(k)=1.e6_8
             ! Fall
             elseif(bounds(1)==2)then
               spmZ(k)=spmZ(voronoiCell(k)%bpoint)-1.0_8
@@ -493,6 +493,7 @@ contains
     real(kind=8),dimension(3)::d1,d2,n
     real(kind=8),dimension(4)::plane
 
+    ! Sediment thickness
     d1(1)=tcoordX(id2)-tcoordX(id1)
     d1(2)=tcoordY(id2)-tcoordY(id1)
     d1(3)=sedthick(id2)-sedthick(id1)
@@ -549,7 +550,7 @@ contains
 
   end subroutine DeriveTrianglePlanes2
   ! =====================================================================================
-  
+
   subroutine inside_triangle(xa,ya,xb,yb,l)
 
     integer,intent(out)::l
@@ -574,4 +575,4 @@ contains
   end subroutine inside_triangle
   ! =====================================================================================
 
-end module hydrology 
+end module hydrology

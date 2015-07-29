@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (C) 2015 Tristan Salles
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation; either version 2 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,12 +28,12 @@
 !        Created:  30/06/15 18:25:30
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
 module gaussian_filter
-  
+
   use parallel
   use parameters
   use topology
@@ -41,7 +41,7 @@ module gaussian_filter
   implicit none
 
   real(kind=8),dimension(:,:),allocatable::ice_diff,FN,FS,FE,FW,ice_mass
-  
+
 contains
 
   ! =====================================================================================
@@ -91,7 +91,7 @@ contains
     rows=ubound(input,1)
     cols=ubound(input,2)
 
-    ! Rely on automatic deallocation to clean this up. 
+    ! Rely on automatic deallocation to clean this up.
     if(allocated(output)) deallocate(output)
     allocate(output(3*rows,3*cols))
 
@@ -125,12 +125,12 @@ contains
     real(kind=8),intent(inout),dimension(:,:)::output
 
     ! These are allocated within tile_and_reflect, we rely on automatic
-    ! deallocation at the end of the subroutine. 
+    ! deallocation at the end of the subroutine.
     real(kind=8),dimension(:,:),allocatable,target::tiled_input
     real(kind=8),dimension(:,:),pointer::overlapping
-      
+
     integer::rows,cols,hw_row,hw_col,i,j,tj,ti
-    
+
     ! First step is to tile the input.
     rows=ubound(input,1)
     cols=ubound(input,2)
@@ -210,7 +210,7 @@ contains
 
     if(ice_xo+(nbix-1)*ice_dx>minx+nx*dx)nbix=nbix-1
     if(ice_yo+(nbiy-1)*ice_dx>miny+ny*dx)nbiy=nbiy-1
-    
+
     if(allocated(iceX)) deallocate(iceX)
     allocate(iceX(nbix))
     do i=1,nbix
@@ -225,14 +225,14 @@ contains
 
     if(allocated(iceZ)) deallocate(iceZ)
     allocate(iceZ(nbix,nbiy))
-    
+
     if(allocated(iceZb)) deallocate(iceZb)
     allocate(iceZb(nbix,nbiy))
-    
+
     if(allocated(iceH)) deallocate(iceH)
     allocate(iceH(nbix,nbiy))
     iceH=0.0
-    
+
     if(allocated(iceU)) deallocate(iceU)
     allocate(iceU(nbix,nbiy))
     iceU=0.0
@@ -267,14 +267,14 @@ contains
     iceZ(2:nbix-1,nbiy)=iceZ(2:nbix-1,nbiy-1)+(iceZ(2:nbix-1,nbiy-1)-iceZ(2:nbix-1,nbiy-2))
     iceZ(1,2:nbiy-1)=iceZ(2,2:nbiy-1)+iceZ(2,2:nbiy-1)-iceZ(3,2:nbiy-1)
     iceZ(nbix,2:nbiy-1)=iceZ(nbix-1,2:nbiy-1)+iceZ(nbix-1,2:nbiy-1)-iceZ(nbix-2,2:nbiy-1)
-   
-    ! Update corner    
+
+    ! Update corner
     iceZ(1,1)=iceZ(2,2)+iceZ(2,2)-iceZ(3,3)
     iceZ(1,nbiy)=iceZ(2,nbiy-1)+iceZ(2,nbiy-1)-iceZ(3,nbiy-2)
     iceZ(nbix,1)=iceZ(nbix-1,2)+iceZ(nbix-1,2)-iceZ(nbix-2,3)
     iceZ(nbix,nbiy)=iceZ(nbix-1,nbiy-1)+iceZ(nbix-1,nbiy-1)-iceZ(nbix-2,nbiy-2)
 
-  end subroutine ICE_grid  
+  end subroutine ICE_grid
   ! =====================================================================================
 
   subroutine FLEX_grid
@@ -307,7 +307,7 @@ contains
 
     if(allocated(flexZ)) deallocate(flexZ)
     allocate(flexZ(nbfx+2,nbfy+2))
-    
+
     if(allocated(flexSed)) deallocate(flexSed)
     allocate(flexSed(nbfx+2,nbfy+2))
 

@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (C) 2015 Tristan Salles
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation; either version 2 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -25,10 +25,10 @@
 !    Description:  Flexural isostasy computation (Li et al. 2004 CompGeo)
 !
 !        Version:  1.0
-!        Created:  11/02/15 05:05:05
+!        Created:  11/07/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -95,13 +95,13 @@ contains
     flexZ(2:nbfx+1,nbfy+2)=flexZ(2:nbfx+1,nbfy+1)
     flexZ(1,2:nbfy+1)=flexZ(2,2:nbfy+1)
     flexZ(nbfx+2,2:nbfy+1)=flexZ(nbfx+1,2:nbfy+1)
-    
+
     flexSed(2:nbfx+1,1)=flexSed(2:nbfx+1,2)
     flexSed(2:nbfx+1,nbfy+2)=flexSed(2:nbfx+1,nbfy+1)
     flexSed(1,2:nbfy+1)=flexSed(2,2:nbfy+1)
     flexSed(nbfx+2,2:nbfy+1)=flexSed(nbfx+1,2:nbfy+1)
 
-    ! Update corner    
+    ! Update corner
     flexZ(1,1)=flexZ(2,2)
     flexZ(1,nbfy+2)=flexZ(2,nbfy+1)
     flexZ(nbfx+2,1)=flexZ(nbfx+1,2)
@@ -155,13 +155,13 @@ contains
     flexZ(2:nbfx+1,nbfy+2)=flexZ(2:nbfx+1,nbfy+1)
     flexZ(1,2:nbfy+1)=flexZ(2,2:nbfy+1)
     flexZ(nbfx+2,2:nbfy+1)=flexZ(nbfx+1,2:nbfy+1)
-    
+
     flexSed(2:nbfx+1,1)=flexSed(2:nbfx+1,2)
     flexSed(2:nbfx+1,nbfy+2)=flexSed(2:nbfx+1,nbfy+1)
     flexSed(1,2:nbfy+1)=flexSed(2,2:nbfy+1)
     flexSed(nbfx+2,2:nbfy+1)=flexSed(nbfx+1,2:nbfy+1)
 
-    ! Update corner    
+    ! Update corner
     flexZ(1,1)=flexZ(2,2)
     flexZ(1,nbfy+2)=flexZ(2,nbfy+1)
     flexZ(nbfx+2,1)=flexZ(nbfx+1,2)
@@ -171,6 +171,7 @@ contains
     flexSed(1,nbfy+2)=flexSed(2,nbfy+1)
     flexSed(nbfx+2,1)=flexSed(nbfx+1,2)
     flexSed(nbfx+2,nbfy+2)=flexSed(nbfx+1,nbfy+1)
+
 
     if(allocated(sedloader))then
       p=0
@@ -183,7 +184,7 @@ contains
     else
       do j=1,nbfy+2
         do i=1,nbfx+2
-          tmp=mean_sediment_density*flexSed(i,j)
+          tmp=mean_sediment_density*flexSed(i,j) !*(1-flexPor(i,j))+flexPor(i,j)*flexSed(i,j)*sea_water_density
           if(flexZ(i,j)<gsea%actual_sea) tmp=tmp+(gsea%actual_sea-flexZ(i,j))*sea_water_density
           prevload(i,j)=tmp*cst1
         enddo
@@ -205,7 +206,7 @@ contains
     do j=1,nbfy+2
       do i=1,nbfx+2
         if(j>1.and.j<nbfy+2.and.i>1.and.i<nbfx+2)then
-          tmp=mean_sediment_density*flexSed(i,j)
+          tmp=mean_sediment_density*flexSed(i,j) !*(1-flexPor(i,j))+flexPor(i,j)*flexSed(i,j)*sea_water_density
           if(flexZ(i,j)<gsea%actual_sea) tmp=tmp+(gsea%actual_sea-flexZ(i,j))*sea_water_density
           oldload=prevload(i,j)
           prevload(i,j)=cst1*tmp
@@ -222,7 +223,7 @@ contains
     enddo
 
     ! Tiny added load, ignore isostatic changes
-    if(abs(dtot)<cst1*mean_sediment_density)return  
+    if(abs(dtot)<cst1*mean_sediment_density)return
 
     prevload(1:nbfx+2,1)=prevload(1:nbfx+2,2)
     prevload(1:nbfx+2,nbfy+2)=prevload(1:nbfx+2,nbfy+1)
@@ -242,7 +243,7 @@ contains
     wx=0.0
     wy=0.0
     ld=load
-    
+
     n2x=int(nbfx/2)
     n2x=n2x*2
     n4x=int(nbfx/4)
@@ -268,8 +269,8 @@ contains
           wtot=wtot+abs(w(i,j))
         enddo
       enddo
-            
-      w1=w 
+
+      w1=w
       if(wdiff<torb*wtot.or.p>10000)exit
       if(wtot==0.0)exit
 
@@ -286,7 +287,7 @@ contains
         enddo
       enddo
       call solve_flexure(m,n2x+2,n2y+2,4)
-      
+
       ! Coarser grid 4dx, full weighting operator
       m=4
       do j=2+m,n4y+2-m,m
@@ -330,7 +331,7 @@ contains
           wy(i+2,n2y+2)=0.5*(wy(i,n4y+2)+wy(i+m,n4y+2))
         enddo
       endif
-        
+
       if(n2x>n4x)then
         do j=2,n4y+2-m,4
           w(n2x+2,j)=w(n4x+2,j)
@@ -505,7 +506,7 @@ contains
             else
               ld(i,j)=(load(i,j)-cst3*w3)*dxm4
             endif
-          
+
             resw=w3-w(i,j)
             wdiff=wdiff+abs(w3-w(i,j))
             wtot=wtot+abs(w3)

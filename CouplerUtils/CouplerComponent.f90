@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (C) 2015 Tristan Salles
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation; either version 2 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  08/05/15 13:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -57,8 +57,8 @@ module coupling
 
   real(kind=8),dimension(:,:),allocatable::record
   real(kind=8),dimension(:),allocatable::nhx,nhy,nhz,uzz,nsh,uss
-  real(kind=8),dimension(:),allocatable::disp_hx,disp_hy 
-  
+  real(kind=8),dimension(:),allocatable::disp_hx,disp_hy
+
 contains
 
   ! =====================================================================================
@@ -108,7 +108,7 @@ contains
 
     ubZ=-1.e6
     call interpolate_grid_bilinear(nx+2,bilinearX,ny+2,bilinearY,bilinearV,upartN,uxpart,uypart,uval)
-    
+
     do k=1,upartN
       id=unodeID(k)
       ubZ(id)=uval(k)
@@ -117,7 +117,9 @@ contains
     call mpi_allreduce(ubZ,tcoordZ,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
 
     ! Create a virtual uniform sediment layer
-    if(totgrn==0) sedthick=100000.0 
+    if(totgrn==0)then
+      sedthick=100000.0
+    endif
 
     return
 
@@ -147,14 +149,14 @@ contains
     ubZ=-1.e6
 
     call interpolate_grid_bilinear(nx+2,bilinearX,ny+2,bilinearY,bilinearV,upartN,uxpart,uypart,uval)
-    
+
     do k=1,upartN
       id=unodeID(k)
       ubZ(id)=uval(k)
     enddo
 
     call mpi_allreduce(ubZ,precipitation,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
-    
+
     return
 
   end subroutine bilinearRain
@@ -182,7 +184,7 @@ contains
       id=unodeID(k)
       ubV(id)=uv1(k)
       ubH(id)=uv2(k)
-      if(ubH(id)>tcoordZ(id).and.ubV(id)>0.)then 
+      if(ubH(id)>tcoordZ(id).and.ubV(id)>0.)then
         ubH(id)=ubH(id)-tcoordZ(id)
       else
         ubH(id)=0.
@@ -192,7 +194,7 @@ contains
 
     call mpi_allreduce(ubV,ice_V,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
     call mpi_allreduce(ubH,ice_H,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
-    
+
     return
 
   end subroutine bilinearIce
@@ -219,16 +221,17 @@ contains
     enddo
 
     call mpi_allreduce(ufV,tflex,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
-        
+
     ! Apply the flexural isostasy to delaunay points
     do k=1,dnodes
       tcoordZ(k)=tcoordZ(k)-tflex(k)
+      gtflex(k)=gtflex(k)-tflex(k)
       spmZ(k)=tcoordZ(k)
     enddo
 
     do k=1,upartN
       id=unodeID(k)
-      cumDisp(k)=cumDisp(k)-tflex(id)  
+      cumDisp(k)=cumDisp(k)-tflex(id)
     enddo
 
     return
@@ -271,9 +274,9 @@ contains
 
     if(disp3d)then
       call interpolate_grid_bilinear3(nx+2,bilinearX,ny+2,bilinearY,bilinearV,bilinearHx,bilinearHy, &
-        upartN,uxpart,uypart,uval,uv1,uv2)    
+        upartN,uxpart,uypart,uval,uv1,uv2)
     else
-      call interpolate_grid_bilinear(nx+2,bilinearX,ny+2,bilinearY,bilinearV,upartN,uxpart,uypart,uval)    
+      call interpolate_grid_bilinear(nx+2,bilinearX,ny+2,bilinearY,bilinearV,upartN,uxpart,uypart,uval)
     endif
 
     do k=1,upartN
@@ -289,7 +292,7 @@ contains
       call mpi_allreduce(ub1,disp_hx,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
       call mpi_allreduce(ub2,disp_hy,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
     endif
-    
+
     return
 
   end subroutine bilinearDisp
@@ -303,16 +306,16 @@ contains
     ! Define coupling time for rain
     if(rain_event==0) cpl1_time=time_end+1000.
 
-    if(disp%event>0.and..not.udwFlag)then 
+    if(disp%event>0.and..not.udwFlag)then
       call displacement
     elseif(udwFlag)then
       call SurfaceVTK
       call WaitStepCompletion
       call displacement
-    endif    
+    endif
 
     if(disp%event>0) call bilinearDisp
-    
+
     ! Define coupling time for geodynamic
     if(disp%event==0) cpl2_time=time_end+1000.
 
@@ -328,8 +331,7 @@ contains
     integer::gid,k,n,l,pts(3)
 
     real(kind=8)::xy(2),xb(3),yb(3)
-    real(kind=8),dimension(bnbnodes)::nzz
-    real(kind=8),dimension(bnbnodes)::nsh
+    real(kind=8),dimension(bnbnodes)::nzz,nsh
 
     type(kdtree2),pointer::Ftree
     type(kdtree2_result),dimension(12)::FRslt
@@ -340,12 +342,12 @@ contains
     Ftree=>kdtree2_create(Fdata,sort=.true.,rearrange=.true.)
 
     do k=1,spartN
-    
+
       gid=snodeID(k)
       xy(1)=rcoordX(gid)
       xy(2)=rcoordY(gid)
       call kdtree2_n_nearest(Ftree,xy,nn=12,results=FRslt)
-      lo:do n=1,12 
+      lo:do n=1,12
         pts(1:3)=delmt(FRslt(n)%idx,1:3)
         xb(1)=tcoordX(pts(1))
         xb(2)=tcoordX(pts(2))
@@ -360,7 +362,7 @@ contains
           ! derive elevation from triangle plane equation
           call DeriveTrianglePlanes(xy(1),xy(2),pts(1),pts(2),pts(3),nzz(gid))
           ! derive sediment thickness from triangle plane equation
-          if(isflex)then 
+          if(isflex)then
             call DeriveTrianglePlanesSed(xy(1),xy(2),pts(1),pts(2),pts(3),nsh(gid))
           endif
           exit lo
@@ -370,12 +372,12 @@ contains
       enddo lo
 
     enddo
-    
+
     call mpi_allreduce(nzz,rcoordZ,bnbnodes,mpi_double_precision,mpi_max,badlands_world,rc)
     if(isflex) call mpi_allreduce(nsh,rsedthick,bnbnodes,mpi_double_precision,mpi_max,badlands_world,rc)
-   
+
     call kdtree2_destroy(Ftree)
- 
+
     return
 
   end subroutine delaunayInterpolant
@@ -383,12 +385,12 @@ contains
 
   subroutine getEarthData
 
-    if(rain_event>0.and.cpl1_time<=simulation_time)then 
+    if(rain_event>0.and.cpl1_time<=simulation_time)then
       call rainfall
       call bilinearRain
     endif
 
-    if(disp%event>0.and.cpl2_time<=simulation_time)then 
+    if(disp%event>0.and.cpl2_time<=simulation_time)then
       if(udwFlag)then
         call delaunayInterpolant(.false.)
         call SurfaceVTK
@@ -435,7 +437,7 @@ contains
 
   subroutine getFlexModel
 
-    if(simulation_time==time_start)then 
+    if(simulation_time==time_start)then
       call FLEX_grid
       call delaunayInterpolant(.true.)
       call built_initial_load
@@ -472,7 +474,7 @@ contains
     type(kdtree2),pointer::Ftree2
     type(kdtree2_result),dimension(12)::FRslt2
 
-    if(cpl2_time<=simulation_time)then 
+    if(cpl2_time<=simulation_time)then
 
       if(allocated(nhx)) deallocate(nhx)
       if(allocated(nhy)) deallocate(nhy)
@@ -481,7 +483,7 @@ contains
       if(allocated(record)) deallocate(record)
       allocate(nhx(dnodes),nhy(dnodes),nhz(dnodes))
       allocate(nsh(dnodes),record(dnodes,2))
- 
+
       ! Apply the displacement to delaunay points
       do k=1,dnodes
         if(tcoordX(k)>minx.and.tcoordX(k)<maxx.and. &
@@ -551,14 +553,13 @@ contains
           print*,tcoordX(k),tcoordY(k)
         endif
       enddo
-      
+
       do k=1,dnodes
         if(tcoordX(k)==minx-dx.and.tcoordX(k)==maxx+dx.and. &
           tcoordY(k)==miny-dx.and.tcoordY(k)==maxy+dx)then
           n=0
           d1=0.
           d2=0.
-          d3=0.
           do id=1,delaunayVertex(k)%ngbNb
             l=delaunayVertex(k)%ngbID(id)
             if(l>0)then
@@ -578,7 +579,7 @@ contains
           endif
         endif
       enddo
-      
+
       Ftree1=>kdtree2_create(Fd1,sort=.true.,rearrange=.true.)
 
       onodes=dnodes
@@ -612,7 +613,7 @@ contains
               new_nodes=new_nodes+1
               record(new_nodes,1)=nhx(k)
               record(new_nodes,2)=nhy(k)
-            elseif(sqrt(FRslt1(2)%dis)<disp%mindist)then              
+            elseif(sqrt(FRslt1(2)%dis)<disp%mindist)then
               nx=nhx(k)+0.5*(nhx(k)-nhx(id))
               ny=nhy(k)+0.5*(nhy(k)-nhy(id))
               if(nx>minx+dx.and.nx<maxx-dx.and.ny>miny+dx &
@@ -625,7 +626,7 @@ contains
               endif
             endif
           endif
-        endif 
+        endif
       enddo
       call kdtree2_destroy(Ftree1)
 
@@ -648,7 +649,7 @@ contains
         txy(1)=tcoordX(id)
         txy(2)=tcoordY(id)
         call kdtree2_n_nearest(Ftree2,txy,nn=12,results=FRslt2)
-        lo1:do n=1,12 
+        lo1:do n=1,12
           pts(1:3)=delmt2(FRslt2(n)%idx,1:3)
           txb(1)=nhx(pts(1))
           txb(2)=nhx(pts(2))
@@ -666,25 +667,26 @@ contains
           if(l==0) call insideTriangle(txy,txb,tyb,l)
           if(l==1)then
             d1=sqrt((txy(1)-txb(1))**2.+(txy(2)-tyb(1))**2.)
-            if(d1<1.0e-2)then 
-              uzz(id)=tzb(1) 
+            if(d1<1.0e-2)then
+              uzz(id)=tzb(1)
               uss(id)=tsb(1)
               goto 10
             endif
             d2=sqrt((txy(1)-txb(2))**2.+(txy(2)-tyb(2))**2.)
-            if(d2<1.0e-2)then 
+            if(d2<1.0e-2)then
               uzz(id)=tzb(2)
               uss(id)=tsb(2)
               goto 10
             endif
             d3=sqrt((txy(1)-txb(3))**2.+(txy(2)-tyb(3))**2.)
-            if(d3<1.0e-2)then 
-              uzz(id)=tzb(3) 
+            if(d3<1.0e-2)then
+              uzz(id)=tzb(3)
               uss(id)=tsb(3)
               goto 10
             endif
             ! derive elevation from triangle plane equation
             call DeriveTrianglePlanes2(txy,txb,tyb,tzb,uzz(id))
+            call DeriveTrianglePlanes2(txy,txb,tyb,tsb,uss(id))
             exit lo1
           elseif(n==12)then
             pts(1:3)=delmt2(FRslt2(1)%idx,1:3)
@@ -701,20 +703,20 @@ contains
             tsb(2)=nsh(pts(2))
             tsb(3)=nsh(pts(3))
             d1=sqrt((txy(1)-txb(1))**2.+(txy(2)-tyb(1))**2.)
-            if(d1<1.0e-2)then 
+            if(d1<1.0e-2)then
               uzz(id)=tzb(1)
               uss(id)=tsb(1)
               goto 10
             endif
             d2=sqrt((txy(1)-txb(2))**2.+(txy(2)-tyb(2))**2.)
-            if(d2<1.0e-2)then 
-              uzz(id)=tzb(2) 
+            if(d2<1.0e-2)then
+              uzz(id)=tzb(2)
               uss(id)=tsb(2)
               goto 10
             endif
             d3=sqrt((txy(1)-txb(3))**2.+(txy(2)-tyb(3))**2.)
-            if(d3<1.0e-2)then 
-              uzz(id)=tzb(3) 
+            if(d3<1.0e-2)then
+              uzz(id)=tzb(3)
               uss(id)=tsb(3)
               goto 10
             endif
@@ -727,13 +729,13 @@ contains
             uzz(id)=(uzz(id))/(w1+w2+w3)
             uss(id)=w1*tsb(1)+w2*tsb(2)+w3*tsb(3)
             uss(id)=(uss(id))/(w1+w2+w3)
-          endif          
+          endif
         enddo lo1
-10 continue        
+10 continue
       enddo
       call mpi_allreduce(uzz,tcoordZ,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
       call mpi_allreduce(uss,sedthick,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
-      
+
       ! Update the rain values
       call bilinearRain
 
@@ -791,7 +793,7 @@ contains
     if(rc/=0)then
       print*,'Failed to open Triangle Polygon Shape File'
       call mpi_finalize(rc)
-    endif    
+    endif
     rewind(iu)
 
     ! A box with four points in 2D, no attributes, one boundary marker.
@@ -817,7 +819,7 @@ contains
        write(iu,'(I10,1X,2(F16.3,1X),I2)') p,maxx,miny+(n-1)*dx,0
     enddo
 
-    ! Nodes from previous TIN after displcament 
+    ! Nodes from previous TIN after displcament
     do l=1,new_nodes
       p=p+1
       write(iu,'(I10,1X,2(F16.3,1X),I2)') p,record(l,1:2),0

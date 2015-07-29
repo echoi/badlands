@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (C) 2015 Tristan Salles
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation; either version 2 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,13 +28,13 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
 module external_forces
 
-  use parallel  
+  use parallel
   use hydroUtil
   use parameters
 
@@ -42,7 +42,7 @@ module external_forces
 
   logical::disp3d
 
-  ! Number of rain events 
+  ! Number of rain events
   integer::rain_event
 
   ! Rain event files
@@ -153,17 +153,17 @@ module external_forces
 
   ! Regular grid field arrays
   real(kind=8),dimension(:),allocatable::rtectoZ,rvertDisp,rainVal,rhxDisp,rhyDisp
-  real(kind=8),dimension(:),allocatable::rsedthick,rsedlastthick
+  real(kind=8),dimension(:),allocatable::rsedthick
 
   real(kind=8),dimension(:,:),allocatable::rDisp
 
   ! Vertical displacement rate on unstructured grid
   real(kind=8),dimension(:),allocatable::tvertDisp
 
-  ! Flexural isostasy rate on unstructured grid
-  real(kind=8),dimension(:),allocatable::tflex
+  ! Flexural isostasy rate on unstructured grid and cumulative one
+  real(kind=8),dimension(:),allocatable::tflex,gtflex
 
-  ! Sedimnt thickness on unstructured grid
+  ! Sediment thickness on unstructured grid
   real(kind=8),dimension(:),allocatable::sedthick,lastsedthick
 
 contains
@@ -173,7 +173,7 @@ contains
   subroutine read_sealevel_file
 
     integer::iu,nbsea,k,i,i2,ios
-    
+
     character(len=128)::line
 
     iu=42
@@ -185,11 +185,11 @@ contains
 
     ! Determine total number of sea level records
     nbsea=0
-    do 
+    do
       read(iu,*,iostat=rc,end=30)line
        nbsea=nbsea+1
-    enddo 
-30 continue    
+    enddo
+30 continue
     rewind(iu)
 
     ! Define the number of events and allocate array
@@ -257,7 +257,7 @@ contains
 
   end subroutine eustatism
   ! =====================================================================================
-  
+
   function sealvl_interpolation(sl_param) result(slinterpol)
 
     type(sl_par)::sl_param
@@ -272,7 +272,7 @@ contains
   subroutine read_ELA_file
 
     integer::iu,nbela,k,i,i2,ios
-    
+
     character(len=128)::line
 
     iu=42
@@ -284,11 +284,11 @@ contains
 
     ! Determine total number of ELA records
     nbela=0
-    do 
+    do
       read(iu,*,iostat=rc,end=30)line
        nbela=nbela+1
-    enddo 
-30 continue    
+    enddo
+30 continue
     rewind(iu)
 
     ! Define the number of events and allocate array
@@ -356,7 +356,7 @@ contains
 
   end subroutine ELA_flux
   ! =====================================================================================
-  
+
   function ELA_interpolation(e_param) result(einterpol)
 
     type(ela_par)::e_param

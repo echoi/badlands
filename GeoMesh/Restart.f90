@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (C) 2015 Tristan Salles
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation; either version 2 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -47,7 +47,7 @@ module restart
 
 
   integer::newnds,rstnodes
-  
+
   character(len=128)::frspm
 
   real(kind=8),dimension(:,:),allocatable::newcoord,rstXYZ
@@ -92,7 +92,7 @@ contains
 
         ! Open the file collectively.
         call h5fopen_f(frspm,h5f_acc_rdonly_f,file_id,rc)
-        
+
         ! The node global ID
         text="/nID"
         call h5dopen_f(file_id,trim(text),dset_id,rc)
@@ -104,7 +104,7 @@ contains
         allocate(nID(dims(1)*dims(2)))
         localNd=dims(2)
         call h5dread_f(dset_id,h5t_native_double,nID,dims,rc)
-        
+
         ! The Coordinates - vertices
         text="/vertices"
         call h5dopen_f(file_id,trim(text),dset_id,rc)
@@ -143,16 +143,6 @@ contains
           call h5dread_f(dset_id,h5t_native_double,sedloader,dims,rc)
         endif
 
-!         text="/flex"
-!         call h5dopen_f(file_id,trim(text),dset_id,rc)
-!         call h5dget_type_f(dset_id,dtype_id,rc)
-!         call h5dget_space_f(dset_id,d_spc,rc)
-!         call h5sis_simple_f(d_spc,simple,rc)
-!         call h5sget_simple_extent_ndims_f(d_spc,rank,rc)
-!         call h5sget_simple_extent_dims_f(d_spc,dims,maxdims,rc)
-!         allocate(sedlID(dims(1)*dims(2)))
-!         call h5dread_f(dset_id,h5t_native_double,sedlID,dims,rc)
-
         id=1
         do p=1,localNd
             i=int(nID(p))
@@ -167,7 +157,7 @@ contains
         ! Close the dataset
         call h5sclose_f(d_spc,rc)
         call h5dclose_f(dset_id,rc)
-        
+
         ! Close the file.
         call h5fclose_f(file_id,rc)
 
@@ -231,7 +221,7 @@ contains
               sedthick(k)=100000.
             endif
         enddo
-        call kdtree2_destroy(Ftree)    
+        call kdtree2_destroy(Ftree)
     endif
 
 
@@ -297,7 +287,7 @@ contains
 
         ! Open the file collectively.
         call h5fopen_f(frspm,h5f_acc_rdonly_f,file_id,rc)
-        
+
         ! The node global ID
         text="/nID"
         call h5dopen_f(file_id,trim(text),dset_id,rc)
@@ -309,7 +299,7 @@ contains
         allocate(nID(dims(1)*dims(2)))
         localNd=dims(2)
         call h5dread_f(dset_id,h5t_native_double,nID,dims,rc)
-        
+
         ! The Coordinates - vertices
         text="/vertices"
         call h5dopen_f(file_id,trim(text),dset_id,rc)
@@ -366,7 +356,7 @@ contains
         ! Close the dataset
         call h5sclose_f(d_spc,rc)
         call h5dclose_f(dset_id,rc)
-        
+
         ! Close the file.
         call h5fclose_f(file_id,rc)
 
@@ -401,5 +391,5 @@ contains
 
   end subroutine getSPM_hdf5topography
   ! =====================================================================================
-  
+
 end module restart
