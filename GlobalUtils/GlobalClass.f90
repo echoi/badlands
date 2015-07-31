@@ -179,11 +179,12 @@ module parameters
 
   ! Flexural isostasy parameters
   logical::flexure
-  integer::nbfx,nbfy
+  integer::nbfx,nbfy,flex_lay,pressureFields
 
   real(kind=8)::cst1,cst2,cst3,torb
-  real(kind=8)::flex_dt,flex_dx,flex_xo,flex_yo,flex_rigid,comp_poro,flex_thick,comp_decay
+  real(kind=8)::flex_dt,flex_dx,flex_xo,flex_yo,flex_rigid,flex_thick
   real(kind=8)::mean_sediment_density,mean_mantle_density,sea_water_density
+  real(kind=8),dimension(:),allocatable::pressTable,poroTable
 
   real(kind=8),dimension(:,:),allocatable::load,prevload,flexZ,flexDisp,flexSed
   real(kind=8),dimension(:),allocatable::flexX,flexY,sedloader

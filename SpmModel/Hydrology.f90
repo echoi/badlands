@@ -487,20 +487,30 @@ contains
 
   subroutine DeriveTrianglePlanesSed(x,y,id1,id2,id3,sh)
 
-    integer::id1,id2,id3
-    real(kind=8)::s,x,y,sh
+    integer::p,id1,id2,id3
+    real(kind=8)::s,x,y,sh,sload1,sload2,sload3
 
     real(kind=8),dimension(3)::d1,d2,n
     real(kind=8),dimension(4)::plane
 
+
+    do p=1,flex_lay
+      sload1=ulay_th(id1,p)*(1-ulay_phi(id1,p))*mean_sediment_density+&
+        ulay_th(id1,p)*ulay_phi(id1,p)*sea_water_density
+      sload2=ulay_th(id2,p)*(1-ulay_phi(id2,p))*mean_sediment_density+&
+        ulay_th(id2,p)*ulay_phi(id2,p)*sea_water_density
+      sload3=ulay_th(id3,p)*(1-ulay_phi(id3,p))*mean_sediment_density+&
+        ulay_th(id3,p)*ulay_phi(id3,p)*sea_water_density
+    enddo
+
     ! Sediment thickness
     d1(1)=tcoordX(id2)-tcoordX(id1)
     d1(2)=tcoordY(id2)-tcoordY(id1)
-    d1(3)=sedthick(id2)-sedthick(id1)
+    d1(3)=sload2-sload1
 
     d2(1)=tcoordX(id3)-tcoordX(id1)
     d2(2)=tcoordY(id3)-tcoordY(id1)
-    d2(3)=sedthick(id3)-sedthick(id1)
+    d2(3)=sload3-sload1
 
     n(1)=d2(2)*d1(3)-d2(3)*d1(2)
     n(2)=d2(3)*d1(1)-d2(1)*d1(3)
@@ -511,7 +521,7 @@ contains
     plane(1)=n(1)*s
     plane(2)=n(2)*s
     plane(3)=n(3)*s
-    plane(4)= -(plane(1)*tcoordX(id1)+plane(2)*tcoordY(id1)+plane(3)*sedthick(id1))
+    plane(4)= -(plane(1)*tcoordX(id1)+plane(2)*tcoordY(id1)+plane(3)*sload1)
 
     sh=-(plane(1)*x+plane(2)*y+plane(4))/plane(3)
 

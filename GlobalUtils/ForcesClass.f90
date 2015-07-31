@@ -153,7 +153,7 @@ module external_forces
 
   ! Regular grid field arrays
   real(kind=8),dimension(:),allocatable::rtectoZ,rvertDisp,rainVal,rhxDisp,rhyDisp
-  real(kind=8),dimension(:),allocatable::rsedthick
+  real(kind=8),dimension(:),allocatable::rsedload
 
   real(kind=8),dimension(:,:),allocatable::rDisp
 
@@ -162,6 +162,9 @@ module external_forces
 
   ! Flexural isostasy rate on unstructured grid and cumulative one
   real(kind=8),dimension(:),allocatable::tflex,gtflex
+
+  ! Unstructured grid simple stratigraphic layers record
+  real(kind=8),dimension(:,:),allocatable::ulay_th,ulay_phi
 
   ! Sediment thickness on unstructured grid
   real(kind=8),dimension(:),allocatable::sedthick,lastsedthick

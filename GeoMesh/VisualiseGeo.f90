@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (C) 2015 Tristan Salles
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation; either version 2 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -122,7 +122,7 @@ contains
 
     ! Create the dataset with default properties
     call h5dcreate_f(file_id,trim(text),h5t_native_integer,filespace,dset_id,rc,plist_id)
-    
+
     ! Write the dataset collectively
     call h5dwrite_f(dset_id,h5t_native_integer,connect,dims,rc)
     call h5pclose_f(plist_id,rc)
@@ -184,7 +184,7 @@ contains
 
     fdelaunay='delaunay'
     totnodes=dnodes
-    totelems=delemo 
+    totelems=delemo
 
     file=''
     file=fdelaunay
@@ -313,7 +313,7 @@ contains
 
     ! Setup file access property list for MPI-IO access.
     call h5pcreate_f(h5p_file_access_f,plist_id,rc)
-    
+
     ! Create the file collectively.
     call h5fcreate_f(file,h5f_acc_trunc_f,file_id,rc,access_prp=plist_id)
 
@@ -355,7 +355,7 @@ contains
 
   end subroutine voronoi_hdf5
   ! =====================================================================================
-  
+
   subroutine voronoi_xmf
 
     type(xmlf_t)::xf
@@ -369,7 +369,7 @@ contains
     iter=0
 
     fvoronoi='voronoi'
-    totnodes=vnodes 
+    totnodes=vnodes
     totelems=vcellIN
 
     file=''

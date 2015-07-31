@@ -185,9 +185,9 @@ contains
     if(allocated(rainVal))deallocate(rainVal)
     if(allocated(rDisp))deallocate(rDisp)
     if(allocated(rvertDisp))deallocate(rvertDisp)
-    if(allocated(rsedthick))deallocate(rsedthick)
+    if(allocated(rsedload))deallocate(rsedload)
     allocate(rcoordX(bnbnodes),rcoordY(bnbnodes),rcoordZ(bnbnodes),rainVal(bnbnodes))
-    allocate(rsedthick(bnbnodes))
+    allocate(rsedload(bnbnodes))
     if(.not.disp3d)then
       allocate(rtectoZ(bnbnodes),rDisp(bnbnodes,1),rvertDisp(bnbnodes))
     else
@@ -526,20 +526,25 @@ contains
     if(allocated(tcoordZ)) deallocate(tcoordZ)
     if(allocated(tvertDisp)) deallocate(tvertDisp)
     if(allocated(tflex)) deallocate(tflex)
+    if(flexure.and.allocated(ulay_th)) deallocate(ulay_th)
+    if(flexure.and.allocated(ulay_phi)) deallocate(ulay_phi)
     if(allocated(gtflex)) deallocate(gtflex)
     if(allocated(sedthick)) deallocate(sedthick)
     if(allocated(ice_H)) deallocate(ice_H)
     if(allocated(ice_V)) deallocate(ice_V)
     if(allocated(precipitation)) deallocate(precipitation)
     allocate(tcoordX(dnodes),tcoordY(dnodes),tcoordZ(dnodes),tbound(dnodes))
-    allocate(sedthick(dnodes))
-    allocate(precipitation(dnodes),tvertDisp(dnodes),tflex(dnodes),gtflex(dnodes),ice_V(dnodes),ice_H(dnodes))
+    allocate(precipitation(dnodes),tvertDisp(dnodes),ice_V(dnodes),ice_H(dnodes))
+    allocate(tflex(dnodes),gtflex(dnodes),sedthick(dnodes))
+    if(flexure.and..not.restartFlag) allocate(ulay_th(dnodes,flex_lay),ulay_phi(dnodes,flex_lay))
     tcoordZ=0.0
     tflex=0.0
     gtflex=0.0
     tvertDisp=0.0
     ice_H=0.0
     ice_V=0.0
+    if(flexure.and..not.restartFlag) ulay_th=0.0
+    if(flexure.and..not.restartFlag) ulay_phi=0.0
     if(rain_event==0) precipitation=1.0
     allocate(delaunayVertex(dnodes))
     do n=1,dnodes
@@ -1404,6 +1409,8 @@ contains
     if(allocated(tflex))deallocate(tflex)
     if(allocated(gtflex))deallocate(gtflex)
     if(allocated(sedthick))deallocate(sedthick)
+    if(allocated(ulay_th))deallocate(ulay_th)
+    if(allocated(ulay_phi))deallocate(ulay_phi)
     if(allocated(ice_V))deallocate(ice_V)
     if(allocated(ice_H))deallocate(ice_H)
     if(allocated(vcoordX))deallocate(vcoordX)
@@ -1437,7 +1444,7 @@ contains
     if(allocated(rhyDisp))deallocate(rhyDisp)
     if(allocated(rhxDisp))deallocate(rhxDisp)
     if(allocated(rvertDisp))deallocate(rvertDisp)
-    if(allocated(rsedthick))deallocate(rsedthick)
+    if(allocated(rsedload))deallocate(rsedload)
     if(allocated(rainVal))deallocate(rainVal)
     if(allocated(frainmap))deallocate(frainmap)
     if(allocated(frainval))deallocate(frainval)

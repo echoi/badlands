@@ -22,7 +22,7 @@
 !
 !       Filename:  IsostaticFlexure.f90
 !
-!    Description:  Flexural isostasy computation (Li et al. 2004 CompGeo)
+!    Description:  Flexural isostasy computation (Li et al. 2004 CompGeo) and compaction
 !
 !        Version:  1.0
 !        Created:  11/07/15 05:05:05
@@ -54,6 +54,66 @@ module isoflex
   real(kind=8),dimension(:,:),allocatable::w,w1,wx,wy,ld
 
 contains
+
+  ! =====================================================================================
+  subroutine porosity_compaction
+
+    integer::k,p
+
+    real(kind=8)::toth,dh,phi,subs,pressure_lithos,mass
+
+    do k=1,dnodes
+      pressure_lithos=0.
+      if(spmZ(k)<gsea%actual_sea) pressure_lithos=9.81*sea_water_density*(gsea%actual_sea-spmZ(k))
+      subs=0.
+      do p=flex_lay-1,2,-1
+        ! Mass due to water in pore space
+        mass=mean_sediment_density*ulay_th(k,p+1)*(1-ulay_phi(k,p+1))
+        mass=mass+sea_water_density*ulay_th(k,p+1)*ulay_phi(k,p+1)
+        ! There is some sediment in this layer
+        if(mass>0.)then
+          pressure_lithos=pressure_lithos+mass*9.81
+          ! Calculate new porosity with this pressure
+          call get_porosity(pressure_lithos,ulay_phi(k,p),phi)
+          ! Subsidence due to porosity change
+          subs=subs+ulay_th(k,p)*(ulay_phi(k,p)-phi)
+          ! Update layer thickness
+          ulay_th(k,p)=ulay_th(k,p)-ulay_th(k,p)*(ulay_phi(k,p)-phi)
+          ! Update porosity
+          ulay_phi(k,p)=phi
+        endif
+      enddo
+      ! Correct the topographic elevation due to compactional subsidence
+      spmZ(k)=spmZ(k)-subs
+      sedthick(k)=sedthick(k)-subs
+    enddo
+
+  end subroutine porosity_compaction
+  ! =====================================================================================
+
+  subroutine get_porosity(Plith,in_phi,out_phi)
+
+    integer:: p,fd
+    real(kind=8)::in_phi,out_phi,Plith
+
+    ! Go through the pressure field and find the fitting interval
+    if(Plith<pressTable(1))then
+      out_phi=poroTable(1)
+    endif
+    fd=0
+    loop: do p=2,pressureFields
+      if(Plith>=pressTable(p-1).and.Plith<pressTable(p))then
+        fd=p
+        out_phi=(Plith-pressTable(p-1))/(pressTable(p)-pressTable(p-1))
+        out_phi=out_phi*(poroTable(p)-poroTable(p-1))+poroTable(p-1)
+        exit loop
+      endif
+    enddo loop
+    if(fd==0) out_phi=poroTable(pressureFields)
+
+    out_phi=min(out_phi,in_phi)
+
+  end subroutine get_porosity
   ! =====================================================================================
 
   subroutine update_Flex_array
@@ -72,7 +132,7 @@ contains
         if(i>1.and.i<nx+2.and.j>1.and.j<ny+2)then
           m=m+1
           tempZ(m)=rcoordZ(p)
-          tempSh(m)=rsedthick(p)
+          tempSh(m)=rsedload(p)
         endif
       enddo
     enddo
@@ -123,56 +183,6 @@ contains
 
     step=int(flex_dx/dx)
 
-    ! Read changes in topographic regular grid.
-    p=0
-    m=0
-    do j=1,ny+2
-      do i=1,nx+2
-        p=p+1
-        if(i>1.and.i<nx+2.and.j>1.and.j<ny+2)then
-          m=m+1
-          tempZ(m)=rcoordZ(p)
-          tempSh(m)=rsedthick(p)
-        endif
-      enddo
-    enddo
-
-    j=1
-    do jc=2,nbfy+1
-      i=1
-      p=(j-1)*nx+i
-      do ic=2,nbfx+1
-        flexZ(ic,jc)=tempZ(p)
-        flexSed(ic,jc)=tempSh(p)
-        i=i+step
-        p=(j-1)*nx+i
-      enddo
-      j=j+step
-    enddo
-
-    ! Update border
-    flexZ(2:nbfx+1,1)=flexZ(2:nbfx+1,2)
-    flexZ(2:nbfx+1,nbfy+2)=flexZ(2:nbfx+1,nbfy+1)
-    flexZ(1,2:nbfy+1)=flexZ(2,2:nbfy+1)
-    flexZ(nbfx+2,2:nbfy+1)=flexZ(nbfx+1,2:nbfy+1)
-
-    flexSed(2:nbfx+1,1)=flexSed(2:nbfx+1,2)
-    flexSed(2:nbfx+1,nbfy+2)=flexSed(2:nbfx+1,nbfy+1)
-    flexSed(1,2:nbfy+1)=flexSed(2,2:nbfy+1)
-    flexSed(nbfx+2,2:nbfy+1)=flexSed(nbfx+1,2:nbfy+1)
-
-    ! Update corner
-    flexZ(1,1)=flexZ(2,2)
-    flexZ(1,nbfy+2)=flexZ(2,nbfy+1)
-    flexZ(nbfx+2,1)=flexZ(nbfx+1,2)
-    flexZ(nbfx+2,nbfy+2)=flexZ(nbfx+1,nbfy+1)
-
-    flexSed(1,1)=flexSed(2,2)
-    flexSed(1,nbfy+2)=flexSed(2,nbfy+1)
-    flexSed(nbfx+2,1)=flexSed(nbfx+1,2)
-    flexSed(nbfx+2,nbfy+2)=flexSed(nbfx+1,nbfy+1)
-
-
     if(allocated(sedloader))then
       p=0
       do j=1,nbfy+2
@@ -184,7 +194,8 @@ contains
     else
       do j=1,nbfy+2
         do i=1,nbfx+2
-          tmp=mean_sediment_density*flexSed(i,j) !*(1-flexPor(i,j))+flexPor(i,j)*flexSed(i,j)*sea_water_density
+          flexSed(i,j)=mean_sediment_density*100000.0*(1-poroTable(pressureFields))+100000.0*poroTable(pressureFields)*sea_water_density
+          tmp=flexSed(i,j) !mean_sediment_density*flexSed(i,j) !*(1-flexPor(i,j))+flexPor(i,j)*flexSed(i,j)*sea_water_density
           if(flexZ(i,j)<gsea%actual_sea) tmp=tmp+(gsea%actual_sea-flexZ(i,j))*sea_water_density
           prevload(i,j)=tmp*cst1
         enddo
@@ -206,7 +217,7 @@ contains
     do j=1,nbfy+2
       do i=1,nbfx+2
         if(j>1.and.j<nbfy+2.and.i>1.and.i<nbfx+2)then
-          tmp=mean_sediment_density*flexSed(i,j) !*(1-flexPor(i,j))+flexPor(i,j)*flexSed(i,j)*sea_water_density
+          tmp=flexSed(i,j) !*(1-flexPor(i,j))+flexPor(i,j)*flexSed(i,j)*sea_water_density
           if(flexZ(i,j)<gsea%actual_sea) tmp=tmp+(gsea%actual_sea-flexZ(i,j))*sea_water_density
           oldload=prevload(i,j)
           prevload(i,j)=cst1*tmp

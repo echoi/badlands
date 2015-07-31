@@ -46,11 +46,12 @@ module restart
   implicit none
 
 
-  integer::newnds,rstnodes
+  integer::newnds,rstnodes,rstlay
 
   character(len=128)::frspm
 
-  real(kind=8),dimension(:,:),allocatable::newcoord,rstXYZ
+  real(kind=8),dimension(:,:),allocatable::newcoord,rstXYZ,rstFphi,rstFth
+  real(kind=8),dimension(:),allocatable::rstFload
 
 contains
 
@@ -60,10 +61,10 @@ contains
 
     logical::compression,simple
 
-    integer::id,i,rank,rpet,localNd,p
+    integer::id,i,rank,rpet,localNd,p,id2,n,loclay
 
-    real(kind=8),dimension(:),allocatable::nodes,nID,sedID
-    real(kind=8),dimension(:,:),allocatable::prevNd
+    real(kind=8),dimension(:),allocatable::nodes,nID,sedID,sedload,sedphi,sedth,pSedLoad
+    real(kind=8),dimension(:,:),allocatable::prevNd,pFlexH,pFlexP
     real(kind=8)::x,y
 
     character(len=128)::text
@@ -73,6 +74,9 @@ contains
     integer(hsize_t),dimension(2)::dims,maxdims
 
     rstnodes=0
+
+    if(allocated(ulay_th)) deallocate(ulay_th)
+    if(allocated(ulay_phi)) deallocate(ulay_phi)
 
     do rpet=0,restartPet-1
         frspm=rstfolder
@@ -130,7 +134,7 @@ contains
         allocate(sedID(dims(1)*dims(2)))
         call h5dread_f(dset_id,h5t_native_double,sedID,dims,rc)
 
-        ! The last sediment pile thickness for flexure
+        ! Flexure data
         if(flexure)then
           text="/flex"
           call h5dopen_f(file_id,trim(text),dset_id,rc)
@@ -139,11 +143,39 @@ contains
           call h5sis_simple_f(d_spc,simple,rc)
           call h5sget_simple_extent_ndims_f(d_spc,rank,rc)
           call h5sget_simple_extent_dims_f(d_spc,dims,maxdims,rc)
-          allocate(sedloader(dims(1)*dims(2)))
+          allocate(sedload(dims(1)*dims(2)))
           call h5dread_f(dset_id,h5t_native_double,sedloader,dims,rc)
+
+          text="/layth"
+          call h5dopen_f(file_id,trim(text),dset_id,rc)
+          call h5dget_type_f(dset_id,dtype_id,rc)
+          call h5dget_space_f(dset_id,d_spc,rc)
+          call h5sis_simple_f(d_spc,simple,rc)
+          call h5sget_simple_extent_ndims_f(d_spc,rank,rc)
+          call h5sget_simple_extent_dims_f(d_spc,dims,maxdims,rc)
+          allocate(sedth(dims(1)*dims(2)))
+          call h5dread_f(dset_id,h5t_native_double,sedth,dims,rc)
+
+          text="/layphi"
+          call h5dopen_f(file_id,trim(text),dset_id,rc)
+          call h5dget_type_f(dset_id,dtype_id,rc)
+          call h5dget_space_f(dset_id,d_spc,rc)
+          call h5sis_simple_f(d_spc,simple,rc)
+          call h5sget_simple_extent_ndims_f(d_spc,rank,rc)
+          call h5sget_simple_extent_dims_f(d_spc,dims,maxdims,rc)
+          allocate(sedphi(dims(1)*dims(2)))
+          call h5dread_f(dset_id,h5t_native_double,sedphi,dims,rc)
+          ! Update number of stratigrahic layers
+          loclay=dims(1)
+          if(rpet==0)then
+            allocate(pSedLoad((restartPet+1)*localNd))
+            allocate(pFlexH((restartPet+1)*localNd,loclay))
+            allocate(pFlexP((restartPet+1)*localNd,loclay))
+          endif
         endif
 
         id=1
+        id2=0
         do p=1,localNd
             i=int(nID(p))
             rstnodes=max(rstnodes,i)
@@ -152,25 +184,39 @@ contains
             prevNd(i,3)=nodes(id+2)
             prevNd(i,4)=sedID(p)
             id=id+3
+            if(flexure)then
+              pSedLoad(i)=sedload(p)
+              do n=1,loclay
+                id2=id2+1
+                pFlexH(i,n)=sedth(id2)
+                pFlexP(i,n)=sedphi(id2)
+              enddo
+            endif
         enddo
 
         ! Close the dataset
         call h5sclose_f(d_spc,rc)
         call h5dclose_f(dset_id,rc)
-
         ! Close the file.
         call h5fclose_f(file_id,rc)
-
         ! Close interface
         call h5close_f(rc)
-
-        deallocate(nodes,nID,sedID)
+        deallocate(nodes,nID,sedID,sedphi,sedth,sedload)
     enddo
 
     if(allocated(rstXYZ)) deallocate(rstXYZ)
     if(allocated(newcoord)) deallocate(newcoord)
     allocate(rstXYZ(rstnodes,4))
     allocate(newcoord(rstnodes,2))
+    if(flexure)then
+      rstlay=loclay
+      if(allocated(rstFphi)) deallocate(rstFphi)
+      if(allocated(rstFth)) deallocate(rstFth)
+      if(allocated(rstFload)) deallocate(rstFload)
+      allocate(rstFphi(rstnodes,loclay))
+      allocate(rstFth(rstnodes,loclay))
+      allocate(rstFload(rstnodes))
+    endif
 
     newnds=0
     do id=1,rstnodes
@@ -182,9 +228,16 @@ contains
             newcoord(newnds,1)=x
             newcoord(newnds,2)=y
         endif
+        if(flexure)then
+          rstFload(id)=pSedLoad(id)
+          do n=1,rstlay
+            rstFth(id,n)=pFlexH(id,n)
+            rstFphi(id,n)=pFlexP(id,n)
+          enddo
+        endif
     enddo
 
-    deallocate(prevNd)
+    deallocate(prevNd,pSedLoad,pFlexH,pFlexP)
 
     return
 
@@ -193,13 +246,26 @@ contains
 
   subroutine getRestart_topography
 
-    integer::id,k,rc
+    integer::id,k,rc,p,n
 
     real(kind=8),dimension(2)::txy
     real(kind=8),dimension(2,rstnodes)::Fd
+    real(kind=8),dimension(:),allocatable::Fphi,Fth
 
     type(kdtree2),pointer::Ftree
     type(kdtree2_result),dimension(1)::FRslt
+
+    if(flexure)then
+      if(allocated(sedloader)) deallocate(sedloader)
+      if(allocated(ulay_phi)) deallocate(ulay_phi)
+      if(allocated(ulay_th)) deallocate(ulay_th)
+      allocate(sedloader(dnodes))
+      flex_lay=flex_lay+rstlay
+      allocate(ulay_th(dnodes,flex_lay))
+      allocate(ulay_phi(dnodes,flex_lay))
+      allocate(Fphi(dnodes*rstlay))
+      allocate(Fth(dnodes*rstlay))
+    endif
 
     if(pet_id==0)then
         do k=1,rstnodes
@@ -208,6 +274,7 @@ contains
         enddo
         Ftree=>kdtree2_create(Fd,sort=.true.,rearrange=.true.)
 
+        n=0
         do k=1,dnodes
             txy(1)=tcoordX(k)
             txy(2)=tcoordY(k)
@@ -220,10 +287,17 @@ contains
             else
               sedthick(k)=100000.
             endif
+            if(flexure)then
+              sedloader(k)=rstFload(FRslt(1)%idx)
+              do p=1,rstlay
+                n=n+1
+                Fth(n)=rstFth(FRslt(1)%idx,p)
+                Fphi(n)=rstFphi(FRslt(1)%idx,p)
+              enddo
+            endif
         enddo
         call kdtree2_destroy(Ftree)
     endif
-
 
     if(allocated(bilinearX)) deallocate(bilinearX)
     if(allocated(bilinearY)) deallocate(bilinearY)
@@ -247,8 +321,29 @@ contains
     enddo
 
     if(allocated(rstXYZ)) deallocate(rstXYZ)
-
+    if(flexure)then
+      if(allocated(rstFth)) deallocate(rstFth)
+      if(allocated(rstFphi)) deallocate(rstFphi)
+      if(allocated(rstFload)) deallocate(rstFload)
+    endif
     call mpi_bcast(tcoordZ,dnodes,mpi_double_precision,0,badlands_world,rc)
+    call mpi_bcast(sedthick,dnodes,mpi_double_precision,0,badlands_world,rc)
+
+    if(flexure)then
+      call mpi_bcast(sedloader,dnodes,mpi_double_precision,0,badlands_world,rc)
+      call mpi_bcast(Fth,dnodes*rstlay,mpi_double_precision,0,badlands_world,rc)
+      call mpi_bcast(Fphi,dnodes*rstlay,mpi_double_precision,0,badlands_world,rc)
+      flex_lay=rstlay
+      n=0
+      do k=1,dnodes
+        do p=1,rstlay
+          n=n+1
+          ulay_th(k,p)=Fth(n)
+          ulay_phi(k,p)=Fphi(n)
+        enddo
+      enddo
+      deallocate(Fth,Fphi)
+    endif
 
     return
 
@@ -259,15 +354,18 @@ contains
 
     logical::compression,simple
 
-    integer::id,i,rank,rpet,localNd,p
+    integer::id,i,rank,rpet,localNd,p,n,loclay,id2
 
-    real(kind=8),dimension(:),allocatable::nodes,nID,sedID,sedlID
+    real(kind=8),dimension(:),allocatable::nodes,nID,sedID,sedlID,layphi,layth,sedload
 
     character(len=128)::text
 
     integer(hid_t)::file_id,d_spc
     integer(hid_t)::dset_id,dtype_id
     integer(hsize_t),dimension(2)::dims,maxdims
+
+    if(allocated(ulay_th)) deallocate(ulay_th)
+    if(allocated(ulay_phi)) deallocate(ulay_phi)
 
     do rpet=0,restartPet-1
         frspm=rstfolder
@@ -332,11 +430,40 @@ contains
           call h5sis_simple_f(d_spc,simple,rc)
           call h5sget_simple_extent_ndims_f(d_spc,rank,rc)
           call h5sget_simple_extent_dims_f(d_spc,dims,maxdims,rc)
-          allocate(sedloader(dims(1)*dims(2)))
+          allocate(sedload(dims(1)*dims(2)))
           call h5dread_f(dset_id,h5t_native_double,sedloader,dims,rc)
+
+          text="/layth"
+          call h5dopen_f(file_id,trim(text),dset_id,rc)
+          call h5dget_type_f(dset_id,dtype_id,rc)
+          call h5dget_space_f(dset_id,d_spc,rc)
+          call h5sis_simple_f(d_spc,simple,rc)
+          call h5sget_simple_extent_ndims_f(d_spc,rank,rc)
+          call h5sget_simple_extent_dims_f(d_spc,dims,maxdims,rc)
+          allocate(layth(dims(1)*dims(2)))
+          call h5dread_f(dset_id,h5t_native_double,layth,dims,rc)
+
+          text="/layphi"
+          call h5dopen_f(file_id,trim(text),dset_id,rc)
+          call h5dget_type_f(dset_id,dtype_id,rc)
+          call h5dget_space_f(dset_id,d_spc,rc)
+          call h5sis_simple_f(d_spc,simple,rc)
+          call h5sget_simple_extent_ndims_f(d_spc,rank,rc)
+          call h5sget_simple_extent_dims_f(d_spc,dims,maxdims,rc)
+          allocate(layphi(dims(1)*dims(2)))
+          call h5dread_f(dset_id,h5t_native_double,layphi,dims,rc)
+          ! Update number of stratigrahic layers
+          loclay=dims(1)
+          flex_lay=flex_lay+dims(1)
+          if(.not.allocated(ulay_th))then
+            allocate(ulay_th(dnodes,flex_lay),ulay_phi(dnodes,flex_lay))
+            ulay_th=0.
+            ulay_phi=0.
+          endif
         endif
 
         id=1
+        id2=0
         do p=1,localNd
             i=int(nID(p))
             if(abs(nodes(id)-tcoordX(i))>0.01.or.abs(nodes(id+1)-tcoordY(i))>0.01)then
@@ -351,6 +478,14 @@ contains
               sedthick(i)=100000.
             endif
             id=id+3
+            if(flexure)then
+              sedloader(i)=sedload(p)
+              do n=1,loclay
+                id2=id2+1
+                ulay_th(i,n)=layth(id2)
+                ulay_phi(i,n)=layphi(id2)
+              enddo
+            endif
         enddo
 
         ! Close the dataset
@@ -364,6 +499,7 @@ contains
         call h5close_f(rc)
 
         deallocate(nodes,nID,sedlID,sedID)
+        if(flexure)deallocate(layth,layphi,sedload)
     enddo
 
     if(allocated(bilinearX)) deallocate(bilinearX)
@@ -386,6 +522,8 @@ contains
     do id=2,ny+2
         bilinearY(id)=bilinearY(id-1)+real(dx)
     enddo
+
+    flex_lay=loclay
 
     return
 

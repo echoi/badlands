@@ -53,10 +53,11 @@ module coupling
 
   implicit none
 
-  integer::new_nodes
+  integer::new_nodes,olayflex
 
   real(kind=8),dimension(:,:),allocatable::record
   real(kind=8),dimension(:),allocatable::nhx,nhy,nhz,uzz,nsh,uss
+  real(kind=8),dimension(:,:),allocatable::nsf,usf,nsp,usp
   real(kind=8),dimension(:),allocatable::disp_hx,disp_hy
 
 contains
@@ -117,9 +118,7 @@ contains
     call mpi_allreduce(ubZ,tcoordZ,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
 
     ! Create a virtual uniform sediment layer
-    if(totgrn==0)then
-      sedthick=100000.0
-    endif
+    if(totgrn==0) sedthick=100000.0
 
     return
 
@@ -374,7 +373,7 @@ contains
     enddo
 
     call mpi_allreduce(nzz,rcoordZ,bnbnodes,mpi_double_precision,mpi_max,badlands_world,rc)
-    if(isflex) call mpi_allreduce(nsh,rsedthick,bnbnodes,mpi_double_precision,mpi_max,badlands_world,rc)
+    if(isflex) call mpi_allreduce(nsh,rsedload,bnbnodes,mpi_double_precision,mpi_max,badlands_world,rc)
 
     call kdtree2_destroy(Ftree)
 
@@ -442,9 +441,18 @@ contains
       call delaunayInterpolant(.true.)
       call built_initial_load
       cpl4_time=time_start+flex_dt
+      ! Create a simple stratigraphic layer mesh
+      if(.not.restartFlag)then
+        flex_lay=1
+        ulay_th(1:dnodes,flex_lay)=100000.0
+        ulay_phi(1:dnodes,flex_lay)=poroTable(pressureFields)
+      endif
     endif
 
     if(cpl4_time<=simulation_time)then
+      ! First compute the porosity change on the
+      ! simple stratigraphic layer
+      call porosity_compaction
       ! Get the updated topography from TIN to regular grid
       call delaunayInterpolant(.true.)
       call update_Flex_array
@@ -454,6 +462,8 @@ contains
       cpl4_time=cpl4_time+flex_dt
     endif
 
+    flex_lay=flex_lay+1
+
     return
 
   end subroutine getFlexModel
@@ -461,11 +471,14 @@ contains
 
   subroutine mvSpmGrid
 
-    integer::k,id,rmvID(dnodes),n,l,h,pts(3),onodes,tt
-    real(kind=8)::nx,ny,d1,d2,d3,w1,w2,w3
+    integer::k,id,rmvID(dnodes),n,l,h,pts(3),onodes,tt,p
+    real(kind=8)::nx,ny,d1,d2,d3,w1,w2,w3,testh
+    real(kind=8),dimension(:),allocatable::dd3,dd4
 
     real(kind=8),dimension(2)::txy
     real(kind=8),dimension(3)::txb,tyb,tzb,tsb
+    real(kind=8),dimension(:),allocatable::ff,fp,gfp,gff
+    real(kind=8),dimension(:,:),allocatable::tsf,tsp
     real(kind=8),dimension(2,dnodes)::Fd1
 
     type(kdtree2),pointer::Ftree1
@@ -483,6 +496,21 @@ contains
       if(allocated(record)) deallocate(record)
       allocate(nhx(dnodes),nhy(dnodes),nhz(dnodes))
       allocate(nsh(dnodes),record(dnodes,2))
+      if(flexure)then
+        olayflex=flex_lay
+        if(allocated(nsf)) deallocate(nsf)
+        if(allocated(nsp)) deallocate(nsp)
+        allocate(nsf(dnodes,olayflex))
+        allocate(nsp(dnodes,olayflex))
+        if(allocated(dd3)) deallocate(dd3)
+        if(allocated(dd4)) deallocate(dd4)
+        allocate(dd3(olayflex))
+        allocate(dd4(olayflex))
+        if(allocated(tsf)) deallocate(tsf)
+        if(allocated(tsp)) deallocate(tsp)
+        allocate(tsf(3,olayflex))
+        allocate(tsp(3,olayflex))
+      endif
 
       ! Apply the displacement to delaunay points
       do k=1,dnodes
@@ -496,6 +524,10 @@ contains
           nhy(k)=tcoordY(k)
         endif
         nsh(k)=sedthick(k)
+        if(flexure)then
+          nsf(k,1:olayflex)=ulay_th(k,1:olayflex)
+          nsp(k,1:olayflex)=ulay_phi(k,1:olayflex)
+        endif
         Fd1(1,k)=nhx(k)
         Fd1(2,k)=nhy(k)
       enddo
@@ -508,6 +540,8 @@ contains
           n=0
           d1=0.
           d2=0.
+          dd3=0.
+          dd4=0.
           do id=1,delaunayVertex(k)%ngbNb
             l=delaunayVertex(k)%ngbID(id)
             if(l>0)then
@@ -516,12 +550,24 @@ contains
                 n=n+1
                 d1=d1+nhz(l)
                 d2=d2+nsh(l)
+                if(flexure)then
+                  do p=1,olayflex
+                    dd3(p)=dd3(p)+nsf(l,p)
+                    dd4(p)=dd4(p)+nsp(l,p)
+                  enddo
+                endif
               endif
             endif
           enddo
           if(n>=1)then
             nhz(k)=d1/n
             nsh(k)=d2/n
+            if(flexure)then
+              do p=1,olayflex
+                nsf(k,p)=dd3(p)/n
+                nsp(k,p)=dd4(p)/n
+              enddo
+            endif
           else
             tt=tt+1
             rmvID(tt)=k
@@ -534,6 +580,8 @@ contains
         n=0
         d1=0.
         d2=0.
+        dd3=0.
+        dd4=0.
         do id=1,delaunayVertex(k)%ngbNb
           l=delaunayVertex(k)%ngbID(id)
           if(l>0)then
@@ -542,12 +590,24 @@ contains
               n=n+1
               d1=d1+nhz(l)
               d2=d2+nsh(l)
+              if(flexure)then
+                do p=1,olayflex
+                  dd3(p)=dd3(p)+nsf(l,p)
+                  dd4(p)=dd4(p)+nsp(l,p)
+                enddo
+              endif
             endif
           endif
         enddo
         if(n>=1)then
           nhz(k)=d1/n
           nsh(k)=d2/n
+          if(flexure)then
+            do p=1,olayflex
+              nsf(k,p)=dd3(p)/n
+              nsp(k,p)=dd4(p)/n
+            enddo
+          endif
         else
           print*,'issue moving spm grid',k,delaunayVertex(k)%ngbNb
           print*,tcoordX(k),tcoordY(k)
@@ -560,6 +620,8 @@ contains
           n=0
           d1=0.
           d2=0.
+          dd3=0.
+          dd4=0.
           do id=1,delaunayVertex(k)%ngbNb
             l=delaunayVertex(k)%ngbID(id)
             if(l>0)then
@@ -568,12 +630,24 @@ contains
                 n=n+1
                 d1=d1+nhz(l)
                 d2=d2+nsh(l)
+                if(flexure)then
+                  do p=1,olayflex
+                    dd3(p)=dd3(p)+nsf(l,p)
+                    dd4(p)=dd4(p)+nsp(l,p)
+                  enddo
+                endif
               endif
             endif
           enddo
           if(n>=1)then
             nhz(k)=d1/n
             nsh(k)=d2/n
+            if(flexure)then
+              do p=1,olayflex
+                nsf(k,p)=dd3(p)/n
+                nsp(k,p)=dd4(p)/n
+              enddo
+            endif
           else
             print*,'issue moving spm grid 2',k,delaunayVertex(k)%ngbNb
           endif
@@ -642,6 +716,14 @@ contains
       if(allocated(uss))deallocate(uss)
       allocate(uzz(dnodes))
       allocate(uss(dnodes))
+      if(flexure)then
+        if(allocated(usf))deallocate(usf)
+        if(allocated(usp))deallocate(usp)
+        allocate(usf(dnodes,olayflex))
+        allocate(usp(dnodes,olayflex))
+        usf=-1.e8
+        usp=0.
+      endif
       uzz=-1.e6
       uss=-1.e8
       do k=1,upartN
@@ -663,6 +745,14 @@ contains
           tsb(1)=nsh(pts(1))
           tsb(2)=nsh(pts(2))
           tsb(3)=nsh(pts(3))
+          if(flexure)then
+            tsf(1,1:olayflex)=nsf(pts(1),1:olayflex)
+            tsf(2,1:olayflex)=nsf(pts(2),1:olayflex)
+            tsf(3,1:olayflex)=nsf(pts(3),1:olayflex)
+            tsp(1,1:olayflex)=nsp(pts(1),1:olayflex)
+            tsp(2,1:olayflex)=nsp(pts(2),1:olayflex)
+            tsp(3,1:olayflex)=nsp(pts(3),1:olayflex)
+          endif
           call is_point_in_triangle(txy,txb,tyb,l)
           if(l==0) call insideTriangle(txy,txb,tyb,l)
           if(l==1)then
@@ -670,23 +760,41 @@ contains
             if(d1<1.0e-2)then
               uzz(id)=tzb(1)
               uss(id)=tsb(1)
+              if(flexure)then
+                usf(id,1:olayflex)=tsf(1,1:olayflex)
+                usp(id,1:olayflex)=tsp(1,1:olayflex)
+              endif
               goto 10
             endif
             d2=sqrt((txy(1)-txb(2))**2.+(txy(2)-tyb(2))**2.)
             if(d2<1.0e-2)then
               uzz(id)=tzb(2)
               uss(id)=tsb(2)
+              if(flexure)then
+                usf(id,1:olayflex)=tsf(2,1:olayflex)
+                usp(id,1:olayflex)=tsp(2,1:olayflex)
+              endif
               goto 10
             endif
             d3=sqrt((txy(1)-txb(3))**2.+(txy(2)-tyb(3))**2.)
             if(d3<1.0e-2)then
               uzz(id)=tzb(3)
               uss(id)=tsb(3)
+              if(flexure)then
+                usf(id,1:olayflex)=tsf(3,1:olayflex)
+                usp(id,1:olayflex)=tsp(3,1:olayflex)
+              endif
               goto 10
             endif
             ! derive elevation from triangle plane equation
             call DeriveTrianglePlanes2(txy,txb,tyb,tzb,uzz(id))
             call DeriveTrianglePlanes2(txy,txb,tyb,tsb,uss(id))
+            if(flexure)then
+              do p=1,olayflex
+                call DeriveTrianglePlanes2(txy,txb,tyb,tsf(1:3,p),usf(id,p))
+                call DeriveTrianglePlanes2(txy,txb,tyb,tsp(1:3,p),usp(id,p))
+              enddo
+            endif
             exit lo1
           elseif(n==12)then
             pts(1:3)=delmt2(FRslt2(1)%idx,1:3)
@@ -702,22 +810,42 @@ contains
             tsb(1)=nsh(pts(1))
             tsb(2)=nsh(pts(2))
             tsb(3)=nsh(pts(3))
+            if(flexure)then
+              tsf(1,1:olayflex)=nsf(pts(1),1:olayflex)
+              tsf(2,1:olayflex)=nsf(pts(2),1:olayflex)
+              tsf(3,1:olayflex)=nsf(pts(3),1:olayflex)
+              tsp(1,1:olayflex)=nsp(pts(1),1:olayflex)
+              tsp(2,1:olayflex)=nsp(pts(2),1:olayflex)
+              tsp(3,1:olayflex)=nsp(pts(3),1:olayflex)
+            endif
             d1=sqrt((txy(1)-txb(1))**2.+(txy(2)-tyb(1))**2.)
             if(d1<1.0e-2)then
               uzz(id)=tzb(1)
               uss(id)=tsb(1)
+              if(flexure)then
+                usf(id,1:olayflex)=tsf(1,1:olayflex)
+                usp(id,1:olayflex)=tsp(1,1:olayflex)
+              endif
               goto 10
             endif
             d2=sqrt((txy(1)-txb(2))**2.+(txy(2)-tyb(2))**2.)
             if(d2<1.0e-2)then
               uzz(id)=tzb(2)
               uss(id)=tsb(2)
+              if(flexure)then
+                usf(id,1:olayflex)=tsf(2,1:olayflex)
+                usp(id,1:olayflex)=tsp(2,1:olayflex)
+              endif
               goto 10
             endif
             d3=sqrt((txy(1)-txb(3))**2.+(txy(2)-tyb(3))**2.)
             if(d3<1.0e-2)then
               uzz(id)=tzb(3)
               uss(id)=tsb(3)
+              if(flexure)then
+                usf(id,1:olayflex)=tsf(3,1:olayflex)
+                usp(id,1:olayflex)=tsp(3,1:olayflex)
+              endif
               goto 10
             endif
             ! Compute elevation based on inverse weighted averaged distance
@@ -729,6 +857,14 @@ contains
             uzz(id)=(uzz(id))/(w1+w2+w3)
             uss(id)=w1*tsb(1)+w2*tsb(2)+w3*tsb(3)
             uss(id)=(uss(id))/(w1+w2+w3)
+            if(flexure)then
+              do p=1,olayflex
+                usf(id,p)=w1*tsf(1,p)+w2*tsf(2,p)+w3*tsf(3,p)
+                usf(id,p)=(usf(id,p))/(w1+w2+w3)
+                usp(id,p)=w1*tsp(1,p)+w2*tsp(2,p)+w3*tsp(3,p)
+                usp(id,p)=(usp(id,p))/(w1+w2+w3)
+              enddo
+            endif
           endif
         enddo lo1
 10 continue
@@ -736,18 +872,54 @@ contains
       call mpi_allreduce(uzz,tcoordZ,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
       call mpi_allreduce(uss,sedthick,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
 
+      if(flexure)then
+        if(allocated(ff)) deallocate(ff)
+        if(allocated(fp)) deallocate(fp)
+        allocate(ff(dnodes*olayflex))
+        allocate(fp(dnodes*olayflex))
+        if(allocated(gff)) deallocate(gff)
+        if(allocated(gfp)) deallocate(gfp)
+        allocate(gff(dnodes*olayflex))
+        allocate(gfp(dnodes*olayflex))
+        ff=-1.e6
+        fp=0.
+        do k=1,upartN
+          id=unodeID(k)
+          tt=(id-1)*olayflex
+          do p=1,olayflex
+            tt=tt+1
+            ff(tt)=usf(id,p)
+            fp(tt)=usp(id,p)
+          enddo
+        enddo
+        call mpi_allreduce(ff,gff,dnodes*olayflex,mpi_double_precision,mpi_max,badlands_world,rc)
+        call mpi_allreduce(fp,gfp,dnodes*olayflex,mpi_double_precision,mpi_max,badlands_world,rc)
+        tt=0
+        do k=1,dnodes
+          testh=0.
+          do p=1,olayflex
+            tt=tt+1
+            ulay_th(k,p)=gff(tt)
+            testh=testh+ulay_th(k,p)
+            ulay_phi(k,p)=gfp(tt)
+          enddo
+          if(abs(testh-sedthick(k))>0.1)then
+            print*,'Problem when looking at thickness conservation between strat layer and cumulative thickness'
+            print*,olayflex,testh,sedthick(k)
+            stop
+          endif
+        enddo
+      endif
+
       ! Update the rain values
       call bilinearRain
-
       ! Get next displacement timestep
       if(disp%actual<disp%event)then
         cpl2_time=disp_time(disp%actual+1,1)
       else
         cpl2_time=time_end+1000.
       endif
-
       update3d=.true.
-
       call kdtree2_destroy(Ftree2)
     endif
 

@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (C) 2015 Tristan Salles
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation; either version 2 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -24,11 +24,11 @@
 !
 !    Description:  Implements the geometry and topology functions of the stratigraphic grid
 !
-!        Version:  1.0 
+!        Version:  1.0
 !        Created:  02/06/15 07:56:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -69,7 +69,7 @@ module stratal_class
   type(sediment_parameters),dimension(:),allocatable::sediments
 
   ! Stratigraphic layer
-  character(len=128),dimension(:),allocatable::flayh 
+  character(len=128),dimension(:),allocatable::flayh
 
   integer,dimension(:),allocatable::lnID
   integer,dimension(:),allocatable::delPt
@@ -116,7 +116,7 @@ contains
 
     ! Stratal layer dimension
     slay=int((time_end-time_start)/time_layer)+ilay
-   
+
     ! Read initial deposit
     do k=1,ilay
       if(ilayh(k)==0)then
@@ -202,14 +202,14 @@ contains
     allocate(lay_base(upartN))
     if(allocated(lay_thick)) deallocate(lay_thick)
     if(allocated(lay_sed)) deallocate(lay_sed)
-    allocate(lay_thick(upartN,slay))    
+    allocate(lay_thick(upartN,slay))
     allocate(lay_sed(upartN,slay,totgrn))
     lay_thick=0.0
     lay_sed=0.0
 
     if(allocated(interpVal)) deallocate(interpVal)
     allocate(interpVal(upartN))
-   
+
     ! Build grid X-Y coordinates for fine stratal mesh
     do k=1,upartN
       n=unodeID(k)
@@ -217,7 +217,7 @@ contains
       lay_coord(k,2)=tcoordY(n)
     enddo
 
-    ! Interpolate values from coarse regular grid to fine stratal grid
+    ! Interpolate values from coarse regular grid to unstructured stratal grid
     call interpolate_grid_bilinear(nx+2,biX,ny+2,biY,biZ,upartN,real(lay_coord(1:upartN,1)),real(lay_coord(1:upartN,2)),interpVal)
     lay_base=interpVal
 
@@ -244,7 +244,7 @@ contains
 
     return
 
-  end subroutine constructStrata      
-  ! =====================================================================================                                                     
+  end subroutine constructStrata
+  ! =====================================================================================
 
 end module stratal_class

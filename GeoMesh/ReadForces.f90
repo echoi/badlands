@@ -79,9 +79,10 @@ module readforces
   logical,save::in_flexdt=.false.
   logical,save::in_flexdx=.false.
   logical,save::in_flexsedth=.false.
-  logical,save::in_flexsedporo=.false.
+  logical,save::in_flexpfields=.false.
+  logical,save::in_flexpressure=.false.
   logical,save::in_flexseddens=.false.
-  logical,save::in_flexdecay=.false.
+  logical,save::in_flexporosity=.false.
   logical,save::in_flexthick=.false.
   logical,save::in_mantledens=.false.
 
@@ -227,10 +228,11 @@ contains
     if(name=='flex_dx') in_flexdx=.true.
     if(name=='flex_dt') in_flexdt=.true.
     if(name=='sed_dens') in_flexseddens=.true.
-    if(name=='sed_poro') in_flexsedporo=.true.
-    if(name=='comp_decay') in_flexdecay=.true.
     if(name=='mantle_dens') in_mantledens=.true.
     if(name=='flex_thick') in_flexthick=.true.
+    if(name=='nb_Pfields') in_flexpfields=.true.
+    if(name=='Pressures') in_flexpressure=.true.
+    if(name=='Porosity') in_flexporosity=.true.
 
   end subroutine SflexElement_handler
   ! =====================================================================================
@@ -313,10 +315,11 @@ contains
     if(name=='flex_dx') in_flexdx=.false.
     if(name=='flex_dt') in_flexdt=.false.
     if(name=='sed_dens') in_flexseddens=.false.
-    if(name=='comp_decay') in_flexdecay=.false.
-    if(name=='sed_poro') in_flexsedporo=.false.
     if(name=='mantle_dens') in_mantledens=.false.
     if(name=='flex_thick') in_flexthick=.false.
+    if(name=='nb_Pfields') in_flexpfields=.false.
+    if(name=='Pressures') in_flexpressure=.false.
+    if(name=='Porosity') in_flexporosity=.false.
 
   end subroutine EflexElement_handler
   ! =====================================================================================
@@ -434,10 +437,16 @@ contains
       call rts(chars,flex_dt)
     elseif(in_flexseddens)then
       call rts(chars,mean_sediment_density)
-    elseif(in_flexdecay)then
-      call rts(chars,comp_decay)
-    elseif(in_flexsedporo)then
-      call rts(chars,comp_poro)
+    elseif(in_flexpfields)then
+      call rts(chars,pressureFields)
+      if(allocated(pressTable)) deallocate(pressTable)
+      if(allocated(poroTable)) deallocate(poroTable)
+      allocate(pressTable(pressureFields))
+      allocate(poroTable(pressureFields))
+    elseif(in_flexpressure)then
+      call rts(chars,pressTable(1:pressureFields))
+    elseif(in_flexporosity)then
+      call rts(chars,poroTable(1:pressureFields))
     elseif(in_mantledens)then
       call rts(chars,mean_mantle_density)
     elseif(in_flexthick)then
@@ -504,8 +513,6 @@ contains
     IceEro=0.001
     flex_dx=0.0
     flex_thick=10000.
-    comp_decay=4.0
-    comp_poro=0.
     flexure=.false.
 
     ! Open file
@@ -542,7 +549,9 @@ contains
       cpl4_time=time_start
       flex_rigid=70.e9/(12.0*0.75**2.)
       flex_rigid=flex_rigid*flex_thick**3.
+      flex_lay=int((time_end-time_start)/flex_dt+1)+1
     else
+      flex_lay=0
       cpl4_time=time_end+1000.0
     endif
 

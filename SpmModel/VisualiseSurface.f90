@@ -55,10 +55,11 @@ contains
 
     logical::compression
 
-    integer::id,i,j,k,p,rank,iter,totnodes,totelems,ierr
+    integer::id,id2,i,j,k,p,rank,iter,totnodes,totelems,ierr
     integer,dimension(:),allocatable::connect
     real(kind=8),dimension(:),allocatable::nodes,facc,dz,cumdz,rego,cID,nID,sl
     real(kind=8),dimension(:),allocatable::coldU,coldH,sedflex,cumflex
+    real(kind=8),dimension(:),allocatable::sedth,sedphi
 
     character(len=128)::text,file
 
@@ -98,10 +99,13 @@ contains
     endif
     if(flexure)then
       allocate(cumflex(totnodes))
+      allocate(sedth(totnodes*flex_lay))
+      allocate(sedphi(totnodes*flex_lay))
     endif
 
     ! Create nodes arrays
     id=1
+    id2=0
     do k=1,totnodes
        i=unodeID(k)
        nodes(id)=tcoordX(i)
@@ -131,7 +135,14 @@ contains
           cumdz(k)=0.
           dz(k)=0.0
        endif
-       if(flexure)cumflex(k)=gtflex(i)
+       if(flexure)then
+         cumflex(k)=gtflex(i)
+         do p=1,flex_lay
+           id2=id2+1
+           sedth(id2)=ulay_th(i,p)
+           sedphi(id2)=ulay_phi(i,p)
+         enddo
+       endif
        cID(k)=real(subcatchmentID(i))
        sl(k)=gsea%actual_sea
        if(ice_dx>0.)then
@@ -320,7 +331,6 @@ contains
 
     ! Flexural thickness
     if(flexure)then
-
       ! Cumulative flexure
       dims(1)=1
       dims(2)=totnodes
@@ -376,6 +386,55 @@ contains
       ! Close the dataset
       call h5dclose_f(dset_id,ierr)
       call h5sclose_f(filespace,ierr)
+
+      ! Sediment layer thickness
+      dims(1)=flex_lay
+      dims(2)=totnodes
+      rank=2
+      call h5screate_simple_f(rank,dims,filespace,ierr)
+      text=''
+      text="layth"
+
+      ! Create property list for collective dataset write
+      call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
+      call h5pset_deflate_f(plist_id,9,ierr)
+      call h5pset_chunk_f(plist_id,rank,dims,ierr)
+
+      ! Create the dataset with default properties
+      call h5dcreate_f(file_id,trim(text),h5t_native_double,filespace,dset_id,ierr,plist_id)
+
+      ! Write the dataset collectively
+      call h5dwrite_f(dset_id,h5t_native_double,sedth,dims,ierr)
+      call h5pclose_f(plist_id,ierr)
+
+      ! Close the dataset
+      call h5dclose_f(dset_id,ierr)
+      call h5sclose_f(filespace,ierr)
+
+      ! Sediment layer porosity
+      dims(1)=flex_lay
+      dims(2)=totnodes
+      rank=2
+      call h5screate_simple_f(rank,dims,filespace,ierr)
+      text=''
+      text="/layphi"
+
+      ! Create property list for collective dataset write
+      call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
+      call h5pset_deflate_f(plist_id,9,ierr)
+      call h5pset_chunk_f(plist_id,rank,dims,ierr)
+
+      ! Create the dataset with default properties
+      call h5dcreate_f(file_id,trim(text),h5t_native_double,filespace,dset_id,ierr,plist_id)
+
+      ! Write the dataset collectively
+      call h5dwrite_f(dset_id,h5t_native_double,sedphi,dims,ierr)
+      call h5pclose_f(plist_id,ierr)
+
+      ! Close the dataset
+      call h5dclose_f(dset_id,ierr)
+      call h5sclose_f(filespace,ierr)
+
     endif
 
     ! Catchment ID

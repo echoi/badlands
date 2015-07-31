@@ -51,8 +51,7 @@ module geomorpho
   integer::iter,idiff
 
   real(kind=8)::cpl_time,max_time
-  real(kind=8),dimension(:),allocatable::sedchange
-!   real(kind=8)::time1,time2,tt1,tt2
+  real(kind=8),dimension(:),allocatable::sedchange,tempthick
 
 contains
 
@@ -60,7 +59,9 @@ contains
 
   subroutine geomorphology
 
-    integer::k
+    integer::k,p
+
+    real(kind=8)::dh
 
     if(.not.allocated(nZ)) allocate(nZ(dnodes))
     if(.not.allocated(nH)) allocate(nH(dnodes))
@@ -70,6 +71,7 @@ contains
     if(.not.allocated(Qs_in)) allocate(Qs_in(dnodes))
     if(.not.allocated(cumDisp)) allocate(cumDisp(upartN))
     if(.not.allocated(sedchange)) allocate(sedchange(dnodes))
+    if(flexure.and..not.allocated(tempthick)) allocate(tempthick(dnodes))
     if(.not.allocated(change_local)) allocate(change_local(dnodes))
     if(.not.allocated(lastsedthick)) allocate(lastsedthick(dnodes))
 
@@ -99,40 +101,15 @@ contains
       if(.not.allocated(watercell)) allocate(watercell(dnodes))
 
       ! Update borders
-!       time1=mpi_wtime()
-!       tt1=mpi_wtime()
       call update_grid_borders
-!       call mpi_barrier(badlands_world,rc)
-!       tt2=mpi_wtime()
-!       if(pet_id==0)print*,'grid_borders',tt2-tt1
-!       tt1=mpi_wtime()
-
       ! Perform depressionless water filling algo
       call planchon_dem_fill_algorithm
-!       call mpi_barrier(badlands_world,rc)
-!       tt2=mpi_wtime()
-!       if(pet_id==0)print*,'fill compute',tt2-tt1
-!       tt1=mpi_wtime()
-
       ! Find network tree based on Braun & Willet 2013
       call define_landscape_network
-!       call mpi_barrier(badlands_world,rc)
-!       tt2=mpi_wtime()
-!       if(pet_id==0)print*,'network compute',tt2-tt1
-!       tt1=mpi_wtime()
-
       ! Define subcathcment partitioning
       call compute_subcatchment
-!       call mpi_barrier(badlands_world,rc)
-!       tt2=mpi_wtime()
-!       if(pet_id==0)print*,'subcatch',tt2-tt1
-!       tt1=mpi_wtime()
-
       ! Define load balancing
       call bcast_loadbalancing
-!       call mpi_barrier(badlands_world,rc)
-!       tt2=mpi_wtime()
-!       if(pet_id==0)print*,'load',tt2-tt1
 
       if(simulation_time==time_start.or.update3d) newZ=spmZ
       if(pet_id==0)print*,'Current time:',simulation_time
@@ -149,10 +126,6 @@ contains
         lastsedthick=sedthick
         cumDisp=0.
       endif
-!       call mpi_barrier(badlands_world,rc)
-!       call mpi_finalize(rc)
-!       stop
-!       tt1=mpi_wtime()
 
       ! Get time step size for hillslope process and stream power law
       call CFL_condition
@@ -169,19 +142,35 @@ contains
 
       ! Merge local geomorphic evolution
       call mpi_allreduce(nZ,spmZ,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
+      if(flexure) tempthick=sedthick
       call mpi_allreduce(sedchange,sedthick,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
+
+      if(flexure)then
+        ! Update layer thickness
+        do k=1,dnodes
+          ! In case of erosion
+          if(tempthick(k)>sedthick(k))then
+            dh=tempthick(k)-sedthick(k)
+            tlp: do p=flex_lay,1,-1
+              if(dh>ulay_th(k,p))then
+                ulay_th(k,p)=0.
+                ulay_phi(k,p)=0.
+                dh=dh-ulay_th(k,p)
+              elseif(dh<ulay_th(k,p))then
+                ulay_th(k,p)=ulay_th(k,p)-dh
+              endif
+            enddo tlp
+          ! In case of deposition
+          elseif(tempthick(k)<sedthick(k))then
+            ulay_th(k,flex_lay)=ulay_th(k,flex_lay)+sedthick(k)-tempthick(k)
+            ulay_phi(k,flex_lay)=poroTable(1)
+          endif
+        enddo
+      endif
+
       if(stream_ero>0..or.regoProd>0.) &
         call mpi_allreduce(nH,spmH,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
       update3d=.false.
-!       stop
-!       call mpi_barrier(badlands_world,rc)
-!       tt2=mpi_wtime()
-!       if(pet_id==0)print*,'geomorpho',tt2-tt1
-
-!       call mpi_barrier(badlands_world,rc)
-!       time2=mpi_wtime()
-!       if(pet_id==0)print*,'time-step',time2-time1
-!       if(pet_id==0.and.simulation_time>2.2)stop
     enddo
 
     if(simulation_time>=time_end)then
@@ -279,28 +268,23 @@ contains
       endif
 
       if(voronoiCell(id)%btype<0)then
-
         ! Define local parameters
         rcv=receivers(id)
         distance=sqrt((tcoordX(id)-tcoordX(rcv))**2.0+(tcoordY(id)-tcoordY(rcv))**2.0)
-
         ! Creep processes
         call hillslope_flux(id,LDL,DDD,NDL,diffH)
         ! Stream Power Law (detachment-limited) - bedrock incision
         SPL=0.
         Qs1=0.
         if(Cerodibility>0.) call detachmentlimited(id,rcv,distance,diffH,SPL,Qs1)
-
         ! Sediment Transport Law (transport-limited)
         STL=0.
         Qs2=0.
         if(Cefficiency>0.) call transportlimited(id,rcv,distance,diffH,STL,Qs2)
-
         ! Sediment Transport Capacity model
         STC=0.
         Qs3=0.
         if(stream_ero>0.) call streamcapacity(id,rcv,distance,diffH,STC,Qs3)
-
         ! Hybrid sediment flux
         ST=0
         if(Cefficiency>0..and.Cerodibility>0..and.regoProd==0.)then
