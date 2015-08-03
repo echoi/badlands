@@ -11,7 +11,7 @@ Badlands
 
 ## The specs...
 
-The model is mainly written in fortran and takes advantage of the Earth Surface Modelling Framework (**ESMF**). 
+The model is mainly written in fortran and is based on the following characteristics: 
 * The finite volume approach from Tucker et al. (2001) based on the dual Delaunay-Voronoi framework is used to solve the continuity equation explicitly, 
 * Node ordering is perform efficiently based on the work from Braun & Willett (2013),
 * A Hilbert Space-Filling Curve method algorithm (Zoltan) is used to partition the TIN-based surface into subdomains,
