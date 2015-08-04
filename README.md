@@ -7,7 +7,7 @@ Badlands
 
 ## Overview
 
-**Ba**sin an**d** **Lan**dscape **D**ynamic**s** (**Badlands**) is a parallel TIN-based landscape evolution model, built to simulate topography development at various space and time scales. The model is presently capable of simulating hillslope processes such as **linear** & **nonlinear** diffusion, fluvial incision (**detachment-limited** & **under-capacity** laws), spatially varying surface uplift which can be used to simulate changes in base level, as well as effects of climate changes and sea-level fluctuations. 
+**Ba**sin an**d** **Lan**dscape **D**ynamic**s** (**Badlands**) is a parallel TIN-based landscape evolution model, built to simulate topography development at various space and time scales. The model is presently capable of simulating hillslope processes (**linear** diffusion), fluvial incision (*'modified'* **SPL**:  erosion/transport/deposition), spatially and temporally varying geodynamic (horizontal + vertical displacements) and climatic forces which can be used to simulate changes in base level, as well as effects of climate changes or sea-level fluctuations. 
 
 ## The specs...
 
