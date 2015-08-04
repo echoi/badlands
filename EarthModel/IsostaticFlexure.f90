@@ -1,19 +1,19 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
 ! This program is free software; you can redistribute it and/or modify it under
-! the terms of the GNU General Public License as published by the Free Software
-! Foundation; either version 2 of the License, or (at your option) any later
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
 ! This program is distributed in the hope that it will be useful, but WITHOUT
 ! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
-! You should have received a copy of the GNU General Public License along with
+! You should have received a copy of the GNU Lesser General Public License along with
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
@@ -60,7 +60,7 @@ contains
 
     integer::k,p
 
-    real(kind=8)::toth,dh,phi,subs,pressure_lithos,mass
+    real(kind=8)::phi,subs,pressure_lithos,mass
 
     do k=1,dnodes
       pressure_lithos=0.
@@ -177,11 +177,49 @@ contains
 
   subroutine built_initial_load
 
-    integer::i,j,p,m,ic,jc,step
+    integer::step,i,j,ic,jc,p,m
+
     real(kind=8)::tmp
-    real(kind=8),dimension(nbnodes)::tempZ,tempSh
+    real(kind=8),dimension(nbnodes)::tempZ
 
     step=int(flex_dx/dx)
+
+    ! Read changes in topographic regular grid.
+    p=0
+    m=0
+    do j=1,ny+2
+      do i=1,nx+2
+        p=p+1
+        if(i>1.and.i<nx+2.and.j>1.and.j<ny+2)then
+          m=m+1
+          tempZ(m)=rcoordZ(p)
+        endif
+      enddo
+    enddo
+
+    j=1
+    do jc=2,nbfy+1
+      i=1
+      p=(j-1)*nx+i
+      do ic=2,nbfx+1
+        flexZ(ic,jc)=tempZ(p)
+        i=i+step
+        p=(j-1)*nx+i
+      enddo
+      j=j+step
+    enddo
+
+    ! Update border
+    flexZ(2:nbfx+1,1)=flexZ(2:nbfx+1,2)
+    flexZ(2:nbfx+1,nbfy+2)=flexZ(2:nbfx+1,nbfy+1)
+    flexZ(1,2:nbfy+1)=flexZ(2,2:nbfy+1)
+    flexZ(nbfx+2,2:nbfy+1)=flexZ(nbfx+1,2:nbfy+1)
+
+    ! Update corner
+    flexZ(1,1)=flexZ(2,2)
+    flexZ(1,nbfy+2)=flexZ(2,nbfy+1)
+    flexZ(nbfx+2,1)=flexZ(nbfx+1,2)
+    flexZ(nbfx+2,nbfy+2)=flexZ(nbfx+1,nbfy+1)
 
     if(allocated(sedloader))then
       p=0
@@ -201,6 +239,7 @@ contains
         enddo
       enddo
     endif
+
 
 
   end subroutine built_initial_load

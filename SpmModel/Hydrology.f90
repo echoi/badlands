@@ -1,19 +1,19 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
 ! This program is free software; you can redistribute it and/or modify it under
-! the terms of the GNU General Public License as published by the Free Software
-! Foundation; either version 2 of the License, or (at your option) any later
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
 ! This program is distributed in the hope that it will be useful, but WITHOUT
 ! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
-! You should have received a copy of the GNU General Public License along with
+! You should have received a copy of the GNU Lesser General Public License along with
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
@@ -45,7 +45,7 @@ module hydrology
   ! Local arrays
   integer,dimension(:),allocatable::intArray,allocs,donorCount,partStack
 
-  real(kind=8),dimension(:),allocatable::cumDisp,watercell
+  real(kind=8),dimension(:),allocatable::watercell
   real(kind=8),dimension(:),allocatable::nZ,nH,change_local,filldem
 
 contains
@@ -240,11 +240,6 @@ contains
       id=localNodesGID(lid)
       k=stackOrder(id)
       nZ(k)=nZ(k)+tvertDisp(k)*time_step
-    enddo
-
-    do k=1,upartN
-      id=unodeID(k)
-      cumDisp(k)=cumDisp(k)+tvertDisp(id)*time_step
     enddo
 
   end subroutine compute_vertical_displacement
@@ -493,13 +488,15 @@ contains
     real(kind=8),dimension(3)::d1,d2,n
     real(kind=8),dimension(4)::plane
 
-
+    sload1=0.
+    sload2=0.
+    sload3=0.
     do p=1,flex_lay
-      sload1=ulay_th(id1,p)*(1-ulay_phi(id1,p))*mean_sediment_density+&
+      sload1=sload1+ulay_th(id1,p)*(1-ulay_phi(id1,p))*mean_sediment_density+&
         ulay_th(id1,p)*ulay_phi(id1,p)*sea_water_density
-      sload2=ulay_th(id2,p)*(1-ulay_phi(id2,p))*mean_sediment_density+&
+      sload2=sload2+ulay_th(id2,p)*(1-ulay_phi(id2,p))*mean_sediment_density+&
         ulay_th(id2,p)*ulay_phi(id2,p)*sea_water_density
-      sload3=ulay_th(id3,p)*(1-ulay_phi(id3,p))*mean_sediment_density+&
+      sload3=sload3+ulay_th(id3,p)*(1-ulay_phi(id3,p))*mean_sediment_density+&
         ulay_th(id3,p)*ulay_phi(id3,p)*sea_water_density
     enddo
 

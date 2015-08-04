@@ -1,19 +1,19 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
 ! This program is free software; you can redistribute it and/or modify it under
-! the terms of the GNU General Public License as published by the Free Software
-! Foundation; either version 2 of the License, or (at your option) any later
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
 ! This program is distributed in the hope that it will be useful, but WITHOUT
 ! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
-! You should have received a copy of the GNU General Public License along with
+! You should have received a copy of the GNU Lesser General Public License along with
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
@@ -222,15 +222,11 @@ contains
     call mpi_allreduce(ufV,tflex,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
 
     ! Apply the flexural isostasy to delaunay points
+    ! print*,'dedeefffffffd',tflex(1)
     do k=1,dnodes
       tcoordZ(k)=tcoordZ(k)-tflex(k)
       gtflex(k)=gtflex(k)-tflex(k)
       spmZ(k)=tcoordZ(k)
-    enddo
-
-    do k=1,upartN
-      id=unodeID(k)
-      cumDisp(k)=cumDisp(k)-tflex(id)
     enddo
 
     return
@@ -341,7 +337,6 @@ contains
     Ftree=>kdtree2_create(Fdata,sort=.true.,rearrange=.true.)
 
     do k=1,spartN
-
       gid=snodeID(k)
       xy(1)=rcoordX(gid)
       xy(2)=rcoordY(gid)
@@ -369,12 +364,10 @@ contains
           print*,'Problem when finding points within Delaunay cell.'
         endif
       enddo lo
-
     enddo
 
     call mpi_allreduce(nzz,rcoordZ,bnbnodes,mpi_double_precision,mpi_max,badlands_world,rc)
     if(isflex) call mpi_allreduce(nsh,rsedload,bnbnodes,mpi_double_precision,mpi_max,badlands_world,rc)
-
     call kdtree2_destroy(Ftree)
 
     return
@@ -438,12 +431,12 @@ contains
 
     if(simulation_time==time_start)then
       call FLEX_grid
+      if(.not.restartFlag) flex_lay=1
       call delaunayInterpolant(.true.)
       call built_initial_load
       cpl4_time=time_start+flex_dt
       ! Create a simple stratigraphic layer mesh
       if(.not.restartFlag)then
-        flex_lay=1
         ulay_th(1:dnodes,flex_lay)=100000.0
         ulay_phi(1:dnodes,flex_lay)=poroTable(pressureFields)
       endif
@@ -1041,7 +1034,6 @@ contains
     if(allocated(rcvIDs)) deallocate(rcvIDs)
     if(allocated(allocs)) deallocate(allocs)
     if(allocated(delemID)) deallocate(delemID)
-    if(allocated(cumDisp)) deallocate(cumDisp)
     if(allocated(filldem)) deallocate(filldem)
     if(allocated(strahler)) deallocate(strahler)
     if(allocated(baselist)) deallocate(baselist)

@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
-! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! You should have received a copy of the GNU Lesser General Public License along with
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  11/06/15 09:11:25
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -50,7 +50,7 @@ module stratmorph
   use external_forces
 
   implicit none
-  
+
   integer::iter,idiff
 
   real(kind=8)::cpl_time,max_time
@@ -73,21 +73,19 @@ contains
     if(.not.allocated(newZ)) allocate(newZ(dnodes))
     if(.not.allocated(spmZ)) allocate(spmZ(dnodes))
     if(.not.allocated(spmH)) allocate(spmH(dnodes))
-    if(.not.allocated(cumDisp)) allocate(cumDisp(upartN))
     if(.not.allocated(nsed)) allocate(nsed(dnodes,totgrn))
     if(.not.allocated(Qs_inS)) allocate(Qs_inS(dnodes,totgrn))
     if(.not.allocated(change_localS)) allocate(change_localS(dnodes,totgrn))
-   
+
     ! Define paramaters
     if(simulation_time==time_start.or.update3d)then
       if(simulation_time==time_start) iter=0
       ! Build active layer
       call buildActiveLayer
       spmZ=tcoordZ
-      cumDisp=0.
       CFL_diffusion=display_interval
       idiff=0
-      if(simulation_time==time_start) time_step=0. 
+      if(simulation_time==time_start) time_step=0.
       if(simulation_time==time_start) time_display=time_start
       if(simulation_time==time_start) time_strata=time_start
       if(Cefficiency>0..or.stream_ero>0.) Tforce=1
@@ -109,7 +107,7 @@ contains
 
       ! Find network tree based on Braun & Willet 2013
       call define_landscape_network
-      
+
       ! Define subcathcment partitioning
       call compute_subcatchment
 
@@ -118,7 +116,7 @@ contains
 
       if(simulation_time==time_start.or.update3d) newZ=spmZ
       if(pet_id==0)print*,'Current time:',simulation_time
-      
+
       ! Add stratigraphic layer
       if(simulation_time>=time_strata)then
         if(time_strata<=time_end) layNb=layNb+1
@@ -135,36 +133,35 @@ contains
         time_display=time_display+display_interval
         iter=iter+1
         newZ=spmZ
-        cumDisp=0.
       endif
 
       ! Get time step size for hillslope process and stream power law
-      call CFL_conditionS 
+      call CFL_conditionS
 
       ! Geomorphological evolution
       call geomorphic_evolutionS
-      
+
       ! Advance time
       simulation_time=simulation_time+time_step
       ! Update sea-level
       if(gsea%sealevel) call eustatism
       ! Apply displacement
-      if(disp%event>0.and..not.disp3d)then 
+      if(disp%event>0.and..not.disp3d)then
         call compute_vertical_displacement
         call compute_stratal_displacement
       endif
 
-      ! Merge local geomorphic evolution      
+      ! Merge local geomorphic evolution
       call mpi_allreduce(nZ,spmZ,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
 
-      ! Merge local stratigraphic evolution     
-      call mpi_allreduce(nth,alay_thick,dnodes,mpi_double_precision,mpi_max,badlands_world,rc) 
-      
+      ! Merge local stratigraphic evolution
+      call mpi_allreduce(nth,alay_thick,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
+
       do ks=1,totgrn
         tsed(1:dnodes)=nsed(1:dnodes,ks)
-        call mpi_allreduce(tsed,gsed,dnodes,mpi_double_precision,mpi_max,badlands_world,rc) 
+        call mpi_allreduce(tsed,gsed,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
         alay_sed(1:dnodes,ks)=gsed(1:dnodes)
-      enddo    
+      enddo
 
       ! Update stratigraphic layer
       call update_stratigraphy_layer
@@ -198,7 +195,7 @@ contains
     real(kind=8)::denom,distance,dh,ldt,dt
 
     ! Hillslope CFL conditions
-    if(simulation_time==time_start.or.idiff==0.or.sediments(1)%diffa>0.)then 
+    if(simulation_time==time_start.or.idiff==0.or.sediments(1)%diffa>0.)then
       call CFLdiffusionS
       CFL_diffusion=display_interval
       idiff=1
@@ -206,12 +203,12 @@ contains
     else
       time_step=CFL_diffusion
     endif
-    
+
     ! CFL factor for stream power law (bedrock incision)
     if(Cerodibility>0.)then
       do lid=1,localNodes
         p=localNodesGID(lid)
-        k=stackOrder(p) 
+        k=stackOrder(p)
         if(voronoiCell(k)%border==0)then
           id=receivers(k)
           if(k/=id)then
@@ -228,9 +225,9 @@ contains
 
     if(time_step>display_interval) time_step=display_interval
     if(time_step<force_time) time_step=force_time
-    
+
     ! Get maximum time step for stability
-    ldt=time_step    
+    ldt=time_step
     call mpi_allreduce(ldt,dt,1,mpi_double_precision,mpi_min,badlands_world,rc)
     time_step=dt
 
@@ -239,7 +236,7 @@ contains
     if(simulation_time+time_step>time_display) time_step=time_display-simulation_time+1.e-4
     if(simulation_time+time_step>time_strata) time_step=time_strata-simulation_time+1.e-4
     if(simulation_time+time_step>time_end) time_step=time_end-simulation_time+1.e-4
-      
+
   end subroutine CFL_conditionS
   ! =====================================================================================
 
@@ -247,7 +244,7 @@ contains
 
     integer::k,id,rcv,lid,p,q,m,ks
     integer::stat(mpi_status_size),ierr,req(localNodes),r
-    
+
     real(kind=8),dimension(totgrn)::LDL,SPL,Qs1,Qsr
 
     real(kind=8)::mtime,dt,maxtime,th
@@ -263,37 +260,37 @@ contains
 
     do lid=localNodes,1,-1
       k=localNodesGID(lid)
-      id=stackOrder(k) 
-    
+      id=stackOrder(k)
+
       ! Receive child influx
       if(rcvprocNb(id)>0)then
         do p=1,rcvprocNb(id)
           call mpi_recv(Qsr,totgrn,mpi_double_precision,rcvprocID(id,p),rcvsendID(id,p),badlands_world,stat,ierr)
           do ks=1,totgrn
-            Qs_inS(id,ks)=Qs_inS(id,ks)+Qsr(ks) 
+            Qs_inS(id,ks)=Qs_inS(id,ks)+Qsr(ks)
           enddo
         enddo
       endif
 
       if(voronoiCell(id)%btype<0)then
-        
+
         ! Define local parameters
         rcv=receivers(id)
         distance=sqrt((tcoordX(id)-tcoordX(rcv))**2.0+(tcoordY(id)-tcoordY(rcv))**2.0)
 
         ! Creep processes
         call hillslope_fluxS(id,LDL,diffH)
-    
+
         ! Stream Power Law (detachment-limited) - bedrock incision
         SPL=0.
         Qs1=0.
         call detachmentlimitedS(id,distance,diffH,SPL,Qs1)
-        
+
         ! Detachment-limited condition
         do ks=1,totgrn
           Qs_inS(rcv,ks)=Qs_inS(rcv,ks)+Qs1(ks)
         enddo
-        
+
         do ks=1,totgrn
           if(perosive==1.and.SPL(ks)>0.) SPL(ks)=0.
           change_localS(id,ks)=SPL(ks)+LDL(ks)
@@ -325,7 +322,7 @@ contains
     if(Tforce==0)then
       do lid=1,localNodes
         k=localNodesGID(lid)
-        id=stackOrder(k) 
+        id=stackOrder(k)
         rcv=receivers(id)
         th=0.0
         do ks=1,totgrn
@@ -338,7 +335,7 @@ contains
         if(tcoordX(id)<minx.or.tcoordX(id)>maxx.or.tcoordY(id)<miny &
             .or.tcoordY(id)>maxy) change_localS(id,1:totgrn)=0.
 
-        if(rcv==id.and.th>0..and.voronoiCell(id)%btype<0)then 
+        if(rcv==id.and.th>0..and.voronoiCell(id)%btype<0)then
           if(watercell(id)==0.)then
             maxh=0.
             do q=1,delaunayVertex(id)%ngbNb
@@ -346,27 +343,27 @@ contains
               maxh=max(maxh,spmZ(m)-spmZ(id))
             enddo
             if(maxh>0.)then
-              mtime=maxh/th 
+              mtime=maxh/th
               maxtime=min(maxtime,mtime)
             endif
           else
             mtime=watercell(id)/th
             maxtime=min(maxtime,mtime)
-          endif 
+          endif
         endif
 
       enddo
     endif
     call mpi_allreduce(maxtime,dt,1,mpi_double_precision,mpi_min,badlands_world,rc)
-    time_step=dt   
+    time_step=dt
     if(time_step<force_time) time_step=force_time
 
     ! Perform elevation and regolith evolution
     do lid=1,localNodes
       id=localNodesGID(lid)
-      k=stackOrder(id) 
-      if(voronoiCell(k)%border==0)then 
-        if(tcoordX(k)==minx.and.bounds(3)==0)change_local(k)=0. 
+      k=stackOrder(id)
+      if(voronoiCell(k)%border==0)then
+        if(tcoordX(k)==minx.and.bounds(3)==0)change_local(k)=0.
         if(tcoordX(k)==maxx.and.bounds(4)==0)change_local(k)=0.
         if(tcoordY(k)==miny.and.bounds(2)==0)change_local(k)=0.
         if(tcoordY(k)==maxy.and.bounds(1)==0)change_local(k)=0.
@@ -375,7 +372,7 @@ contains
         do ks=1,totgrn
           th=th+time_step*change_localS(k,ks)
           nsed(k,ks)=alay_sed(k,ks)+time_step*change_localS(k,ks)
-          if(abs(nsed(k,ks))<1.e-6)then 
+          if(abs(nsed(k,ks))<1.e-6)then
             if(nsed(k,ks)>0.) th=th-nsed(k,ks)
             nsed(k,ks)=0.
           endif
@@ -414,7 +411,7 @@ contains
 
     ! Volumic fraction of each sediment class present in the bed
     frac(1:totgrn)=alay_sed(id,1:totgrn)/alay_thick(id)
-  
+
     ! In case erosion occurs
     if(rcv/=id.and.dh>0..and.watercell(id)<1.e-6.and.spmZ(id)>=gsea%actual_sea)then
       ! If next vertex is potentially erosional
@@ -473,7 +470,7 @@ contains
           enddo lp2
         endif
 
-      ! Fill depression 
+      ! Fill depression
       elseif(watercell(id)>0.0001.and.rcv/=id)then
         dh=watercell(id)
         if(Tforce==0)then
@@ -496,7 +493,7 @@ contains
               Qs(ks)=0.
               dh=dh-Qs_inS(id,ks)*time_step/voronoiCell(id)%area
             else
-              ST(ks)=dh/time_step 
+              ST(ks)=dh/time_step
               Qs(ks)=Qs_inS(id,ks)-ST(ks)*voronoiCell(id)%area
               dh=0.
             endif

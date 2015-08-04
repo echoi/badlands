@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (C) 2015 Tristan Salles 
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the Free Software 
-! Foundation; either version 2 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
-! You should have received a copy of the GNU General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! You should have received a copy of the GNU Lesser General Public License along with
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -108,7 +108,7 @@ contains
           vdisp_time(kn,1)=disp_time(disp%event,2)
           vdisp_fill(kn)=0
         endif
-        
+
         deallocate(disp_time,disp_fill)
         allocate(disp_time(vdisp%event,2),disp_fill(vdisp%event))
         disp%event=vdisp%event
@@ -239,7 +239,7 @@ contains
       endif
     enddo
 
-    ! Define next coupling time 
+    ! Define next coupling time
     if(.not.disp3d)then
       if(disp%actual<disp%event)then
         cpl2_time=disp_time(disp%actual+1,1)
