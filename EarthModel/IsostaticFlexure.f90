@@ -43,7 +43,7 @@ module isoflex
 
   implicit none
 
-  integer::n2x,n2y,n4x,n4y
+  integer::numrow,numcol,n2row,n2col,n4row,n4col
 
   ! Fourth order schema parameters
   real(kind=8),parameter::q1=216.,q2=-18.,q3=-84.
@@ -51,7 +51,7 @@ module isoflex
   real(kind=8),parameter::r1=144.,r2=18.,r3=-48.
   real(kind=8),parameter::r4=-6.,r5=1./240.
 
-  real(kind=8),dimension(:,:),allocatable::w,w1,wx,wy,ld
+  real(kind=8),dimension(:,:),allocatable::w,wx,wy,ld,w1
 
 contains
 
@@ -60,7 +60,7 @@ contains
 
     integer::k,p
 
-    real(kind=8)::phi,subs,pressure_lithos,mass
+    real(kind=8)::phi,subs,pressure_lithos,mass,nh
 
     do k=1,dnodes
       pressure_lithos=0.
@@ -75,17 +75,26 @@ contains
           pressure_lithos=pressure_lithos+mass*9.81
           ! Calculate new porosity with this pressure
           call get_porosity(pressure_lithos,ulay_phi(k,p),phi)
-          ! Subsidence due to porosity change
-          subs=subs+ulay_th(k,p)*(ulay_phi(k,p)-phi)
-          ! Update layer thickness
-          ulay_th(k,p)=ulay_th(k,p)-ulay_th(k,p)*(ulay_phi(k,p)-phi)
-          ! Update porosity
-          ulay_phi(k,p)=phi
+          if(phi>ulay_phi(k,p)) print*,'Issue computing compactional porosity'
+          phi=min(phi,ulay_phi(k,p))
+          if(phi<1.)then
+            nh=ulay_th(k,p)*(1.0-ulay_phi(k,p))/(1.0-phi)
+            nh=min(ulay_th(k,p),nh)
+            ! Subsidence due to porosity change
+            subs=subs+nh-ulay_th(k,p)
+            ! Update layer thickness
+            ulay_th(k,p)=nh
+            ! Update porosity
+            ulay_phi(k,p)=phi
+          else
+            ulay_th(k,p)=0.
+            ulay_phi(k,p)=0.
+          endif
         endif
       enddo
       ! Correct the topographic elevation due to compactional subsidence
-      spmZ(k)=spmZ(k)-subs
-      sedthick(k)=sedthick(k)-subs
+      spmZ(k)=spmZ(k)+subs
+      sedthick(k)=sedthick(k)+subs
     enddo
 
   end subroutine porosity_compaction
@@ -247,16 +256,16 @@ contains
 
   subroutine isostatic_flexure
 
-    integer::i,j,p,m
-    real(kind=8)::tmp,oldload,dtot,wdiff,wtot
+    integer::i,j,n,m
+
+    real(kind=8)::tmp,oldload,dtot,wtot,wdiff
 
     load=0.
-
     dtot=0.0
     do j=1,nbfy+2
       do i=1,nbfx+2
         if(j>1.and.j<nbfy+2.and.i>1.and.i<nbfx+2)then
-          tmp=flexSed(i,j) !*(1-flexPor(i,j))+flexPor(i,j)*flexSed(i,j)*sea_water_density
+          tmp=flexSed(i,j)
           if(flexZ(i,j)<gsea%actual_sea) tmp=tmp+(gsea%actual_sea-flexZ(i,j))*sea_water_density
           oldload=prevload(i,j)
           prevload(i,j)=cst1*tmp
@@ -281,126 +290,127 @@ contains
     load(1:nbfx+2,nbfy+2)=load(1:nbfx+2,nbfy+1)
 
     ! Initialise flexure arrays
-    if(.not.allocated(w)) allocate(w(nbfx+2,nbfy+2))
-    if(.not.allocated(wx)) allocate(wx(nbfx+2,nbfy+2))
-    if(.not.allocated(wy)) allocate(wy(nbfx+2,nbfy+2))
-    if(.not.allocated(w1)) allocate(w1(nbfx+2,nbfy+2))
-    if(.not.allocated(ld)) allocate(ld(nbfx+2,nbfy+2))
+    numrow=nbfx+2
+    numcol=nbfy+2
+    if(.not.allocated(w)) allocate(w(numrow,numcol))
+    if(.not.allocated(w1)) allocate(w1(numrow,numcol))
+    if(.not.allocated(wx)) allocate(wx(numrow,numcol))
+    if(.not.allocated(wy)) allocate(wy(numrow,numcol))
+    if(.not.allocated(ld)) allocate(ld(numrow,numcol))
 
     ! Update flexure parameters
     w=0.0
-    w1=0.0
     wx=0.0
     wy=0.0
+    w1=0.0
     ld=load
 
-    n2x=int(nbfx/2)
-    n2x=n2x*2
-    n4x=int(nbfx/4)
-    n4x=n4x*4
-    n2y=int(nbfy/2)
-    n2y=n2y*2
-    n4y=int(nbfy/4)
-    n4y=n4y*4
+    n2col=(numcol-2)/2
+    n2row=(numrow-2)/2
+    n4col=(numcol-2)/4
+    n4row=(numrow-2)/4
+    n2col=n2col*2+2
+    n2row=n2row*2+2
+    n4col=n4col*4+2
+    n4row=n4row*4+2
 
-    p=0
+    n=0
     ! Iterate until a solution is reached
     do
-      p=p+1
+      n=n+1
       ! Fine grid first
       m=1
-      call solve_flexure(m,nbfx+1,nbfy+1,4)
-      wdiff=0.
-      wtot=0.
-      ! Compare with the last finest grid results
-      do j=2,nbfy+2-m
-        do i=2,nbfx+2-m
+      call solve_flexure2(m,numrow-1,numcol-1,4)
+      wtot=0.0
+      wdiff=0.0
+      do j=2,numcol-1
+        do i=2,numrow-1
           wdiff=wdiff+abs(w1(i,j)-w(i,j))
           wtot=wtot+abs(w(i,j))
         enddo
       enddo
-
       w1=w
-      if(wdiff<torb*wtot.or.p>10000)exit
+      if(wdiff<torb*wtot.and.n>10000)exit
       if(wtot==0.0)exit
 
       ! Coarser grid 2dx, full weighting operator
       m=2
-      do j=2+m,n2y+2-m,m
-        do i=2+m,n2x+2-m,m
-          w(i,j)=0.0625_8*(w(i-1,j-1)+w(i+1,j-1)+w(i-1,j+1)+w(i+1,j+1)+ &
-            2.0_8*(w(i,j-1)+w(i,j+1)+w(i-1,j)+w(i+1,j))+4.0_8*w(i,j))
-          wx(i,j)=0.0625_8*(wx(i-1,j-1)+wx(i+1,j-1)+wx(i-1,j+1)+wx(i+1,j+1)+ &
-            2.0_8*(wx(i,j-1)+wx(i,j+1)+wx(i-1,j)+wx(i+1,j))+4.0_8*wx(i,j))
-          wy(i,j)=0.0625_8*(wy(i-1,j-1)+wy(i+1,j-1)+wy(i-1,j+1)+wy(i+1,j+1)+ &
-            2.0_8*(wy(i,j-1)+wy(i,j+1)+wy(i-1,j)+wy(i+1,j))+4.0_8*wy(i,j))
+      do j=2+m,n2col-m,m
+        do i=2+m,n2row-m,m
+          w(i,j)=0.0625*(w(i-1,j-1)+w(i+1,j-1)+w(i-1,j+1)+w(i+1,j+1)+ &
+            2.0*(w(i,j-1)+w(i,j+1)+w(i-1,j)+w(i+1,j))+4.0*w(i,j))
+          wx(i,j)=0.0625*(wx(i-1,j-1)+wx(i+1,j-1)+wx(i-1,j+1)+wx(i+1,j+1)+ &
+            2.0*(wx(i,j-1)+wx(i,j+1)+wx(i-1,j)+wx(i+1,j))+4.0*wx(i,j))
+          wy(i,j)=0.0625*(wy(i-1,j-1)+wy(i+1,j-1)+wy(i-1,j+1)+wy(i+1,j+1)+ &
+            2.0*(wy(i,j-1)+wy(i,j+1)+wy(i-1,j)+wy(i+1,j))+4.0*wy(i,j))
         enddo
       enddo
-      call solve_flexure(m,n2x+2,n2y+2,4)
+      call solve_flexure2(m,n2row,n2col,4)
 
       ! Coarser grid 4dx, full weighting operator
       m=4
-      do j=2+m,n4y+2-m,m
-        do i=2+m,n4x+2-m,m
-          w(i,j)=0.0625_8*(w(i-2,j-2)+w(i+2,j-2)+w(i-2,j+2)+w(i+2,j+2)+ &
-            2.0_8*(w(i,j-2)+w(i,j+2)+w(i-2,j)+w(i+2,j))+4.0_8*w(i,j))
-          wx(i,j)=0.0625_8*(wx(i-2,j-2)+wx(i+2,j-2)+wx(i-2,j+2)+wx(i+2,j+2)+ &
-            2.0_8*(wx(i,j-2)+wx(i,j+2)+wx(i-2,j)+wx(i+2,j))+4.0_8*wx(i,j))
-          wy(i,j)=0.0625_8*(wy(i-2,j-2)+wy(i+2,j-2)+wy(i-2,j+2)+wy(i+2,j+2)+ &
-            2.0_8*(wy(i,j-2)+wy(i,j+2)+wy(i-2,j)+w(i+2,j))+4.0_8*wy(i,j))
+      do j=2+m,n4col-m,m
+        do i=2+m,n4row-m,m
+          w(i,j)=0.0625*(w(i-2,j-2)+w(i+2,j-2)+w(i-2,j+2)+w(i+2,j+2)+ &
+            2.0*(w(i,j-2)+w(i,j+2)+w(i-2,j)+w(i+2,j))+4.0*w(i,j))
+          wx(i,j)=0.0625*(wx(i-2,j-2)+wx(i+2,j-2)+wx(i-2,j+2)+wx(i+2,j+2)+ &
+            2.0*(wx(i,j-2)+wx(i,j+2)+wx(i-2,j)+wx(i+2,j))+4.0*wx(i,j))
+          wy(i,j)=0.0625*(wy(i-2,j-2)+wy(i+2,j-2)+wy(i-2,j+2)+wy(i+2,j+2)+ &
+            2.0*(wy(i,j-2)+wy(i,j+2)+wy(i-2,j)+w(i+2,j))+4.0*wy(i,j))
         enddo
       enddo
-      call boundary_flexure(m,n4x+2-m,n4y+2-m,w)
-      call boundary_flexure(m,n4x+2-m,n4y+2-m,wx)
-      call boundary_flexure(m,n4x+2-m,n4y+2-m,wy)
-      call solve_flexure(m,n4x+2,n4y+2,16)
+      call boundary_flexure(m,n4row-m,n4col-m,w)
+      call boundary_flexure(m,n4row-m,n4col-m,wx)
+      call boundary_flexure(m,n4row-m,n4col-m,wy)
+
+      call solve_flexure2(m,n4row,n4col,16)
 
       ! Interpolate to finer grid (2dx)
-      do j=2,n4y+2-m,4
-        do i=2,n4x+2-m,4
-          w(i,j+2)=0.5_8*(w(i,j)+w(i,j+m))
-          w(i+2,j)=0.5_8*(w(i,j)+w(i+m,j))
-          w(i+2,j+2)=0.25_8*(w(i,j)+w(i,j+m)+w(i+m,j)+w(i+m,j+m))
-          wx(i,j+2)=0.5_8*(wx(i,j)+wx(i,j+m))
-          wx(i+2,j)=0.5_8*(wx(i,j)+wx(i+m,j))
-          wx(i+2,j+2)=0.25_8*(wx(i,j)+wx(i,j+m)+wx(i+m,j)+wx(i+m,j+m))
-          wy(i,j+2)=0.5_8*(wy(i,j)+wy(i,j+m))
-          wy(i+2,j)=0.5_8*(wy(i,j)+wy(i+m,j))
-          wy(i+2,j+2)=0.25_8*(wy(i,j)+wy(i,j+m)+wy(i+m,j)+wy(i+m,j+m))
+      do j=2,n4col-m,4
+        do i=2,n4row-m,4
+          w(i,j+2)=0.5*(w(i,j)+w(i,j+m))
+          w(i+2,j)=0.5*(w(i,j)+w(i+m,j))
+          w(i+2,j+2)=0.25*(w(i,j)+w(i,j+m)+w(i+m,j)+w(i+m,j+m))
+          wx(i,j+2)=0.5*(wx(i,j)+wx(i,j+m))
+          wx(i+2,j)=0.5*(wx(i,j)+wx(i+m,j))
+          wx(i+2,j+2)=0.25*(wx(i,j)+wx(i,j+m)+wx(i+m,j)+wx(i+m,j+m))
+          wy(i,j+2)=0.5*(wy(i,j)+wy(i,j+m))
+          wy(i+2,j)=0.5*(wy(i,j)+wy(i+m,j))
+          wy(i+2,j+2)=0.25*(wy(i,j)+wy(i,j+m)+wy(i+m,j)+wy(i+m,j+m))
         enddo
       enddo
 
       ! At boundaries of finer grid (2dx)
-      if(n2y>n4y)then
-        do i=2,n4x+2-m,4
-          w(i,n2y+2)=w(i,n4y+2)
-          w(i+2,n2y+2)=0.5*(w(i,n4y+2)+w(i+m,n4y+2))
-          wx(i,n2y+2)=wx(i,n4y+2)
-          wx(i+2,n2y+2)=0.5*(wx(i,n4y+2)+wx(i+m,n4y+2))
-          wy(i,n2y+2)=wy(i,n4y+2)
-          wy(i+2,n2y+2)=0.5*(wy(i,n4y+2)+wy(i+m,n4y+2))
+      if(n2col>n4col)then
+        do i=2,n4row-m,4
+          w(i,n2col)=w(i,n4col)
+          w(i+2,n2col)=0.5*(w(i,n4col)+w(i+m,n4col))
+          wx(i,n2col)=wx(i,n4col)
+          wx(i+2,n2col)=0.5*(wx(i,n4col)+wx(i+m,n4col))
+          wy(i,n2col)=wy(i,n4col)
+          wy(i+2,n2col)=0.5*(wy(i,n4col)+wy(i+m,n4col))
         enddo
       endif
 
-      if(n2x>n4x)then
-        do j=2,n4y+2-m,4
-          w(n2x+2,j)=w(n4x+2,j)
-          w(n2x+2,j+2)=0.5*(w(n4x+2,j)+w(n4x+2,j+m))
-          wx(n2x+2,j)=wx(n4x+2,j)
-          wx(n2x+2,j+2)=0.5*(wx(n4x+2,j)+wx(n4x+2,j+m))
-          wy(n2x+2,j)=wy(n4x+2,j)
-          wy(n2x+2,j+2)=0.5*(wy(n4x+2,j)+wy(n4x+2,j+m))
+      if(n2row>n4row)then
+        do j=2,n4col-m,4
+          w(n2row,j)=w(n4row,j)
+          w(n2row,j+2)=0.5*(w(n4row,j)+w(n4row,j+m))
+          wx(n2row,j)=wx(n4row,j)
+          wx(n2row,j+2)=0.5*(wx(n4row,j)+wx(n4row,j+m))
+          wy(n2row,j)=wy(n4row,j)
+          wy(n2row,j+2)=0.5*(wy(n4row,j)+wy(n4row,j+m))
         enddo
       endif
-      w(n2x+2,n2y+2)=w(n4x+2,n4y+2)
-      wx(n2x+2,n2y+2)=wx(n4x+2,n4y+2)
-      wy(n2x+2,n2y+2)=wy(n4x+2,n4y+2)
+      w(n2row,n2col)=w(n4row,n4col)
+      wx(n2row,n2col)=wx(n4row,n4col)
+      wy(n2row,n2col)=wy(n4row,n4col)
       m=2
-      call solve_flexure(m,n2x+2,n2y+2,4)
+      call solve_flexure2(m,n2row,n2col,4)
 
       ! Finer grid dx
-      do j=2,n2y+2-m,2
-        do i=2,n2x+2-m,2
+      do j=2,n2col-m,2
+        do i=2,n2row-m,2
           w(i,j+1)=0.5*(w(i,j)+w(i,j+m))
           w(i+1,j)=0.5*(w(i,j)+w(i+m,j))
           w(i+1,j+1)=0.25*(w(i,j)+w(i,j+m)+w(i+m,j)+w(i+m,j+m))
@@ -413,95 +423,89 @@ contains
         enddo
       enddo
 
-      if(nbfy+1>n2y+2)then
-        do i=2,n2x+2-m,2
-          w(i,nbfy+1)=w(i,n2y+2)
-          w(i+1,nbfy+1) =0.5*(w(i,n2y+2)+w(i+m,n2y+2))
-          wx(i,nbfy+1) =wx(i,n2y+2)
-          wx(i+1,nbfy+1)=0.5*(wx(i,n2y+2)+wx(i+m,n2y+2))
-          wy(i,nbfy+1) =wy(i,n2y+2)
-          wy(i+1,nbfy+1)=0.5*(wy(i,n2y+2)+wy(i+m,n2y+2))
+      if(numcol-1>n2col)then
+        do i=2,n2row-m,2
+          w(i,numcol-1)=w(i,n2col)
+          w(i+1,numcol-1)=0.5*(w(i,n2col)+w(i+m,n2col))
+          wx(i,numcol-1)=wx(i,n2col)
+          wx(i+1,numcol-1)=0.5*(wx(i,n2col)+wx(i+m,n2col))
+          wy(i,numcol-1)=wy(i,n2col)
+          wy(i+1,numcol-1)=0.5*(wy(i,n2col)+wy(i+m,n2col))
         enddo
       endif
-      if(nbfx+1>n2x+2)then
-        do j=2,n2y+2-m,2
-          w(nbfx+1,j)=w(n2x+2,j)
-          w(nbfx+1,j+1)=0.5*(w(n2x+2,j)+w(n2x+2,j+m))
-          wx(nbfx+1,j)=wx(n2x+2,j)
-          wx(nbfx+1,j+1)=0.5*(wx(n2x+2,j)+wx(n2x+2,j+m))
-          wy(nbfx+1,j)=wy(n2x+2,j)
-          wy(nbfx+1,j+1)=0.5*(wy(n2x+2,j)+wy(n2x+2,j+m))
+      if(numrow-1>n2row)then
+        do j=2,n2col-m,2
+          w(numrow-1,j)=w(n2row,j)
+          w(numrow-1,j+1)=0.5*(w(n2row,j)+w(n2row,j+m))
+          wx(numrow-1,j)=wx(n2row,j)
+          wx(numrow-1,j+1)=0.5*(wx(n2row,j)+wx(n2row,j+m))
+          wy(numrow-1,j)=wy(n2row,j)
+          wy(numrow-1,j+1)=0.5*(wy(n2row,j)+wy(n2row,j+m))
         enddo
       endif
-      w(nbfx+1,nbfy+1)=w(n2x+2,n2y+2)
-      wx(nbfx+1,nbfy+1)=wx(n2x+2,n2y+2)
-      wy(nbfx+1,nbfy+1)=wy(n2x+2,n2y+2)
-      do i=1,nbfx+2
+      w(numrow-1,numcol-1)=w(n2row,n2col)
+      wx(numrow-1,numcol-1)=wx(n2row,n2col)
+      wy(numrow-1,numcol-1)=wy(n2row,n2col)
+      do i=1,numrow
         w(i,1)=w(i,2)
-        w(i,nbfy+2)=w(i,nbfy+1)
+        w(i,numcol)=w(i,numcol-1)
         wx(i,1)=wx(i,2)
-        wx(i,nbfy+2)=wx(i,nbfy+1)
+        wx(i,numcol)=wx(i,numcol-1)
         wy(i,1)=wy(i,2)
-        wy(i,nbfy+2)=wy(i,nbfy+1)
+        wy(i,numcol)=wy(i,numcol-1)
       enddo
-      do j=1,nbfy+2
+      do j=1,numcol
         w(1,j)=w(2,j)
-        w(nbfx+2,j)=w(nbfx+1,j)
+        w(numrow,j)=w(numrow-1,j)
         wx(1,j)=wx(2,j)
-        wx(nbfx+2,j)=wx(nbfx+1,j)
+        wx(numrow,j)=wx(numrow-1,j)
         wy(1,j)=wy(2,j)
-        wy(nbfx+2,j)=wy(nbfx+1,j)
+        wy(numrow,j)=wy(numrow-1,j)
       enddo
     enddo
-
-    if(p>=10000)then
-      print*,'Issue: isostacy did not converge to a solution'
-      print*,wdiff,1.0E-18_8*wtot,wtot
-    endif
-    flexDisp=w
 
   end subroutine isostatic_flexure
   ! =====================================================================================
 
-  subroutine boundary_flexure(ks,ncl,nrw,temp)
+  subroutine boundary_flexure(ks,nrw,ncl,temp)
 
-    integer::ks,ncl,nrw,i,j,k1
-    real(kind=8),dimension(nbfx+2,nbfy+2)::temp
+    integer::ncl,nrw,i,j,ks,k1
+    real(kind=8),dimension(numrow,numcol)::temp
 
     k1=2+ks
-    do j=1,nbfy+2
-      do i=1,k1-1
-        temp(i,j)=temp(k1,j)
-      enddo
-      do i=ncl+1,nbfx+2
-        temp(i,j)=temp(ncl,j)
-      enddo
-    enddo
-
-    do i=1,nbfx+2
+    do i=1,numrow
       do j=1,k1-1
         temp(i,j)=temp(i,k1)
       enddo
-      do j=nrw+1,nbfy+2
-        temp(i,j)=temp(i,nrw)
+      do j=ncl+1,numcol
+        temp(i,j)=temp(i,ncl)
+      enddo
+    enddo
+
+    do j=1,numcol
+      do i=1,k1-1
+        temp(i,j)=temp(k1,j)
+      enddo
+      do i=nrw+1,numrow
+        temp(i,j)=temp(nrw,j)
       enddo
     enddo
 
   end subroutine boundary_flexure
   ! =====================================================================================
 
-  subroutine solve_flexure(m,ncl,nrw,nloop)
+  subroutine solve_flexure(m,nrw,ncl,nloop)
 
-    integer::m,ncl,nrw,nloop,i,j,isw,jsw,ks,ipass,n
+    integer::m,ncl,nrw,nloop,i,j,ks,isw,jsw,ipass,n
 
-    real(kind=8)::resw,w3,wtot,wdiff,piv,dxm4,el1
+    real(kind=8)::w3,wtot,wdiff,piv,dxm4,el1
 
     ks=0
     if(m>1)ks=m
     dxm4=(flex_dx**4)*m**4
 
-    do j=2,nrw,m
-      do i=2,ncl,m
+    do j=2,ncl,m
+      do i=2,nrw,m
         el1=flexZ(i,j)
         if(el1<=gsea%actual_sea)then
           ld(i,j)=(load(i,j)-cst2*w(i,j))*dxm4
@@ -510,7 +514,8 @@ contains
         endif
       enddo
     enddo
-    call boundary_flexure(0,ncl,nrw,ld)
+    call boundary_flexure(0,nrw,ncl,ld)
+    ! call boundary_flexure(ks,nrw-ks,ncl-ks,ld)
 
     n=0
     do
@@ -520,8 +525,8 @@ contains
       jsw=1
       do ipass=1,2
         isw=jsw
-        do j=2+ks,nrw-ks,m
-          do i=isw+1+ks,ncl-ks,2*m
+        do j=2+ks,ncl-ks,m
+          do i=isw+1+ks,nrw-ks,2*m
             el1=flexZ(i,j)
             if(el1<=gsea%actual_sea)then
               piv=q5+11.0*cst2*dxm4
@@ -557,7 +562,6 @@ contains
               ld(i,j)=(load(i,j)-cst3*w3)*dxm4
             endif
 
-            resw=w3-w(i,j)
             wdiff=wdiff+abs(w3-w(i,j))
             wtot=wtot+abs(w3)
             w(i,j)=w3
@@ -565,10 +569,10 @@ contains
           isw=m+2-isw
         enddo
         jsw=m+2-jsw
-        call boundary_flexure(ks,ncl-ks,nrw-ks,w)
-        call boundary_flexure(ks,ncl-ks,nrw-ks,wx)
-        call boundary_flexure(ks,ncl-ks,nrw-ks,wy)
-        call boundary_flexure(ks,ncl-ks,nrw-ks,ld)
+        call boundary_flexure(ks,nrw-ks,ncl-ks,w)
+        call boundary_flexure(ks,nrw-ks,ncl-ks,wx)
+        call boundary_flexure(ks,nrw-ks,ncl-ks,wy)
+        call boundary_flexure(ks,nrw-ks,ncl-ks,ld)
       enddo
 
       if(wdiff<1.0E-10*wtot.or.n>nloop)exit
@@ -576,6 +580,85 @@ contains
     enddo
 
   end subroutine solve_flexure
+  ! =====================================================================================
+
+  subroutine solve_flexure2(m,nrw,ncl,nloop)
+
+    integer::m,ncl,nrw,nloop,i,j,ks,im,jm,im2,jm2,n,ip,jp,ip2,jp2
+
+    real(kind=8)::w3,wtot,wdiff,piv,dxm4,el1
+
+    ks=0
+    if(m>1)ks=m
+    dxm4=(flex_dx**4)*m**4
+
+    do j=2,ncl,m
+      do i=2,nrw,m
+        el1=flexZ(i,j)
+        if(el1<=gsea%actual_sea)then
+          ld(i,j)=(load(i,j)-cst2*w(i,j))*dxm4
+        else
+          ld(i,j)=(load(i,j)-cst3*w(i,j))*dxm4
+        endif
+      enddo
+    enddo
+    call boundary_flexure(ks,nrw,ncl,ld)
+
+    n=0
+    do
+      n=n+1
+      wtot=0.0
+      wdiff=0.0
+      do j=2+ks,ncl-ks,m
+        do i=2+ks,nrw-ks,m
+          el1=flexZ(i,j)
+          if(el1<=gsea%actual_sea)then
+            piv=20.0+11.0/15.0*cst2*dxm4
+          else
+            piv=20.0+11.0/15.0*cst3*dxm4
+          endif
+
+          im=i-m
+        	im2=i-2*m
+        	jm=j-m
+        	jm2=j-2*m
+        	if(i-m<1)im=1
+        	if(j-m<1)jm=1
+        	if(i-2*m<1)im2=1
+        	if(j-2*m<1)jm2=1
+        	ip=i+m
+        	jp=j+m
+        	ip2=i+2*m
+        	jp2=j+2*m
+        	if(i+m>nrw)ip=nrw
+        	if(j+m>ncl)jp=ncl
+        	if(i+2*m>nrw)ip2=nrw
+        	if(j+2*m>ncl)jp2=ncl
+
+          w3=(8.0_8*(w(ip,j)+w(im,j)+w(i,jp)+w(i,jm))	&
+            -2.0_8*(w(ip,jp)+w(im,jp)+w(ip,jm)+w(im,jm)) &
+            -(w(ip2,j)+w(im2,j)+w(i,jp2)+w(i,jm2))+ &
+          	(ld(ip,j)+ld(im,j)+ld(i,jp)+ld(i,jm))/15.0_8 &
+            +11.0_8*load(i,j)*dxm4/15.0_8)/piv
+
+          if(el1<=gsea%actual_sea)then
+            ld(i,j)=(load(i,j)-cst2*w3)*dxm4
+          else
+            ld(i,j)=(load(i,j)-cst3*w3)*dxm4
+          endif
+          wdiff=wdiff+abs(w3-w(i,j))
+          wtot=wtot+abs(w3)
+          w(i,j)=w3
+        enddo
+      enddo
+
+      if(wdiff<1.0E-10*wtot.or.n>nloop)exit
+      if(wtot==0.0)exit
+      call boundary_flexure(ks,nrw,ncl,w)
+      call boundary_flexure(ks,nrw,ncl,ld)
+    enddo
+
+  end subroutine solve_flexure2
   ! =====================================================================================
 
 end module isoflex
