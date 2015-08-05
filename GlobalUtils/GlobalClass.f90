@@ -179,7 +179,7 @@ module parameters
 
   ! Flexural isostasy parameters
   logical::flexure
-  integer::nbfx,nbfy,flex_lay,pressureFields
+  integer::nbfx,nbfy,flex_lay,pressureFields,flexorder
 
   real(kind=8)::cst1,cst2,cst3,torb
   real(kind=8)::flex_dt,flex_dx,flex_xo,flex_yo,flex_rigid,flex_thick

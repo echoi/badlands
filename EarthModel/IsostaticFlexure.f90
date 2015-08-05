@@ -320,7 +320,11 @@ contains
       n=n+1
       ! Fine grid first
       m=1
-      call solve_flexure2(m,numrow-1,numcol-1,4)
+      if(flexorder==2)then
+        call solve_flexure2(m,numrow-1,numcol-1,4)
+      else
+        call solve_flexure4(m,numrow-1,numcol-1,4)
+      endif
       wtot=0.0
       wdiff=0.0
       do j=2,numcol-1
@@ -330,7 +334,7 @@ contains
         enddo
       enddo
       w1=w
-      if(wdiff<torb*wtot.and.n>10000)exit
+      if(wdiff<torb*wtot.or.n>100000)exit
       if(wtot==0.0)exit
 
       ! Coarser grid 2dx, full weighting operator
@@ -345,8 +349,11 @@ contains
             2.0*(wy(i,j-1)+wy(i,j+1)+wy(i-1,j)+wy(i+1,j))+4.0*wy(i,j))
         enddo
       enddo
-      call solve_flexure2(m,n2row,n2col,4)
-
+      if(flexorder==2)then
+        call solve_flexure2(m,n2row,n2col,4)
+      else
+        call solve_flexure4(m,n2row,n2col,4)
+      endif
       ! Coarser grid 4dx, full weighting operator
       m=4
       do j=2+m,n4col-m,m
@@ -362,8 +369,11 @@ contains
       call boundary_flexure(m,n4row-m,n4col-m,w)
       call boundary_flexure(m,n4row-m,n4col-m,wx)
       call boundary_flexure(m,n4row-m,n4col-m,wy)
-
-      call solve_flexure2(m,n4row,n4col,16)
+      if(flexorder==2)then
+        call solve_flexure2(m,n4row,n4col,16)
+      else
+        call solve_flexure4(m,n4row,n4col,16)
+      endif
 
       ! Interpolate to finer grid (2dx)
       do j=2,n4col-m,4
@@ -406,7 +416,11 @@ contains
       wx(n2row,n2col)=wx(n4row,n4col)
       wy(n2row,n2col)=wy(n4row,n4col)
       m=2
-      call solve_flexure2(m,n2row,n2col,4)
+      if(flexorder==2)then
+        call solve_flexure2(m,n2row,n2col,4)
+      else
+        call solve_flexure4(m,n2row,n2col,4)
+      endif
 
       ! Finer grid dx
       do j=2,n2col-m,2
@@ -464,6 +478,9 @@ contains
       enddo
     enddo
 
+    if(n>100000.and.pet_id==0) print*,'Isostacy did not converge to a solution.'
+    flexDisp=w
+
   end subroutine isostatic_flexure
   ! =====================================================================================
 
@@ -494,7 +511,7 @@ contains
   end subroutine boundary_flexure
   ! =====================================================================================
 
-  subroutine solve_flexure(m,nrw,ncl,nloop)
+  subroutine solve_flexure4(m,nrw,ncl,nloop)
 
     integer::m,ncl,nrw,nloop,i,j,ks,isw,jsw,ipass,n
 
@@ -579,7 +596,7 @@ contains
       if(wtot==0.0)exit
     enddo
 
-  end subroutine solve_flexure
+  end subroutine solve_flexure4
   ! =====================================================================================
 
   subroutine solve_flexure2(m,nrw,ncl,nloop)

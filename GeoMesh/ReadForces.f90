@@ -78,6 +78,7 @@ module readforces
   logical,save::in_flex=.false.
   logical,save::in_flexdt=.false.
   logical,save::in_flexdx=.false.
+  logical,save::in_flexorder=.false.
   logical,save::in_flexsedth=.false.
   logical,save::in_flexpfields=.false.
   logical,save::in_flexpressure=.false.
@@ -227,6 +228,7 @@ contains
 
     if(name=='flex_dx') in_flexdx=.true.
     if(name=='flex_dt') in_flexdt=.true.
+    if(name=='flex_order') in_flexorder=.true.
     if(name=='sed_dens') in_flexseddens=.true.
     if(name=='mantle_dens') in_mantledens=.true.
     if(name=='flex_thick') in_flexthick=.true.
@@ -314,6 +316,7 @@ contains
 
     if(name=='flex_dx') in_flexdx=.false.
     if(name=='flex_dt') in_flexdt=.false.
+    if(name=='flex_order') in_flexorder=.false.
     if(name=='sed_dens') in_flexseddens=.false.
     if(name=='mantle_dens') in_mantledens=.false.
     if(name=='flex_thick') in_flexthick=.false.
@@ -439,6 +442,8 @@ contains
       call rts(chars,flex_dt)
     elseif(in_flexseddens)then
       call rts(chars,mean_sediment_density)
+    elseif(in_flexorder)then
+      call rts(chars,flexorder)
     elseif(in_flexpfields)then
       call rts(chars,pressureFields)
       if(allocated(pressTable)) deallocate(pressTable)
@@ -520,6 +525,7 @@ contains
     flex_dx=0.0
     flex_thick=10000.
     flexure=.false.
+    flexorder=2
 
     ! Open file
     call open_xml_file(xf,xmlfile,rc)
