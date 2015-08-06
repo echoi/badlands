@@ -27,7 +27,7 @@ You should have received a copy of the GNU Lesser General Public License along w
 
 The code is conceived as an open-source project, and is an ideal tool for both **Research** and **Learning** purposes.
 
-## Going further
+## Hands-on examples
 
 A compilation of examples and some documentation related to the physics, assumptions and installation of Badlands can be found in the <a href='https://github.com/badlands-model/Badlands-doc'>Badlands-doc repository<a/>
 
