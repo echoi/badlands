@@ -32,10 +32,12 @@ The code is conceived as an open-source project, and is an ideal tool for both *
 A compilation of examples and some documentation related to the physics, assumptions and installation of Badlands can be found in the <a href='https://github.com/badlands-model/Badlands-doc'>Badlands-doc repository<a/>
 
 
-| Planar surface with single outlet (execution 30s 2CPUs)| Delta evolution under sea-level fluctuations (execution 240s 2CPUs) | Climatic forcing on drainage evolution (execution 620s 2CPUs)| 
+| Planar surface with single outlet| Delta evolution under sea-level fluctuations | Climatic forcing on drainage evolution| 
 | :-------------: |:-------------:|:-------------:| 
 | <a href="http://www.youtube.com/watch?feature=player_embedded&v=lORa_EPs15Y" target="_blank"><img src="http://img.youtube.com/vi/lORa_EPs15Y/0.jpg" alt="Planar surface with single outlet" width="240" height="180" border="10" /></a> | <a href="http://www.youtube.com/watch?feature=player_embedded&v=nX0EDM2-oTc" target="_blank"><img src="http://img.youtube.com/vi/nX0EDM2-oTc/0.jpg" alt="Delta evolution under sea-level fluctuations" width="240" height="180" border="10" /></a> | <a href="http://www.youtube.com/watch?feature=player_embedded&v=2ibm8I1GvT8" target="_blank"><img src="http://img.youtube.com/vi/2ibm8I1GvT8/0.jpg" alt="Climatic forcing on drainage evolution" width="240" height="180" border="10" /></a> |
+| execution 30s 2 CPUs |execution 240s 2 CPUs|execution 620s 2 CPUs|
 
-| High-resolution depression filling model (execution 30s)| 3D Tectonic forcing and drainage evolution (execution 7958s 32CPUs) | Landscape evolution over continental scale (execution 500s)| 
+| High-resolution depression filling model | 3D Tectonic forcing and drainage evolution| Landscape evolution over continental scale | 
 | :-------------: |:-------------:|:-------------:| 
 | <a href="http://www.youtube.com/watch?feature=player_embedded&v=lORa_EPs15Y" target="_blank"><img src="http://img.youtube.com/vi/lORa_EPs15Y/0.jpg" alt="High-resolution depression filling model" width="240" height="180" border="10" /></a> | <a href="http://www.youtube.com/watch?feature=player_embedded&v=20Z92nnnpQY" target="_blank"><img src="http://img.youtube.com/vi/20Z92nnnpQY/0.jpg" alt="3D Tectonic forcing and drainage evolution" width="240" height="180" border="10" /></a> | <a href="http://www.youtube.com/watch?feature=player_embedded&v=ke2c9Ybb6LM" target="_blank"><img src="http://img.youtube.com/vi/ke2c9Ybb6LM/0.jpg" alt="Landscape evolution over continental scale" width="240" height="180" border="10" /></a> |
+| execution 30s 2 CPUs |execution 22h 32 CPUs|execution 4h 16 CPUs|
