@@ -34,7 +34,7 @@ A compilation of examples and some documentation related to the physics, assumpt
 <div align="center">
 
 | Example 1 (30s)| Example 2 (240s) | Example 3 (500s)| 
-| :-------------: |:-------------:| 
+| :-------------: |:-------------:|:-------------:| 
 | <a href="http://www.youtube.com/watch?feature=player_embedded&v=lORa_EPs15Y" target="_blank"><img src="http://img.youtube.com/vi/lORa_EPs15Y/0.jpg" alt="Planar surface with single outlet" width="240" height="180" border="10" /></a> | <a href="http://www.youtube.com/watch?feature=player_embedded&v=nX0EDM2-oTc" target="_blank"><img src="http://img.youtube.com/vi/nX0EDM2-oTc/0.jpg" alt="Delta evolution under sea-level fluctuations" width="240" height="180" border="10" /></a> | <a href="http://www.youtube.com/watch?feature=player_embedded&v=2ibm8I1GvT8" target="_blank"><img src="http://img.youtube.com/vi/2ibm8I1GvT8/0.jpg" alt="Climatic forcing on drainage evolution" width="240" height="180" border="10" /></a> |
 
 </div>
