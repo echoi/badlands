@@ -31,8 +31,6 @@ The code is conceived as an open-source project, and is an ideal tool for both *
 
 A compilation of examples and some documentation related to the physics, assumptions and installation of Badlands can be found in the <a href='https://github.com/badlands-model/Badlands-doc'>Badlands-doc repository<a/>
 
-### Set of examples
-
 #### Example 1
 
 Planar surface with single outlet (Execution time on standard laptop: 30s)
@@ -48,7 +46,9 @@ alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a>
 Delta evolution under sea-level fluctuations (Execution time on standard laptop: 230s)
 
 <div align="center">
-    <img width=800 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/ex1.png" alt="ex1" title="planar surface with single outlet 500,000 years"</img>
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=nX0EDM2-oTc
+" target="_blank"><img src="http://img.youtube.com/vi/nX0EDM2-oTc/0.jpg" 
+alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a>
 </div>
 
 #### Example 3
@@ -56,7 +56,9 @@ Delta evolution under sea-level fluctuations (Execution time on standard laptop:
 Climatic forcing on drainage evolution (Execution time: )
 
 <div align="center">
-    <img width=800 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/ex1.png" alt="ex1" title="planar surface with single outlet 500,000 years"</img>
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=2ibm8I1GvT8
+" target="_blank"><img src="http://img.youtube.com/vi/2ibm8I1GvT8/0.jpg" 
+alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a>
 </div>
 
 #### Example 4
