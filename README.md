@@ -31,6 +31,10 @@ The code is conceived as an open-source project, and is an ideal tool for both *
 
 A compilation of examples and some documentation related to the physics, assumptions and installation of Badlands can be found in the <a href='https://github.com/badlands-model/Badlands-doc'>Badlands-doc repository<a/>
 
+| Example 1        | Example 2           | 
+| :-------------: |:-------------:| 
+| <a href="http://www.youtube.com/watch?feature=player_embedded&v=lORa_EPs15Y" target="_blank"><img src="http://img.youtube.com/vi/lORa_EPs15Y/0.jpg" alt="Planar surface with single outlet" width="240" height="180" border="10" /></a> | <a href="http://www.youtube.com/watch?feature=player_embedded&v=nX0EDM2-oTc" target="_blank"><img src="http://img.youtube.com/vi/nX0EDM2-oTc/0.jpg" alt="Delta evolution under sea-level fluctuations" width="240" height="180" border="10" /></a> |
+
 #### Example 1
 
 Planar surface with single outlet (Execution time on standard laptop: 30s)
