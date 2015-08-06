@@ -2,7 +2,7 @@ Badlands
 =====
 
 <div align="center">
-    <img width=400 src="https://github.com/badlands-model/Badlands-doc/blob/master/riseofthephoenix.png" alt="Rise of the Phoenix" title="Example of Landscape evolution with Badlands"</img>
+    <img width=400 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/riseofthephoenix.png" alt="Rise of the Phoenix" title="Example of Landscape evolution with Badlands"</img>
 </div>
 
 ## Overview
@@ -31,3 +31,52 @@ The code is conceived as an open-source project, and is an ideal tool for both *
 
 A compilation of examples and some documentation related to the physics, assumptions and installation of Badlands can be found in the <a href='https://github.com/badlands-model/Badlands-doc'>Badlands-doc repository<a/>
 
+### Set of examples
+
+#### Example 1
+
+Planar surface with single outlet (Execution time: 30 s)
+
+<div align="center">
+    <img width=800 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/ex1.png" alt="ex1" title="planar surface with single outlet 500,000 years"</img>
+</div>
+
+#### Example 2
+
+Delta evolution under sea-level fluctuations (Execution time: )
+
+<div align="center">
+    <img width=800 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/ex1.png" alt="ex1" title="planar surface with single outlet 500,000 years"</img>
+</div>
+
+#### Example 3
+
+Climatic forcing on drainage evolution (Execution time: )
+
+<div align="center">
+    <img width=800 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/ex1.png" alt="ex1" title="planar surface with single outlet 500,000 years"</img>
+</div>
+
+#### Example 4
+
+High-resolution depression filling model (Execution time: )
+
+<div align="center">
+    <img width=800 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/ex1.png" alt="ex1" title="planar surface with single outlet 500,000 years"</img>
+</div>
+
+#### Example 5
+
+Tectonic forcing on drainage evolution (Execution time: )
+
+<div align="center">
+    <img width=800 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/ex1.png" alt="ex1" title="planar surface with single outlet 500,000 years"</img>
+</div>
+
+#### Example 6
+
+Landscape evolution over continental scale (Execution time: )
+
+<div align="center">
+    <img width=800 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/ex1.png" alt="ex1" title="planar surface with single outlet 500,000 years"</img>
+</div>
