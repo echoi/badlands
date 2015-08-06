@@ -158,6 +158,9 @@ module parameters
   ! Maximum filling algorithm height
   real(kind=8)::fh
 
+  ! Sediment thickness evolution
+  real(kind=8),dimension(:),allocatable::sedchange,tempthick
+
   ! Infiltration evaporation percentage for water in lakes
   real(kind=8)::infiltration_evaporation
 

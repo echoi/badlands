@@ -51,7 +51,6 @@ module geomorpho
   integer::iter,idiff
 
   real(kind=8)::cpl_time,max_time
-  real(kind=8),dimension(:),allocatable::sedchange,tempthick
 
 contains
 

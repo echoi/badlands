@@ -533,8 +533,10 @@ contains
           n=0
           d1=0.
           d2=0.
-          dd3=0.
-          dd4=0.
+          if(flexure)then
+            dd3=0.
+            dd4=0.
+          endif
           do id=1,delaunayVertex(k)%ngbNb
             l=delaunayVertex(k)%ngbID(id)
             if(l>0)then
@@ -573,8 +575,10 @@ contains
         n=0
         d1=0.
         d2=0.
-        dd3=0.
-        dd4=0.
+        if(flexure)then
+          dd3=0.
+          dd4=0.
+        endif
         do id=1,delaunayVertex(k)%ngbNb
           l=delaunayVertex(k)%ngbID(id)
           if(l>0)then
@@ -613,8 +617,10 @@ contains
           n=0
           d1=0.
           d2=0.
-          dd3=0.
-          dd4=0.
+          if(flexure)then
+            dd3=0.
+            dd4=0.
+          endif
           do id=1,delaunayVertex(k)%ngbNb
             l=delaunayVertex(k)%ngbID(id)
             if(l>0)then
@@ -699,8 +705,10 @@ contains
 
       ! Delete the previous delaunay grid
       call UnstructuredMeshDestroy
+
       ! Clean geomorphic arrays
       call cleanGeomorpho
+
       ! Create the new grid
       call remesher
 
@@ -719,6 +727,7 @@ contains
       endif
       uzz=-1.e6
       uss=-1.e8
+
       do k=1,upartN
         id=unodeID(k)
         txy(1)=tcoordX(id)

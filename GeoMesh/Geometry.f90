@@ -1418,6 +1418,11 @@ contains
     if(allocated(refine_grid))deallocate(refine_grid)
     if(allocated(delaunayVertex))deallocate(delaunayVertex)
     if(allocated(voronoiCell))deallocate(voronoiCell)
+    if(allocated(sedchange))deallocate(sedchange)
+    if(allocated(lastsedthick))deallocate(lastsedthick)
+    if(allocated(spmH))deallocate(spmH)
+    if(allocated(Qs_in))deallocate(Qs_in)
+    if(allocated(tempthick))deallocate(tempthick)
 
   end subroutine UnstructuredMeshDestroy
   ! =====================================================================================
