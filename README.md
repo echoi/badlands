@@ -35,15 +35,17 @@ A compilation of examples and some documentation related to the physics, assumpt
 
 #### Example 1
 
-Planar surface with single outlet (Execution time: 30 s)
+Planar surface with single outlet (Execution time on standard laptop: 30s)
 
 <div align="center">
-    <img width=800 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/ex1.png" alt="ex1" title="planar surface with single outlet 500,000 years"</img>
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=lORa_EPs15Y
+" target="_blank"><img src="http://img.youtube.com/vi/lORa_EPs15Y/0.jpg" 
+alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a>
 </div>
 
 #### Example 2
 
-Delta evolution under sea-level fluctuations (Execution time: )
+Delta evolution under sea-level fluctuations (Execution time on standard laptop: 230s)
 
 <div align="center">
     <img width=800 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/ex1.png" alt="ex1" title="planar surface with single outlet 500,000 years"</img>
