@@ -93,6 +93,8 @@ contains
         endif
       enddo
       ! Correct the topographic elevation due to compactional subsidence
+      if(subs>0.0001) print*,'Problem when updating compactional subsidence'
+      if(subs>0.) subs=0.
       spmZ(k)=spmZ(k)+subs
       sedthick(k)=sedthick(k)+subs
     enddo

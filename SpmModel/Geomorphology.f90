@@ -149,11 +149,13 @@ contains
             dh=tempthick(k)-sedthick(k)
             tlp: do p=flex_lay,1,-1
               if(dh>ulay_th(k,p))then
+                dh=dh-ulay_th(k,p)
                 ulay_th(k,p)=0.
                 ulay_phi(k,p)=0.
-                dh=dh-ulay_th(k,p)
-              elseif(dh<ulay_th(k,p))then
+              elseif(dh<=ulay_th(k,p))then
                 ulay_th(k,p)=ulay_th(k,p)-dh
+                dh=0.
+                exit tlp
               endif
             enddo tlp
           ! In case of deposition

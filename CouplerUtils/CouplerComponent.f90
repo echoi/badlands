@@ -332,7 +332,7 @@ contains
     type(kdtree2_result),dimension(12)::FRslt
 
     nzz=-1.e6
-    nsh=-1.e6
+    nsh=0.0
 
     Ftree=>kdtree2_create(Fdata,sort=.true.,rearrange=.true.)
 
