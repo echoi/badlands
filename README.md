@@ -9,6 +9,12 @@ Badlands
 
 **Ba**sin an**d** **Lan**dscape **D**ynamic**s** (**Badlands**) is a parallel TIN-based landscape evolution model, built to simulate topography development at various space and time scales. The model is presently capable of simulating hillslope processes (**linear** diffusion), fluvial incision (*'modified'* **SPL**:  erosion/transport/deposition), spatially and temporally varying geodynamic (horizontal + vertical displacements) and climatic forces which can be used to simulate changes in base level, as well as effects of climate changes or sea-level fluctuations. 
 
+The preferable way to use Badlands is to download the latest official release:
+* <a href='https://github.com/badlands-model/badlands/releases'>Badlands v1.0<a/>
+
+The latest Badlands version is the one that’s in our Git repository (our revision-control system). This is only for experienced users who want to try incoming changes and help identify bugs before an official release. Get it using this shell command, which requires Git:
+* `git clone https://github.com/badlands-model/badlands.git`
+
 ## The specs...
 
 The model is mainly written in fortran and is based on the following characteristics: 
