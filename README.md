@@ -1,5 +1,6 @@
 Badlands
 =====
+[![DOI](https://zenodo.org/badge/16678/badlands-model/badlands.svg)](https://zenodo.org/badge/latestdoi/16678/badlands-model/badlands)
 
 <div align="center">
     <img width=400 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/riseofthephoenix.png" alt="Rise of the Phoenix" title="Example of Landscape evolution with Badlands"</img>
