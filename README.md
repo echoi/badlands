@@ -34,6 +34,8 @@ You should have received a copy of the GNU Lesser General Public License along w
 
 The code is conceived as an open-source project, and is an ideal tool for both **Research** and **Learning** purposes.
 
+* CSDMS wiki [link](http://csdms.colorado.edu/wiki/Model:Badlands)
+
 ### Reporting  
 
 If you come accross a bug or if you need some help compiling or using the code [drop us a line](badlandsmodel@gmail.com).
