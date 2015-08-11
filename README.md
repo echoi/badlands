@@ -37,7 +37,7 @@ The code is conceived as an open-source project, and is an ideal tool for both *
 ### CSDMS QR-code 
 
 **Badlands** is downloadable from the **Community Surface Dynamic Modeling System** [wiki](http://csdms.colorado.edu/wiki/Model:Badlands)
-<div align="center">
+<div>
     <img width=100 src="http://csdms.colorado.edu/mediawiki/images/Qrcode_Badlands.png" alt="QR-code" title="QR-code"</img>
 </div>
 
