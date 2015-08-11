@@ -34,6 +34,10 @@ You should have received a copy of the GNU Lesser General Public License along w
 
 The code is conceived as an open-source project, and is an ideal tool for both **Research** and **Learning** purposes.
 
+### EarthByte software 
+
+**Badlands** is part of the suite of software developed by the EarthByte [group](http://www.earthbyte.org/category/resources/).
+
 ### CSDMS QR-code 
 
 **Badlands** is downloadable from the **Community Surface Dynamic Modeling System** [wiki](http://csdms.colorado.edu/wiki/Model:Badlands)
