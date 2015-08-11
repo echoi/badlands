@@ -34,7 +34,9 @@ You should have received a copy of the GNU Lesser General Public License along w
 
 The code is conceived as an open-source project, and is an ideal tool for both **Research** and **Learning** purposes.
 
-### CSDMS wiki [link](http://csdms.colorado.edu/wiki/Model:Badlands)
+### CSDMS 
+
+**Badlands** is downloadable from the **Community Surface Dynamic Modeling System** [wiki](http://csdms.colorado.edu/wiki/Model:Badlands)
 
 ### Reporting  
 
