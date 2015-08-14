@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (c) Tristan Salles (The University of Sydney) 
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU Lesser General Public License as published by the Free Software 
-! Foundation; either version 3.0 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -68,7 +68,7 @@ module hydroUtil
 
   ! Stream network accumulation minimal value
   real(kind=8)::accu_thres
-  
+
   ! Strahler stream order
   integer,dimension(:),allocatable::strahler
 
@@ -83,19 +83,19 @@ module hydroUtil
   real(kind=8)::time_step,simulation_time,udw_time,force_time
   real(kind=8)::time_start,time_end,time_display,cpl1_time,cpl2_time,cpl3_time,cpl4_time
   real(kind=8)::display_interval,CFL_diffusion
-  
+
   ! Diffusion coefficient
   real(kind=8),dimension(2)::Cdiffusion ! linear
   real(kind=8),dimension(2)::Cdiffusion_d ! depth-dependent
-  real(kind=8)::Cdiff_m ! depth-dependent 
-  real(kind=8)::Cdiff_n ! depth-dependent 
+  real(kind=8)::Cdiff_m ! depth-dependent
+  real(kind=8)::Cdiff_n ! depth-dependent
   real(kind=8),dimension(2)::Cdiffusion_nl ! non-linear
-  real(kind=8)::slope_critical 
-  
+  real(kind=8)::slope_critical
+
   ! Surface erodibility coefficient
   integer::perosive
   real(kind=8)::Cerodibility
-  
+
   ! Ice erodibility coefficient
   real(kind=8)::IceEro
 
@@ -108,7 +108,7 @@ module hydroUtil
 
   ! Fraction of total load delivered to channels as bedload
   real(kind=8)::Fracbed
-  
+
   ! Stream Power Law coefficient
   real(kind=8)::stl_m
   real(kind=8)::stl_n

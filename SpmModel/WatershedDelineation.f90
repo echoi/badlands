@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (c) Tristan Salles (The University of Sydney) 
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU Lesser General Public License as published by the Free Software 
-! Foundation; either version 3.0 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -50,7 +50,7 @@ module watershed
   integer,dimension(:),allocatable::partition
 
   integer,dimension(:),allocatable::options
-  integer,pointer::vsize,adjwgt 
+  integer,pointer::vsize,adjwgt
   real(kind=8),pointer::tpwgts,ubvec
 
 contains
@@ -58,18 +58,24 @@ contains
   ! =====================================================================================
 
   subroutine compute_subcatchment
-    
+
     integer::id,k,n,p,s,maxs,jcts(npets),disp(npets),disps(npets+1)
+    real(kind=8)::act,aire
 
     if(.not.allocated(strahler)) allocate(strahler(dnodes))
     if(.not.allocated(subcatchmentID)) allocate(subcatchmentID(dnodes))
     if(.not.allocated(junctionIDs)) allocate(junctionIDs(dnodes))
     if(.not.allocated(ljunctionIDs)) allocate(ljunctionIDs(dnodes))
-    
+
     if(.not.allocated(rcvNb)) allocate(rcvNb(dnodes))
     if(.not.allocated(rcvIDs)) allocate(rcvIDs(dnodes,maxrcvs*2))
     rcvNb=0
     rcvIDs=0
+
+    aire=del_area
+    if(refineNb>0)then
+      aire=refine_grid(1)%area
+    endif
 
     ! Compute cumulative discharge
     do id=partStack(pet_id+1),1,-1
@@ -78,15 +84,16 @@ contains
       ! Receivers
       rcvNb(p)=rcvNb(p)+1
       rcvIDs(p,rcvNb(p))=k
-      if(p/=k) discharge(p)=discharge(p)+discharge(k)  
+      if(p/=k) discharge(p)=discharge(p)+discharge(k)
     enddo
 
     call mpi_allreduce(mpi_in_place,discharge,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
-    
+
     ! Compute Strahler stream order
     strahler=0
     jctNb=0
     ljunctionIDs=0
+    act=aire*accu_thres
     do id=partStack(pet_id+1),1,-1
       maxs=0
       k=lstackOrder(id)
@@ -107,11 +114,14 @@ contains
       if(n>1)strahler(k)=maxs+1
 
       if(receivers(k)==k)then
-        jctNb=jctNb+1 
+        jctNb=jctNb+1
         ljunctionIDs(jctNb)=k
+        act=aire*accu_thres !accu_thres
       else
-        if(n>1.and.strahler(k)>1.and.mod(strahler(k),2)==0)then
-          jctNb=jctNb+1 
+        ! if(n>1.and.strahler(k)>1.and.mod(strahler(k),2)==0)then
+        if(discharge(k)>act)then
+          act=act+aire*accu_thres
+          jctNb=jctNb+1
           ljunctionIDs(jctNb)=k
         endif
       endif
@@ -125,11 +135,11 @@ contains
     do p=1,npets
       if(p<npets) disp(p+1)=disp(p)+jcts(p)
       disps(p+1)=disps(p)+jcts(p)
-    enddo 
+    enddo
     junctionIDs=0
     call mpi_allgatherv(ljunctionIDs,jctNb,mpi_integer,junctionIDs,jcts,disp,mpi_integer,badlands_world,rc)
 
-    ! Count nodes per subcatchment 
+    ! Count nodes per subcatchment
     if(allocated(subcatchNb)) deallocate(subcatchNb)
     allocate(subcatchNb(junctionsNb))
     subcatchNb=0
@@ -146,7 +156,7 @@ contains
     call mpi_allreduce(mpi_in_place,junctionIDs,dnodes,mpi_integer,mpi_max,badlands_world,rc)
     call mpi_allreduce(mpi_in_place,subcatchNb,junctionsNb,mpi_integer,mpi_max,badlands_world,rc)
     call mpi_allreduce(mpi_in_place,subcatchmentID,dnodes,mpi_integer,mpi_max,badlands_world,rc)
-    
+
     ! Perform subcatchment load-balancing and partitioning
     if(pet_id==0)call metis_loadbalancing
 
@@ -168,7 +178,7 @@ contains
         subcatchNb(catchID)=subcatchNb(catchID)+1
         success=addtosubcatch(s,catchID)
       endif
-    enddo 
+    enddo
 
     success=0
 
@@ -205,14 +215,14 @@ contains
       ! Declare tree connection parameters
       if(l/=s)then
         connectsNb(s)=connectsNb(s)+1
-        connectsNb(l)=connectsNb(l)+1      
+        connectsNb(l)=connectsNb(l)+1
         connects(s,connectsNb(s))=l
         connects(l,connectsNb(l))=s
-      ! Link to the top root 
+      ! Link to the top root
       elseif(s<=junctionsNb)then
         l=junctionsNb+1
         connectsNb(s)=connectsNb(s)+1
-        connectsNb(l)=connectsNb(l)+1      
+        connectsNb(l)=connectsNb(l)+1
         connects(s,connectsNb(s))=l
         connects(l,connectsNb(l))=s
       endif
@@ -240,13 +250,13 @@ contains
 
     ! Nullify pointers
     vsize=>null()
-    adjwgt=>null() 
+    adjwgt=>null()
     tpwgts=>null()
     ubvec=>null()
 
     ! K-way metis partitioning
     partition=1
-    if(npets>1) call METIS_PartGraphKway(junctionsNb+1,1,CRSadj,CRSadjncy,vwgt,vsize,adjwgt,npets,tpwgts,ubvec,options,objval,partition) 
+    if(npets>1) call METIS_PartGraphKway(junctionsNb+1,1,CRSadj,CRSadjncy,vwgt,vsize,adjwgt,npets,tpwgts,ubvec,options,objval,partition)
     deallocate(options)
 
     ! Cleaning process
@@ -254,7 +264,7 @@ contains
 
   end subroutine metis_loadbalancing
   ! =====================================================================================
-  
+
   subroutine bcast_loadbalancing
 
     integer::s,id,k,p
@@ -265,7 +275,7 @@ contains
       allocate(partition(junctionsNb+1))
     endif
     call mpi_bcast(partition,junctionsNb+1,mpi_integer,0,badlands_world,rc)
-    
+
     if(.not.allocated(subcatchmentProc)) allocate(subcatchmentProc(dnodes))
     subcatchmentProc=-1
 
@@ -285,11 +295,11 @@ contains
     drainOde=0
     localNodes=0
     do k=1,dnodes
-      p=stackOrder(k) 
+      p=stackOrder(k)
       id=receivers(p)
-      subcatchmentProc(p)=partition(subcatchmentID(p))-1 
-      subcatchmentProc(id)=partition(subcatchmentID(id))-1 
-      subcatchmentProc(k)=partition(subcatchmentID(k))-1 
+      subcatchmentProc(p)=partition(subcatchmentID(p))-1
+      subcatchmentProc(id)=partition(subcatchmentID(id))-1
+      subcatchmentProc(k)=partition(subcatchmentID(k))-1
       if(pet_id==subcatchmentProc(k))localNodes=localNodes+1
       ! Inter-partition nodes variables
       if(subcatchmentProc(p)/=subcatchmentProc(id))then
@@ -304,9 +314,11 @@ contains
         s=s+1
       endif
     enddo
+
     drainOde=drainOde+localNodes
+
 
   end subroutine bcast_loadbalancing
   ! =====================================================================================
 
-end module watershed 
+end module watershed
