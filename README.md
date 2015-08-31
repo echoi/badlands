@@ -63,17 +63,3 @@ A compilation of examples and some documentation related to the physics, assumpt
 | :-------------: |:-------------:|:-------------:| 
 | <a href="http://www.youtube.com/watch?feature=player_embedded&v=R16jZ2VT-ik" target="_blank"><img src="http://img.youtube.com/vi/R16jZ2VT-ik/0.jpg" alt="High-resolution depression filling model" width="240" height="180" border="10" /></a> | <a href="http://www.youtube.com/watch?feature=player_embedded&v=20Z92nnnpQY" target="_blank"><img src="http://img.youtube.com/vi/20Z92nnnpQY/0.jpg" alt="3D Tectonic forcing and drainage evolution" width="240" height="180" border="10" /></a> | <a href="http://www.youtube.com/watch?feature=player_embedded&v=ke2c9Ybb6LM" target="_blank"><img src="http://img.youtube.com/vi/ke2c9Ybb6LM/0.jpg" alt="Landscape evolution over continental scale" width="240" height="180" border="10" /></a> |
 | execution 1h 2 CPUs |execution 22h 32 CPUs|execution 4h 16 CPUs|
-
-<div id="disqus_thread"></div>
-<script type="text/javascript">
-    /* * * CONFIGURATION VARIABLES * * */
-    var disqus_shortname = 'badlands-model';
-    
-    /* * * DON'T EDIT BELOW THIS LINE * * */
-    (function() {
-        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
-        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
