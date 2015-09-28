@@ -498,7 +498,8 @@ contains
         ! Close interface
         call h5close_f(rc)
 
-        deallocate(nodes,nID,sedlID,sedID)
+        deallocate(nodes,nID,sedID)
+        if( allocated(sedlid) ) deallocate(sedlID)
         if(flexure)deallocate(layth,layphi,sedload)
     enddo
 
