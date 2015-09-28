@@ -60,7 +60,7 @@ contains
   subroutine compute_subcatchment
 
     integer::id,k,n,p,s,maxs,jcts(npets),disp(npets),disps(npets+1)
-    real(kind=8)::act,aire
+    ! real(kind=8)::act,aire
 
     if(.not.allocated(strahler)) allocate(strahler(dnodes))
     if(.not.allocated(subcatchmentID)) allocate(subcatchmentID(dnodes))
@@ -72,10 +72,10 @@ contains
     rcvNb=0
     rcvIDs=0
 
-    aire=del_area
-    if(refineNb>0)then
-      aire=refine_grid(1)%area
-    endif
+    ! aire=del_area
+    ! if(refineNb>0)then
+    !   aire=refine_grid(1)%area
+    ! endif
 
     ! Compute cumulative discharge
     do id=partStack(pet_id+1),1,-1
@@ -93,7 +93,7 @@ contains
     strahler=0
     jctNb=0
     ljunctionIDs=0
-    act=aire*accu_thres
+    ! act=aire*accu_thres
     do id=partStack(pet_id+1),1,-1
       maxs=0
       k=lstackOrder(id)
@@ -116,11 +116,11 @@ contains
       if(receivers(k)==k)then
         jctNb=jctNb+1
         ljunctionIDs(jctNb)=k
-        act=aire*accu_thres !accu_thres
+        ! act=aire*accu_thres !accu_thres
       else
-        ! if(n>1.and.strahler(k)>1.and.mod(strahler(k),2)==0)then
-        if(discharge(k)>act)then
-          act=act+aire*accu_thres
+        if(n>1.and.strahler(k)>1.and.mod(strahler(k),2)==0)then
+        ! if(discharge(k)>act)then
+          ! act=act+aire*accu_thres
           jctNb=jctNb+1
           ljunctionIDs(jctNb)=k
         endif
