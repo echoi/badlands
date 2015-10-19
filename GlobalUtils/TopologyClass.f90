@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  TopologyClass.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module topology
 
   use strings
@@ -79,7 +77,6 @@ module topology
 
 contains
   ! =====================================================================================
-
   function cmp_centroid(fce) result(centroid)
 
     integer::fce,k
@@ -100,7 +97,6 @@ contains
 
   end function cmp_centroid
   ! =====================================================================================
-
   subroutine ReadStrings(id,str)
 
     character(len=50)::str
@@ -125,7 +121,6 @@ contains
 
   end subroutine ReadStrings
   ! =====================================================================================
-
   subroutine addpath(fname)
 
     integer::pathlen,flen
@@ -151,7 +146,6 @@ contains
 
   end subroutine addpath
   ! =====================================================================================
-
   subroutine addpath1(fname)
 
     integer::pathlen,flen
@@ -178,7 +172,6 @@ contains
 
   end subroutine addpath1
   ! =====================================================================================
-
   subroutine addpath2(fname)
 
     integer::pathlen,flen
@@ -204,7 +197,6 @@ contains
 
   end subroutine addpath2
   ! =====================================================================================
-
   subroutine addpath3(fname)
 
     integer::pathlen,flen
@@ -230,7 +222,6 @@ contains
 
   end subroutine addpath3
   ! =====================================================================================
-
   subroutine noblnk(string)
 
     integer::i,j,lg
@@ -305,7 +296,6 @@ contains
 
   end subroutine append_str
   ! =====================================================================================
-
   subroutine append_zero(stg1,i)
 
     integer::l1,l2,i
@@ -337,7 +327,6 @@ contains
 
   end subroutine append_zero
   ! =====================================================================================
-
   subroutine append_nbreal(stg1,n)
 
     real(kind=8)::n
@@ -357,7 +346,6 @@ contains
 
   end subroutine append_nbreal
   ! =====================================================================================
-
   subroutine append_nb(stg1,i)
 
     integer::l1,l2,i
@@ -375,7 +363,6 @@ contains
 
   end subroutine append_nb
   ! =====================================================================================
-
   subroutine append_nb2(stg1,i)
 
     integer::l1,l2,i
@@ -392,5 +379,4 @@ contains
 
   end subroutine append_nb2
   ! =====================================================================================
-
 end module topology

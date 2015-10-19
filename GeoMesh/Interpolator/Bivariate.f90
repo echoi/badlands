@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (c) Tristan Salles (The University of Sydney) 
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU Lesser General Public License as published by the Free Software 
-! Foundation; either version 3.0 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -35,10 +35,9 @@
 !        Created:  08/05/15 11:11:33
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module bivar
 
   implicit none
@@ -46,7 +45,6 @@ module bivar
 contains
 
   ! =====================================================================================
-
   subroutine idbvip( md, ndp, xd, yd, zd, nip, xi, yi, zi, iwk, wk )
 
     integer :: ndp, nip, iip, itipv, itpv, md, nl, nt,ntsc
@@ -158,7 +156,6 @@ contains
 
   end subroutine idbvip
   ! =====================================================================================
-
   subroutine idgrid( xd, yd, nt, ipt, nl, ipl, nxi, nyi, xi, yi, ngp, igp )
 
     integer :: it0, it0t3, ixi, iximn, iximx, iyi, izi, jigp0, jigp1, jigp1i, jngp0, jngp1, l, ngp0
@@ -437,7 +434,6 @@ contains
 
   end subroutine idgrid
   ! =====================================================================================
-
   subroutine idlctn( ndp, xd, yd, nt, ipt, nl, ipl, xii, yii, iti, iwk, wk )
 
     integer :: ndp, nl, nt, i1, i2, i3, idp, idsc(9), il1, il1t3, il2, ip1, ip2, ip3, ipl(3*nl), ipt(3*nt), isc, it0, it0t3, iti
@@ -670,7 +666,6 @@ contains
 
   end subroutine idlctn
   ! =====================================================================================
-
   subroutine idpdrv( ndp, xd, yd, zd, nt, ipt, pd, wk )
 
     real, parameter :: epsln = 1.0E-06
@@ -796,7 +791,6 @@ contains
 
   end subroutine idpdrv
   ! =====================================================================================
-
   subroutine idptip( ndp,xd, yd, zd, nt, ipt, nl, ipl, pdd, iti, xii, yii, zii )
 
     integer :: ndp, nl, nt, i, idp, il1, il2, ipl(3*nl), ipt(3*nt), it0, iti, itpv, jipl
@@ -1096,7 +1090,6 @@ contains
 
   end subroutine idptip
   ! =====================================================================================
-
   subroutine idsfft( md, ndp, xd, yd, zd, nxi, nyi, nzi, xi, yi, zi, iwk, wk )
 
     integer :: ndp, nxi, nyi, nzi, il1, il2, iti, itpv, iwk(31*ndp + nxi*nyi), ixi, iyi, izi, jig0mn, jig0mx
@@ -1255,7 +1248,6 @@ contains
 
   end subroutine idsfft
   ! =====================================================================================
-
   subroutine idtang( ndp, xd, yd, nt, ipt, nl, ipl, iwl, iwp, wk )
 
     integer, parameter :: nrep = 100
@@ -1705,5 +1697,4 @@ contains
 
   end subroutine idxchgfct
   ! =====================================================================================
-
 end module bivar

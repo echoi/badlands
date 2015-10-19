@@ -1,37 +1,35 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (c) Tristan Salles (The University of Sydney) 
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU Lesser General Public License as published by the Free Software 
-! Foundation; either version 3.0 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
-
+! =====================================================================================
 ! =====================================================================================
 !
 !       Filename:  VisualiseStrata.f90
 !
 !    Description:  Visualise stratigraphic grid
 !
-!        Version:  1.0 
+!        Version:  1.0
 !        Created:  03/06/15 09:05:27
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module out_stratal
 
   use hdf5
@@ -47,14 +45,13 @@ module out_stratal
 contains
 
   ! =====================================================================================
-
   subroutine strata_hdf5(iter)
 
 
     logical::compression
 
     integer::id,idt,gid,k,i,ks,p,iter,totnodes,ierr,rank,totelems
-    
+
     integer,dimension(:),allocatable::layID,connect
 
     real(kind=8),dimension(upartN)::lzh
@@ -91,9 +88,9 @@ contains
     allocate(layID(totnodes))
 
     allocate(connect(6*totelems))
-  
+
     ! Create nodes arrays
-    id=1 
+    id=1
     idt=1
     do k=1,upartN
        gid=unodeID(k)
@@ -108,7 +105,7 @@ contains
        id=id+3
        idt=idt+1
     enddo
-    
+
     do k=1,layNb-1
       do i=1,upartN
         gid=unodeID(i)
@@ -174,7 +171,7 @@ contains
 
     ! Create the dataset with default properties
     call h5dcreate_f(file_id,trim(text),h5t_native_integer,filespace,dset_id,rc,plist_id)
-    
+
     ! Write the dataset collectively
     call h5dwrite_f(dset_id,h5t_native_integer,connect,dims,rc)
     call h5pclose_f(plist_id,rc)
@@ -205,7 +202,7 @@ contains
     ! Close the dataset
     call h5dclose_f(dset_id,ierr)
     call h5sclose_f(filespace,ierr)
-    
+
     ! Thickness attribute
     dims(1)=1
     dims(2)=totnodes
@@ -252,7 +249,7 @@ contains
     rank=2
     call h5screate_simple_f(rank,dims,filespace,ierr)
     text=''
-    text="/mgz"        
+    text="/mgz"
     ! Create property list for collective dataset write
     call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
     call h5pset_deflate_f(plist_id,9,ierr)
@@ -273,8 +270,8 @@ contains
       rank=2
       call h5screate_simple_f(rank,dims,filespace,ierr)
       text=''
-      text="/prop" 
-      call append_nb(text,ks)       
+      text="/prop"
+      call append_nb(text,ks)
       ! Create property list for collective dataset write
       call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
       call h5pset_deflate_f(plist_id,9,ierr)
@@ -300,9 +297,8 @@ contains
 
   end subroutine strata_hdf5
   ! =====================================================================================
-
   subroutine strata_xmf(iter)
-    
+
     type(xmlf_t)::xf
     integer::iter,totnodes,totelems,k,ks
 
@@ -441,7 +437,7 @@ contains
             call xml_AddAttribute(xf,"Dimensions",trim(str))
             call xml_AddCharacters(xf,trim(filename2))
             call xml_EndElement(xf,"DataItem")
-            call xml_EndElement(xf,"Attribute") 
+            call xml_EndElement(xf,"Attribute")
 
             ! Mean grain size
             call xml_NewElement(xf,"Attribute")
@@ -455,8 +451,8 @@ contains
             call xml_AddAttribute(xf,"Dimensions",trim(str))
             call xml_AddCharacters(xf,trim(filename3))
             call xml_EndElement(xf,"DataItem")
-            call xml_EndElement(xf,"Attribute") 
-            
+            call xml_EndElement(xf,"Attribute")
+
             ! Layer Nb
             call xml_NewElement(xf,"Attribute")
             call xml_AddAttribute(xf,"Type","Scalar")
@@ -469,7 +465,7 @@ contains
             call xml_AddAttribute(xf,"Dimensions",trim(str))
             call xml_AddCharacters(xf,trim(filename4))
             call xml_EndElement(xf,"DataItem")
-            call xml_EndElement(xf,"Attribute") 
+            call xml_EndElement(xf,"Attribute")
 
             ! Sediment proportion
             do ks=1,totgrn
@@ -479,7 +475,7 @@ contains
                 call append_nb(txt,ks)
                 call xml_NewElement(xf,"Attribute")
                 call xml_AddAttribute(xf,"Type","Scalar")
-                call xml_AddAttribute(xf,"Center","Node") 
+                call xml_AddAttribute(xf,"Center","Node")
                 call xml_AddAttribute(xf,"Name",trim(txt))
                 call xml_NewElement(xf,"DataItem")
                 call xml_AddAttribute(xf,"Format","HDF")
@@ -488,7 +484,7 @@ contains
                 call xml_AddAttribute(xf,"Dimensions",trim(str))
                 call xml_AddCharacters(xf,trim(filename6))
                 call xml_EndElement(xf,"DataItem")
-                call xml_EndElement(xf,"Attribute") 
+                call xml_EndElement(xf,"Attribute")
             enddo
             call xml_EndElement(xf,"Grid")
         enddo
@@ -504,7 +500,6 @@ contains
 
   end subroutine strata_xmf
   ! =====================================================================================
-
   subroutine visualise_strata(iter)
 
     ! Parameters Declaration
@@ -518,7 +513,7 @@ contains
     if(pet_id==0)then
         filename='Stratal_series.xdmf'
         call addpath1(filename)
-        
+
         ! Header
         call xml_OpenFile(filename,xf)
         call xml_AddDOCTYPE(xf,"Xdmf","Xdmf.dtd")
@@ -529,7 +524,7 @@ contains
         call xml_NewElement(xf,"Grid")
         call xml_AddAttribute(xf,"GridType","Collection")
         call xml_AddAttribute(xf,"CollectionType","Temporal")
-        
+
         it0=1
         ! Loop over time step
         do i=it0,iter+1
@@ -547,7 +542,7 @@ contains
             call xml_AddAttribute(xf,"xpointer","xpointer(//Xdmf/Domain/Grid)")
             call xml_EndElement(xf,"xi:include")
         enddo
-        
+
         ! Footer
         call xml_EndElement(xf,"Grid")
         call xml_EndElement(xf,"Domain")
@@ -559,5 +554,4 @@ contains
 
   end subroutine visualise_strata
   ! =====================================================================================
-
 end module out_stratal

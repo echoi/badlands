@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  ReadTopology.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module readtopo
 
   use parallel
@@ -84,17 +82,14 @@ module readtopo
 
 contains
   ! =====================================================================================
-
   subroutine startDocument_handler
 
   end subroutine startDocument_handler
   ! =====================================================================================
-
   subroutine endDocument_handler
 
   end subroutine endDocument_handler
   ! =====================================================================================
-
   subroutine startElement_handler(namespaceURI,localname,name,atts)
 
     character(len=*),intent(in)::namespaceURI
@@ -118,7 +113,6 @@ contains
 
   end subroutine startElement_handler
   ! =====================================================================================
-
   subroutine endElement_handler(namespaceURI,localname,name)
 
     character(len=*),intent(in)::namespaceURI
@@ -137,7 +131,6 @@ contains
 
   end subroutine endElement_handler
   ! =====================================================================================
-
   subroutine characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -163,7 +156,6 @@ contains
 
   end subroutine characters_handler
   ! =====================================================================================
-
   subroutine SgeometryElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -183,7 +175,6 @@ contains
 
   end subroutine SgeometryElement_handler
   ! =====================================================================================
-
   subroutine SrefineElement_handler(name)
 
     character(len=*), intent(in) :: name
@@ -196,7 +187,6 @@ contains
 
   end subroutine SrefineElement_handler
   ! =====================================================================================
-
   subroutine StimeElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -212,7 +202,6 @@ contains
 
   end subroutine StimeElement_handler
   ! =====================================================================================
-
   subroutine SudwElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -222,7 +211,6 @@ contains
 
   end subroutine SudwElement_handler
   ! =====================================================================================
-
   subroutine EgeometryElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -242,7 +230,6 @@ contains
 
   end subroutine EgeometryElement_handler
   ! =====================================================================================
-
   subroutine ErefineElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -255,7 +242,6 @@ contains
 
   end subroutine ErefineElement_handler
   ! =====================================================================================
-
   subroutine EtimeElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -271,7 +257,6 @@ contains
 
   end subroutine EtimeElement_handler
   ! =====================================================================================
-
   subroutine EudwElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -281,7 +266,6 @@ contains
 
   end subroutine EudwElement_handler
   ! =====================================================================================
-
   subroutine geometry_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -317,7 +301,6 @@ contains
 
   end subroutine geometry_characters_handler
   ! =====================================================================================
-
   subroutine refine_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -342,7 +325,6 @@ contains
 
   end subroutine refine_characters_handler
   ! =====================================================================================
-
   subroutine time_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -368,7 +350,6 @@ contains
 
   end subroutine time_characters_handler
   ! =====================================================================================
-
   subroutine udw_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -381,7 +362,6 @@ contains
 
   end subroutine udw_characters_handler
   ! =====================================================================================
-
   subroutine topology_parser
 
     type(xml_t)::xf
@@ -578,6 +558,5 @@ contains
 
   end subroutine topology_parser
   ! =====================================================================================
-
 end module readtopo
 ! =====================================================================================

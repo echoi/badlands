@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  StratalClass.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module stratal_class
 
   use bilinear
@@ -102,7 +100,6 @@ module stratal_class
 contains
 
   ! =====================================================================================
-
   subroutine constructStrata
 
     logical::found
@@ -246,5 +243,4 @@ contains
 
   end subroutine constructStrata
   ! =====================================================================================
-
 end module stratal_class

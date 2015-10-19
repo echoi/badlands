@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  CouplerComponent.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module coupling
 
   use geomesh
@@ -65,7 +63,6 @@ module coupling
 contains
 
   ! =====================================================================================
-
   subroutine bilinearTopo
 
     integer::k,p,id
@@ -126,7 +123,6 @@ contains
 
   end subroutine bilinearTopo
   ! =====================================================================================
-
   subroutine bilinearRain
 
     integer::k,p,id
@@ -162,7 +158,6 @@ contains
 
   end subroutine bilinearRain
   ! =====================================================================================
-
   subroutine bilinearIce
 
     integer::k,id
@@ -200,7 +195,6 @@ contains
 
   end subroutine bilinearIce
   ! =====================================================================================
-
   subroutine bilinearWave
 
     integer::k,p,id
@@ -246,7 +240,6 @@ contains
 
   end subroutine bilinearWave
   ! =====================================================================================
-
   subroutine bilinearCirculation
 
     integer::k,id,p
@@ -292,7 +285,6 @@ contains
 
   end subroutine bilinearCirculation
   ! =====================================================================================
-
   subroutine bilinearFlex
 
     integer::k,id
@@ -326,7 +318,6 @@ contains
 
   end subroutine bilinearFlex
   ! =====================================================================================
-
   subroutine bilinearDisp
 
     integer::k,p,id
@@ -385,7 +376,6 @@ contains
 
   end subroutine bilinearDisp
   ! =====================================================================================
-
   subroutine bilinearGrid
 
     ! Get rainfall and displacement
@@ -411,7 +401,6 @@ contains
 
   end subroutine bilinearGrid
   ! =====================================================================================
-
   subroutine delaunayInterpolant(isflex)
 
     logical::isflex
@@ -467,7 +456,6 @@ contains
 
   end subroutine delaunayInterpolant
   ! =====================================================================================
-
   subroutine getEarthData
 
     if(rain_event>0.and.cpl1_time<=simulation_time)then
@@ -492,7 +480,6 @@ contains
 
   end subroutine getEarthData
   ! =====================================================================================
-
   subroutine getIceModel
 
     if(simulation_time==time_start)then
@@ -521,7 +508,6 @@ contains
   end subroutine getIceModel
 
   ! =====================================================================================
-
   subroutine ocean_circulation_wave_run
 
     integer::scn,sgp,scn1,scn2
@@ -576,7 +562,6 @@ contains
 
   end subroutine ocean_circulation_wave_run
   ! =====================================================================================
-
   subroutine getOceanModel
 
     if(simulation_time==time_start)then
@@ -612,7 +597,6 @@ contains
 
   end subroutine getOceanModel
   ! =====================================================================================
-
   subroutine getFlexModel
 
     if(simulation_time==time_start)then
@@ -647,7 +631,6 @@ contains
 
   end subroutine getFlexModel
   ! =====================================================================================
-
   subroutine mvSpmGrid
 
     integer::k,id,rmvID(dnodes),n,l,h,pts(3),onodes,tt,p
@@ -1115,7 +1098,6 @@ contains
 
   end subroutine mvSpmGrid
   ! =====================================================================================
-
   subroutine remesher
 
     ! Get the new TIN
@@ -1136,7 +1118,6 @@ contains
 
   end subroutine remesher
   ! =====================================================================================
-
   subroutine delaunayRebuilt
 
     character(len=128)::TINCfile,OPTC,stg
@@ -1215,7 +1196,6 @@ contains
 
   end subroutine delaunayRebuilt
   ! =====================================================================================
-
   subroutine cleanGeomorpho
 
     if(allocated(nZ)) deallocate(nZ)
@@ -1255,5 +1235,4 @@ contains
 
   end subroutine cleanGeomorpho
   ! =====================================================================================
-
 end module coupling

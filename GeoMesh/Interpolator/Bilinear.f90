@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  Bilinear.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module bilinear
 
   implicit none
@@ -42,7 +40,6 @@ module bilinear
 contains
 
   ! =====================================================================================
-
   function binarysearch(length,array,value)
     ! Given an array and a value, returns the index of the element that
     ! is closest to, but less than, the given value.
@@ -106,7 +103,6 @@ contains
 
   end function interpolate_circulation_grid
   ! =====================================================================================
-
   subroutine interpolate_grid_bilinear(x_len,x_array,y_len,y_array,f,u_len,x,y,ibv)
 
     ! This function uses bilinear interpolation to estimate the value
@@ -149,7 +145,6 @@ contains
 
   end subroutine interpolate_grid_bilinear
   ! =====================================================================================
-
   subroutine interpolate_grid_bilinear3(x_len,x_array,y_len,y_array,f1,f2,f3,u_len,x,y,ib1,ib2,ib3)
 
     ! This function uses bilinear interpolation to estimate the value
@@ -198,7 +193,6 @@ contains
 
   end subroutine interpolate_grid_bilinear3
   ! =====================================================================================
-
   subroutine pointInTriangleBoundingBox(xy,xb,yb,l)
 
     integer::l
@@ -217,7 +211,6 @@ contains
 
   end subroutine pointInTriangleBoundingBox
   ! =====================================================================================
-
   subroutine sideTriangle(xy,x1,y1,x2,y2,dist)
 
     real(kind=8)::xy(2),x1,y1,x2,y2,dist
@@ -228,7 +221,6 @@ contains
 
   end subroutine sideTriangle
   ! =====================================================================================
-
   subroutine naivepointInTriangle(xy,xb,yb,l)
 
     integer::l
@@ -248,7 +240,6 @@ contains
 
   end subroutine naivepointInTriangle
   ! =====================================================================================
-
   subroutine distanceSquarePt2Segment(xy,x1,y1,x2,y2,dist)
 
     real(kind=8)::xy(2),x1,y1,x2,y2,dist
@@ -269,7 +260,6 @@ contains
 
   end subroutine distanceSquarePt2Segment
   ! =====================================================================================
-
   subroutine is_point_in_triangle(xy,xb,yb,l)
 
     integer,intent(inout)::l
@@ -294,7 +284,6 @@ contains
 
   end subroutine is_point_in_triangle
   ! =====================================================================================
-
   subroutine insideTriangle(xy,xb,yb,l)
 
     integer::l
@@ -334,5 +323,4 @@ contains
 
   end subroutine insideTriangle
   ! =====================================================================================
-
 end module bilinear

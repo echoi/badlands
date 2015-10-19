@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  EarthForces.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module earthforces
 
   use parallel
@@ -47,7 +45,6 @@ module earthforces
 contains
 
   ! =====================================================================================
-
   subroutine displacement
 
     integer::kn,k,iu,p,id,m,n
@@ -250,7 +247,6 @@ contains
 
   end subroutine displacement
   ! =====================================================================================
-
   subroutine rainfall
 
     integer::n,event_nb,iu,p,k,id,m
@@ -328,5 +324,4 @@ contains
 
   end subroutine rainfall
   ! =====================================================================================
-
 end module earthforces

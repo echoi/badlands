@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  ForcesClass.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module external_forces
 
   use parallel
@@ -172,7 +170,6 @@ module external_forces
 contains
 
   ! =====================================================================================
-
   subroutine read_sealevel_file
 
     integer::iu,nbsea,k,i,i2,ios
@@ -229,7 +226,6 @@ contains
 
   end subroutine read_sealevel_file
   ! =====================================================================================
-
   subroutine eustatism
 
     integer::i
@@ -260,7 +256,6 @@ contains
 
   end subroutine eustatism
   ! =====================================================================================
-
   function sealvl_interpolation(sl_param) result(slinterpol)
 
     type(sl_par)::sl_param
@@ -271,7 +266,6 @@ contains
 
   end function sealvl_interpolation
   ! =====================================================================================
-
   subroutine read_ELA_file
 
     integer::iu,nbela,k,i,i2,ios
@@ -328,7 +322,6 @@ contains
 
   end subroutine read_ELA_file
   ! =====================================================================================
-
   subroutine ELA_flux
 
     integer::i
@@ -359,7 +352,6 @@ contains
 
   end subroutine ELA_flux
   ! =====================================================================================
-
   function ELA_interpolation(e_param) result(einterpol)
 
     type(ela_par)::e_param
@@ -370,5 +362,4 @@ contains
 
   end function ELA_interpolation
   ! =====================================================================================
-
 end module external_forces

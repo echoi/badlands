@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (c) Tristan Salles (The University of Sydney) 
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU Lesser General Public License as published by the Free Software 
-! Foundation; either version 3.0 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,10 +28,9 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module meshPartition
 
   use parallel
@@ -47,7 +46,7 @@ module meshPartition
   integer(ZOLTAN_INT),dimension(:),allocatable::zGID
   real,dimension(:),allocatable::zolX,zolY
 
-  ! Zoltan data to store 
+  ! Zoltan data to store
   logical::changes
   integer(Zoltan_INT)::numGidEntries,numLidEntries
   integer(Zoltan_INT)::numImport,numExport
@@ -59,17 +58,16 @@ module meshPartition
 contains
 
   ! =====================================================================================
-
   subroutine StructureGridPart
-  
+
     logical::column_partition
-    
+
     integer::k,e,p,id,extra,partNb,partelems
 
     integer,dimension(npets)::partDim
     integer,dimension(nbelm)::elementPet
     integer,dimension(bnbnodes)::nodeDefine
-     
+
     real(kind=8)::elem_center
     real(kind=8),dimension(npets)::maxCoord
 
@@ -130,8 +128,8 @@ contains
       if(elementPet(e)==pet_id)spartE=spartE+1
     enddo
 
-    if(allocated(snodeID)) deallocate(snodeID) 
-    if(allocated(snodeLID)) deallocate(snodeLID) 
+    if(allocated(snodeID)) deallocate(snodeID)
+    if(allocated(snodeLID)) deallocate(snodeLID)
     allocate(snodeID(spartN),snodeLID(bnbnodes))
     id=0
     snodeLID=-1
@@ -153,8 +151,8 @@ contains
       endif
     enddo
 
-    if(allocated(selemID)) deallocate(selemID) 
-    if(allocated(sownedID)) deallocate(sownedID) 
+    if(allocated(selemID)) deallocate(selemID)
+    if(allocated(sownedID)) deallocate(sownedID)
     allocate(sownedID(spartN),selemID(spartE))
     selemID=-1
     sownedID=pet_id
@@ -183,11 +181,10 @@ contains
 
     return
 
-  end subroutine StructureGridPart 
+  end subroutine StructureGridPart
   ! =====================================================================================
-
   subroutine UnstructureGridPart
-  
+
     integer(Zoltan_INT)::ierr
     real(Zoltan_FLOAT)::version
 
@@ -205,9 +202,8 @@ contains
 
     return
 
-  end subroutine UnstructureGridPart 
+  end subroutine UnstructureGridPart
   ! =====================================================================================
-
   subroutine allocateObjects
 
     integer::i,currIndx
@@ -238,7 +234,7 @@ contains
     enddo
 
   end subroutine allocateObjects
-  ! =====================================================================================  
+  ! =====================================================================================
 
   subroutine define_partition
 
@@ -246,7 +242,7 @@ contains
     integer::allPartAssign(numGlobObjs)
     integer::parts(numLocObjs)
     integer::i,p,id
-    integer,dimension(:),allocatable::upartIDpts,upartIDelem,uIDpts 
+    integer,dimension(:),allocatable::upartIDpts,upartIDelem,uIDpts
 
     do i=1,numLocObjs,1
        parts(i)=pet_id
@@ -271,15 +267,15 @@ contains
        enddo
     endif
     call mpi_bcast(zolt_part,numGlobObjs,mpi_integer,0,badlands_world,rc)
-    
+
     ! Defined the unstructured mesh partition parameters
     upartE=0
     upartN=0
-    if(allocated(upartIDelem)) deallocate(upartIDelem) 
-    if(allocated(upartIDpts)) deallocate(upartIDpts) 
-    if(allocated(uIDpts)) deallocate(uIDpts) 
-    if(allocated(uownEID)) deallocate(uownEID) 
-    allocate(upartIDpts(dnodes),uIDpts(dnodes),upartIDelem(delem),uownEID(delem)) 
+    if(allocated(upartIDelem)) deallocate(upartIDelem)
+    if(allocated(upartIDpts)) deallocate(upartIDpts)
+    if(allocated(uIDpts)) deallocate(uIDpts)
+    if(allocated(uownEID)) deallocate(uownEID)
+    allocate(upartIDpts(dnodes),uIDpts(dnodes),upartIDelem(delem),uownEID(delem))
     upartIDpts=-1
     uIDpts=-1
     do i=1,delem
@@ -294,17 +290,17 @@ contains
         endif
         if(upartIDpts(delmt(i,p))<0)then
           upartIDpts(delmt(i,p))=zolt_part(i)
-        endif 
+        endif
       enddo
     enddo
 
     ! Get the partition elements
-    if(allocated(uelemID)) deallocate(uelemID) 
+    if(allocated(uelemID)) deallocate(uelemID)
     allocate(uelemID(upartE))
     p=0
     uownEID=-1
     do i =1,delem
-      if(upartIDelem(i)==pet_id)then 
+      if(upartIDelem(i)==pet_id)then
         p=p+1
         uelemID(p)=i
         uownEID(i)=pet_id
@@ -312,16 +308,16 @@ contains
     enddo
 
     ! Get the partition nodes and owned processor ID
-    if(allocated(unodeID)) deallocate(unodeID) 
-    if(allocated(unodeID)) deallocate(unodeID) 
-    if(allocated(unodeLID)) deallocate(unodeLID) 
-    if(allocated(uownedID)) deallocate(uownedID) 
+    if(allocated(unodeID)) deallocate(unodeID)
+    if(allocated(unodeID)) deallocate(unodeID)
+    if(allocated(unodeLID)) deallocate(unodeLID)
+    if(allocated(uownedID)) deallocate(uownedID)
     allocate(unodeID(upartN),uownedID(upartN),unodeLID(dnodes))
     unodeLID=-1
     p=0
     id=0
     do i=1,dnodes
-      if(uIDpts(i)==pet_id)then 
+      if(uIDpts(i)==pet_id)then
         p=p+1
         unodeID(p)=i
         unodeLID(i)=p
@@ -334,7 +330,7 @@ contains
     deallocate(uIDpts,upartIDpts,upartIDelem)
 
   end subroutine define_partition
-  ! =====================================================================================  
+  ! =====================================================================================
 
   subroutine RCBPartition
 
@@ -365,7 +361,6 @@ contains
 
   end subroutine RCBPartition
   ! =====================================================================================
-
   subroutine zoltanCleanup()
 
     integer::ierr
@@ -373,9 +368,8 @@ contains
     ierr=Zoltan_LB_Free_Part(importGlobalGids,importLocalGids,importProcs,importToPart)
     ierr=Zoltan_LB_Free_Part(exportGlobalGids,exportLocalGids,exportProcs,exportToPart)
 
-  end subroutine zoltanCleanup 
+  end subroutine zoltanCleanup
   ! =====================================================================================
-
   integer function zoltNumObjs(data,ierr)
 
     ! Local declarations
@@ -385,10 +379,9 @@ contains
     zoltNumObjs=numLocObjs
     ierr=ZOLTAN_OK
 
-  end function zoltNumObjs 
+  end function zoltNumObjs
   ! =====================================================================================
-
-  subroutine zoltGetObjs(data,num_gid_entries,num_lid_entries,global_ids, & 
+  subroutine zoltGetObjs(data,num_gid_entries,num_lid_entries,global_ids, &
        local_ids,wgt_dim,obj_wgts,ierr)
 
     integer(Zoltan_INT),intent(in)::data(*)
@@ -409,9 +402,8 @@ contains
 
     ierr=ZOLTAN_OK
 
-  end subroutine zoltGetObjs  
+  end subroutine zoltGetObjs
   ! =====================================================================================
-
   integer function zoltNumGeom(data,ierr)
 
     integer(Zoltan_INT),intent(in)::data(*)
@@ -422,7 +414,7 @@ contains
 
   end function zoltNumGeom
   ! =====================================================================================
-  
+
   subroutine zoltGeom(data,num_gid_entries,num_lid_entries,global_id, &
        local_id,geom_vec,ierr)
 
@@ -439,8 +431,8 @@ contains
 
     ierr=ZOLTAN_OK
 
-  end subroutine zoltGeom  
-  ! =====================================================================================  
+  end subroutine zoltGeom
+  ! =====================================================================================
 
 end module meshPartition
 ! =====================================================================================

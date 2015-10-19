@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (c) Tristan Salles (The University of Sydney) 
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU Lesser General Public License as published by the Free Software 
-! Foundation; either version 3.0 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,10 +28,9 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module readgeomorpho
 
   use parallel
@@ -54,7 +53,7 @@ module readgeomorpho
   logical,save::in_spln=.false.
   logical,save::in_splm=.false.
   logical,save::in_efficiency=.false.
-  logical,save::in_fracbed=.false. 
+  logical,save::in_fracbed=.false.
   logical,save::in_stln=.false.
   logical,save::in_stlm=.false.
   logical,save::in_rock=.false.
@@ -82,17 +81,14 @@ module readgeomorpho
 contains
 
   ! =====================================================================================
-
   subroutine startDocument_handler
 
   end subroutine startDocument_handler
   ! =====================================================================================
-
   subroutine endDocument_handler
 
   end subroutine endDocument_handler
   ! =====================================================================================
-
   subroutine startElement_handler(namespaceURI,localname,name,atts)
 
     character(len=*),intent(in)::namespaceURI
@@ -122,7 +118,6 @@ contains
 
   end subroutine startElement_handler
   ! =====================================================================================
-
   subroutine endElement_handler(namespaceURI,localname,name)
 
     character(len=*),intent(in)::namespaceURI
@@ -139,7 +134,6 @@ contains
 
   end subroutine endElement_handler
   ! =====================================================================================
-
   subroutine characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -151,10 +145,9 @@ contains
     if(in_lineardiff) call lineardiff_characters_handler(chars)
     if(in_depthdiff) call depthdiff_characters_handler(chars)
     if(in_nlineardiff) call nlineardiff_characters_handler(chars)
-    
+
   end subroutine characters_handler
   ! =====================================================================================
-
   subroutine SdetachmentElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -166,7 +159,6 @@ contains
 
   end subroutine SdetachmentElement_handler
   ! =====================================================================================
-
   subroutine EdetachmentElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -178,7 +170,6 @@ contains
 
   end subroutine EdetachmentElement_handler
   ! =====================================================================================
-
   subroutine StransportElement_handler(name)
 
     character(len=*), intent(in) :: name
@@ -190,7 +181,6 @@ contains
 
   end subroutine StransportElement_handler
   ! =====================================================================================
-
   subroutine EtransportElement_handler(name)
 
     character(len=*), intent(in) :: name
@@ -202,7 +192,6 @@ contains
 
   end subroutine EtransportElement_handler
   ! =====================================================================================
-
   subroutine ScapacityElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -216,7 +205,6 @@ contains
 
   end subroutine ScapacityElement_handler
   ! =====================================================================================
-
   subroutine EcapacityElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -230,7 +218,6 @@ contains
 
   end subroutine EcapacityElement_handler
   ! =====================================================================================
-
   subroutine SregolithElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -243,7 +230,6 @@ contains
 
   end subroutine SregolithElement_handler
   ! =====================================================================================
-
   subroutine EregolithElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -256,7 +242,6 @@ contains
 
   end subroutine EregolithElement_handler
   ! =====================================================================================
-
   subroutine SlineardiffElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -266,7 +251,6 @@ contains
 
   end subroutine SlineardiffElement_handler
   ! =====================================================================================
-
   subroutine ElineardiffElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -276,7 +260,6 @@ contains
 
   end subroutine ElineardiffElement_handler
   ! =====================================================================================
-
   subroutine SdepthdiffElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -288,7 +271,6 @@ contains
 
   end subroutine SdepthdiffElement_handler
   ! =====================================================================================
-
   subroutine EdepthdiffElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -300,7 +282,6 @@ contains
 
   end subroutine EdepthdiffElement_handler
   ! =====================================================================================
-
   subroutine SnlineardiffElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -311,7 +292,6 @@ contains
 
   end subroutine SnlineardiffElement_handler
   ! =====================================================================================
-
   subroutine EnlineardiffElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -322,7 +302,6 @@ contains
 
   end subroutine EnlineardiffElement_handler
   ! =====================================================================================
-
   subroutine detachment_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -339,7 +318,6 @@ contains
 
   end subroutine detachment_characters_handler
   ! =====================================================================================
-
   subroutine transport_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -356,7 +334,6 @@ contains
 
   end subroutine transport_characters_handler
   ! =====================================================================================
-
   subroutine capacity_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -377,7 +354,6 @@ contains
 
   end subroutine capacity_characters_handler
   ! =====================================================================================
-
   subroutine regolith_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -397,7 +373,6 @@ contains
 
   end subroutine regolith_characters_handler
   ! =====================================================================================
-
   subroutine lineardiff_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -410,7 +385,6 @@ contains
 
   end subroutine lineardiff_characters_handler
   ! =====================================================================================
-
   subroutine depthdiff_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -427,7 +401,6 @@ contains
 
   end subroutine depthdiff_characters_handler
   ! =====================================================================================
-
   subroutine nlineardiff_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -442,27 +415,27 @@ contains
 
   end subroutine nlineardiff_characters_handler
   ! =====================================================================================
-  
+
   subroutine geomorphology_parser
 
     type(xml_t)::xf
 
     spl_m=0.5
     spl_n=1.
-    Cerodibility=0. 
+    Cerodibility=0.
     perosive=0
     stl_m=1.5
     stl_n=1.
     Fracbed=0.1
-    Cefficiency=0. 
+    Cefficiency=0.
     Cdiffusion=0.0
     Cdiffusion_d=0.
     Cdiff_m=2.
     Cdiff_n=1.
     Cdiffusion_nl=0.0
     slope_critical=1.
-    regoProd=0. 
-    regoDepth=0. 
+    regoProd=0.
+    regoDepth=0.
     soil_density=2650.
     rock_density=1325.
     bed_length=10000.
@@ -479,7 +452,7 @@ contains
       call mpi_finalize(rc)
     endif
 
-    ! Parser 
+    ! Parser
     call parse(xf, &
          startDocument_handler=startDocument_handler, &
          startElement_handler=startElement_handler, &
@@ -492,6 +465,5 @@ contains
 
   end subroutine geomorphology_parser
   ! =====================================================================================
-
 end module readgeomorpho
 ! =====================================================================================

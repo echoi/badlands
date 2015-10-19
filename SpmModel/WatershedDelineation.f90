@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  WatershedDelineation.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module watershed
 
   use parallel
@@ -56,7 +54,6 @@ module watershed
 contains
 
   ! =====================================================================================
-
   subroutine compute_subcatchment
 
     integer::id,k,n,p,s,maxs,jcts(npets),disp(npets),disps(npets+1)
@@ -164,7 +161,6 @@ contains
 
   end subroutine compute_subcatchment
   ! =====================================================================================
-
   recursive function addtosubcatch(k,catchID) result(success)
 
     integer::n,success,k,catchID,s
@@ -184,7 +180,6 @@ contains
 
   end function addtosubcatch
   ! =====================================================================================
-
   subroutine metis_loadbalancing
 
     integer::l,s,id,k,p,objval
@@ -264,7 +259,6 @@ contains
 
   end subroutine metis_loadbalancing
   ! =====================================================================================
-
   subroutine bcast_loadbalancing
 
     integer::s,id,k,p
@@ -320,5 +314,4 @@ contains
 
   end subroutine bcast_loadbalancing
   ! =====================================================================================
-
 end module watershed

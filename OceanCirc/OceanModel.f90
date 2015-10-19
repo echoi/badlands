@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  OceanModel.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module ocean_model
 
   use parallel
@@ -357,7 +355,7 @@ contains
 
     endif
     call mpi_barrier(badlands_world,rc)
-    
+
     call circulation_compute(sgp)
 
   end subroutine ocean_circulation_run
@@ -645,5 +643,4 @@ contains
 
   end subroutine build_circulation_bounds
   ! =====================================================================================
-
 end module ocean_model

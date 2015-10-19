@@ -1,37 +1,35 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (c) Tristan Salles (The University of Sydney) 
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU Lesser General Public License as published by the Free Software 
-! Foundation; either version 3.0 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
-
+! =====================================================================================
 ! =====================================================================================
 !
 !       Filename:  ReadStratal.f90
 !
 !    Description:  Reads stratigraphic grid and sediment parameters
 !
-!        Version:  1.0 
+!        Version:  1.0
 !        Created:  03/06/15 07:50:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module stratal_read
 
   use parallel
@@ -72,12 +70,10 @@ contains
 
   end subroutine startDocument_handler
   ! =====================================================================================
-
   subroutine endDocument_handler
 
   end subroutine endDocument_handler
   ! =====================================================================================
-
   subroutine startElement_handler(namespaceURI,localname,name,atts)
 
     character(len=*),intent(in)::namespaceURI
@@ -105,7 +101,6 @@ contains
 
   end subroutine startElement_handler
   ! =====================================================================================
-
   subroutine endElement_handler(namespaceURI,localname,name)
 
     character(len=*),intent(in)::namespaceURI
@@ -119,7 +114,6 @@ contains
 
   end subroutine endElement_handler
   ! =====================================================================================
-
   subroutine characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -131,7 +125,6 @@ contains
 
   end subroutine characters_handler
   ! =====================================================================================
-
   subroutine SsedElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -142,7 +135,6 @@ contains
 
   end subroutine SsedElement_handler
   ! =====================================================================================
-
   subroutine SsedfieldElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -155,7 +147,6 @@ contains
 
   end subroutine SsedfieldElement_handler
   ! =====================================================================================
-
   subroutine SstrataElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -166,7 +157,6 @@ contains
 
   end subroutine SstrataElement_handler
   ! =====================================================================================
-
   subroutine SstratafieldElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -176,7 +166,6 @@ contains
 
   end subroutine SstratafieldElement_handler
   ! =====================================================================================
-
   subroutine EsedElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -187,7 +176,6 @@ contains
 
   end subroutine EsedElement_handler
   ! =====================================================================================
-
   subroutine EsedfieldElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -200,7 +188,6 @@ contains
 
   end subroutine EsedfieldElement_handler
   ! =====================================================================================
-
   subroutine EstrataElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -211,7 +198,6 @@ contains
 
   end subroutine EstrataElement_handler
   ! =====================================================================================
-
   subroutine EstratafieldElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -221,7 +207,6 @@ contains
 
   end subroutine EstratafieldElement_handler
   ! =====================================================================================
-
   subroutine sed_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -239,7 +224,6 @@ contains
 
   end subroutine sed_characters_handler
   ! =====================================================================================
-
   subroutine sedfield_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -264,12 +248,11 @@ contains
        call rts(chars,sediments(sedn)%diffa)
     endif
     if(in_diffm)then
-       call rts(chars,sediments(sedn)%diffm) 
+       call rts(chars,sediments(sedn)%diffm)
     endif
 
   end subroutine sedfield_characters_handler
   ! =====================================================================================
-
   subroutine strata_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -290,7 +273,6 @@ contains
 
   end subroutine strata_characters_handler
   ! =====================================================================================
-
   subroutine stratafield_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -304,7 +286,6 @@ contains
 
   end subroutine stratafield_characters_handler
   ! =====================================================================================
-
   subroutine stratal_parser
 
     integer::stp
@@ -324,7 +305,7 @@ contains
        call mpi_finalize(rc)
     endif
 
-    ! Parser 
+    ! Parser
     call parse(xf, &
          startDocument_handler=startDocument_handler, &
          startElement_handler=startElement_handler, &
@@ -338,7 +319,7 @@ contains
     if(time_layer>display_interval) time_layer=display_interval
     if(mod(display_interval,time_layer)>0.)then
       stp=int(display_interval/time_layer)
-      if(stp>0)then  
+      if(stp>0)then
         time_layer=display_interval/real(stp,8)
       else
         time_layer=display_interval
@@ -347,5 +328,4 @@ contains
 
   end subroutine stratal_parser
   ! =====================================================================================
-
 end module stratal_read

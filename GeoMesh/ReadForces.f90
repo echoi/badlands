@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  ReadForces.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module readforces
 
   use parallel
@@ -112,17 +110,14 @@ module readforces
 contains
 
   ! =====================================================================================
-
   subroutine startDocument_handler
 
   end subroutine startDocument_handler
   ! =====================================================================================
-
   subroutine endDocument_handler
 
   end subroutine endDocument_handler
   ! =====================================================================================
-
   subroutine startElement_handler(namespaceURI,localname,name,atts)
 
     character(len=*),intent(in)::namespaceURI
@@ -174,7 +169,6 @@ contains
 
   end subroutine startElement_handler
   ! =====================================================================================
-
   subroutine endElement_handler(namespaceURI,localname,name)
 
     character(len=*),intent(in)::namespaceURI
@@ -194,7 +188,6 @@ contains
 
   end subroutine endElement_handler
   ! =====================================================================================
-
   subroutine characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -212,7 +205,6 @@ contains
 
   end subroutine characters_handler
   ! =====================================================================================
-
   subroutine SrainmapElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -221,7 +213,6 @@ contains
 
   end subroutine SrainmapElement_handler
   ! =====================================================================================
-
   subroutine SrainfieldElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -233,7 +224,6 @@ contains
 
   end subroutine SrainfieldElement_handler
   ! =====================================================================================
-
   subroutine SseaElement_handler(name)
 
     character(len=*), intent(in) :: name
@@ -242,7 +232,6 @@ contains
 
   end subroutine SseaElement_handler
   ! =====================================================================================
-
   subroutine SiceElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -261,7 +250,6 @@ contains
 
   end subroutine SiceElement_handler
   ! =====================================================================================
-
   subroutine ScircElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -279,7 +267,6 @@ contains
 
   end subroutine ScircElement_handler
   ! =====================================================================================
-
   subroutine SwaveElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -290,7 +277,6 @@ contains
 
   end subroutine SwaveElement_handler
   ! =====================================================================================
-
   subroutine ShindcastElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -302,7 +288,6 @@ contains
 
   end subroutine ShindcastElement_handler
   ! =====================================================================================
-
   subroutine SflexElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -319,7 +304,6 @@ contains
 
   end subroutine SflexElement_handler
   ! =====================================================================================
-
   subroutine SvdispElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -330,7 +314,6 @@ contains
 
   end subroutine SvdispElement_handler
   ! =====================================================================================
-
   subroutine SdispElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -341,7 +324,6 @@ contains
 
   end subroutine SdispElement_handler
   ! =====================================================================================
-
   subroutine ErainmapElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -350,7 +332,6 @@ contains
 
   end subroutine ErainmapElement_handler
   ! =====================================================================================
-
   subroutine ErainfieldElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -362,7 +343,6 @@ contains
 
   end subroutine ErainfieldElement_handler
   ! =====================================================================================
-
   subroutine EseaElement_handler(name)
 
     character(len=*), intent(in) :: name
@@ -371,7 +351,6 @@ contains
 
   end subroutine EseaElement_handler
   ! =====================================================================================
-
   subroutine EiceElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -390,7 +369,6 @@ contains
 
   end subroutine EiceElement_handler
   ! =====================================================================================
-
   subroutine EcircElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -408,7 +386,6 @@ contains
 
   end subroutine EcircElement_handler
   ! =====================================================================================
-
   subroutine EwaveElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -419,7 +396,6 @@ contains
 
   end subroutine EwaveElement_handler
   ! =====================================================================================
-
   subroutine EhindcastElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -430,7 +406,6 @@ contains
 
   end subroutine EhindcastElement_handler
   ! =====================================================================================
-
   subroutine EflexElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -447,7 +422,6 @@ contains
 
   end subroutine EflexElement_handler
   ! =====================================================================================
-
   subroutine EvdispElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -458,7 +432,6 @@ contains
 
   end subroutine EvdispElement_handler
   ! =====================================================================================
-
   subroutine EdispElement_handler(name)
 
     character(len=*),intent(in)::name
@@ -469,7 +442,6 @@ contains
 
   end subroutine EdispElement_handler
   ! =====================================================================================
-
   subroutine rainmap_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -485,7 +457,6 @@ contains
 
   end subroutine rainmap_characters_handler
   ! =====================================================================================
-
   subroutine rainfield_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -505,7 +476,6 @@ contains
 
   end subroutine rainfield_characters_handler
   ! =====================================================================================
-
   subroutine sea_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -517,7 +487,6 @@ contains
 
   end subroutine sea_characters_handler
   ! =====================================================================================
-
   subroutine ice_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -549,7 +518,6 @@ contains
 
   end subroutine ice_characters_handler
   ! =====================================================================================
-
   subroutine flex_characters_handler(chars)
 
     integer::p
@@ -587,7 +555,6 @@ contains
 
   end subroutine flex_characters_handler
   ! =====================================================================================
-
   subroutine vdisp_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -604,7 +571,6 @@ contains
 
   end subroutine vdisp_characters_handler
   ! =====================================================================================
-
   subroutine disp_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -619,7 +585,6 @@ contains
 
   end subroutine disp_characters_handler
   ! =====================================================================================
-
   subroutine circ_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -657,7 +622,6 @@ contains
 
   end subroutine circ_characters_handler
   ! =====================================================================================
-
   subroutine wave_characters_handler(chars)
 
     integer::k
@@ -679,7 +643,6 @@ contains
 
   end subroutine wave_characters_handler
   ! =====================================================================================
-
   subroutine hindcast_characters_handler(chars)
 
     character(len=*),intent(in)::chars
@@ -706,7 +669,6 @@ contains
 
   end subroutine hindcast_characters_handler
   ! =====================================================================================
-
   subroutine forces_parser
 
     type(xml_t)::xf
@@ -788,6 +750,5 @@ contains
 
   end subroutine forces_parser
   ! =====================================================================================
-
 end module readforces
 ! =====================================================================================

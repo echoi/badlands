@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  Geometry.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module geomesh
 
   use parallel
@@ -51,7 +49,6 @@ module geomesh
 
 contains
   ! =====================================================================================
-
   subroutine GeoMesher
 
     logical::found
@@ -103,7 +100,6 @@ contains
 
   end subroutine GeoMesher
   ! =====================================================================================
-
   subroutine ReadRegular
 
     logical::first
@@ -277,7 +273,6 @@ contains
 
   end subroutine ReadRegular
   ! =====================================================================================
-
   subroutine DelaunayTransform
 
     character(len=128)::TINCfile,OPTC,stg
@@ -419,7 +414,6 @@ contains
 
   end subroutine DelaunayTransform
   ! =====================================================================================
-
   subroutine DelaunayTransformForce
 
     character(len=128)::TINCfile,OPTC,stg
@@ -499,7 +493,6 @@ contains
 
   end subroutine DelaunayTransformForce
   ! =====================================================================================
-
   subroutine ReadTriangle
 
     integer::iu
@@ -660,7 +653,6 @@ contains
 
   end subroutine ReadTriangle
   ! =====================================================================================
-
   subroutine DelaunayVoronoiDuality
 
     logical::rec,rec2
@@ -983,7 +975,6 @@ contains
 
   end subroutine DelaunayVoronoiDuality
   ! =====================================================================================
-
   function PointTriangle(id0,id1,id2,id) result(inside)
 
     logical::inside
@@ -1031,7 +1022,6 @@ contains
 
   end function PointTriangle
   ! =====================================================================================
-
   function distanceSquarePointToSegment(x1,y1,x2,y2,x,y) result(dist2)
 
     real(kind=8)::x1,y1,x2,y2,x,y,sqrl,sqrl2,dotprod,dist2
@@ -1050,7 +1040,6 @@ contains
 
   end function distanceSquarePointToSegment
   ! =====================================================================================
-
   subroutine DelaunayBorders
 
     integer::k,p,n
@@ -1186,7 +1175,6 @@ contains
 
   end subroutine DelaunayBorders
   ! =====================================================================================
-
   subroutine Envelope(x,y,n,vertex,nvert)
 
     ! Find the vertices (in clockwise order) of a polygon enclosing
@@ -1384,7 +1372,6 @@ contains
 
   end subroutine Envelope
   ! =====================================================================================
-
   subroutine UnstructuredMeshDestroy
 
     if(allocated(dcentroid))deallocate(dcentroid)
@@ -1428,7 +1415,6 @@ contains
 
   end subroutine UnstructuredMeshDestroy
   ! =====================================================================================
-
   subroutine RegularGridDestroy
 
     if(allocated(bilinearX))deallocate(bilinearX)
@@ -1468,6 +1454,5 @@ contains
 
   end subroutine RegularGridDestroy
   ! =====================================================================================
-
 end module geomesh
 ! =====================================================================================

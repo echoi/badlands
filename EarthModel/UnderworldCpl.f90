@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BALAD (BAsin and LAndscape Dynamics)
 !
-! Copyright (c) Tristan Salles (The University of Sydney) 
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU Lesser General Public License as published by the Free Software 
-! Foundation; either version 3.0 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,10 +28,9 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
-! 
+!        Author:  Tristan Salles
+!
 ! =====================================================================================
-
 module underworld
 
   use parallel
@@ -45,7 +44,6 @@ module underworld
 contains
 
   ! =====================================================================================
-
   subroutine SurfaceVTK
 
     integer::iunit,ios,k,p,n,m,uorb
@@ -117,7 +115,6 @@ contains
 
   end subroutine SurfaceVTK
   ! =====================================================================================
-
   subroutine WaitStepCompletion
 
     integer::iu,ios
@@ -131,7 +128,7 @@ contains
           ! Read the maestro file
           open(iu,file=maestro,status="old",action="read",iostat=ios)
           rewind(iu)
-          if(ios==0)then 
+          if(ios==0)then
             read(iu,'(a1)',iostat=ios) charac
             if(ios/=0) charac='U'
           endif
@@ -145,7 +142,7 @@ contains
     return
 
   end subroutine WaitStepCompletion
-  ! =====================================================================================  
+  ! =====================================================================================
 
 end module underworld
 ! =====================================================================================

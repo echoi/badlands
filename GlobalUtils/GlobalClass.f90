@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  GlobalClass.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module parallel
 
 #include "mpif.h"
@@ -250,7 +248,6 @@ module parameters
 contains
 
   ! =====================================================================================
-
   subroutine term_command(cmds)
 
     logical(4)::result
@@ -268,5 +265,4 @@ contains
 
   end subroutine term_command
   ! =====================================================================================
-
 end module parameters

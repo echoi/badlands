@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  Geomorphology.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module geomorpho
 
   use bilinear
@@ -55,7 +53,6 @@ module geomorpho
 contains
 
   ! =====================================================================================
-
   subroutine geomorphology
 
     integer::k,p
@@ -187,7 +184,6 @@ contains
 
   end subroutine geomorphology
   ! =====================================================================================
-
   subroutine CFL_condition
 
     integer::k,p,id,lid
@@ -239,7 +235,6 @@ contains
 
   end subroutine CFL_condition
   ! =====================================================================================
-
   subroutine geomorphic_evolution
 
     integer::k,id,rcv,lid,p,q,m
@@ -423,7 +418,6 @@ contains
 
   end subroutine geomorphic_evolution
   ! =====================================================================================
-
   subroutine detachmentlimited(id,rcv,distance,maxh,ST,Qs)
 
     integer::id,rcv
@@ -501,7 +495,6 @@ contains
 
   end subroutine detachmentlimited
   ! =====================================================================================
-
   subroutine streamcapacity(id,rcv,distance,maxh,ST,Qs)
 
     integer::id,rcv
@@ -582,7 +575,6 @@ contains
 
   end subroutine streamcapacity
   ! =====================================================================================
-
   subroutine transportlimited(id,rcv,distance,maxh,ST,Qs)
 
     integer::id,rcv
@@ -689,5 +681,4 @@ contains
 
   end subroutine transportlimited
   ! =====================================================================================
-
 end module geomorpho

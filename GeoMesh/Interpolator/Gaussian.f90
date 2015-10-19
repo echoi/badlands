@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  Gaussian.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module gaussian_filter
 
   use parallel
@@ -45,7 +43,6 @@ module gaussian_filter
 contains
 
   ! =====================================================================================
-
   subroutine gaussian_kernel(sigma,kernel)
 
     real(kind=8),intent(in)::sigma
@@ -79,7 +76,6 @@ contains
 
   end subroutine gaussian_kernel
   ! =====================================================================================
-
   subroutine tile_and_reflect(input,output)
   ! Set up 3x3 tiles around the input.
 
@@ -117,7 +113,6 @@ contains
 
   end subroutine tile_and_reflect
   ! =====================================================================================
-
   subroutine convolve(input,weights,output)
   ! Convolution.
 
@@ -161,7 +156,6 @@ contains
 
   end subroutine convolve
   ! =====================================================================================
-
   subroutine assert(statement,msg)
 
     logical,intent(in)::statement
@@ -174,7 +168,6 @@ contains
 
   end subroutine assert
   ! =====================================================================================
-
   subroutine gaussian_operator(input,initialkernel,output)
 
     logical::initialkernel
@@ -193,7 +186,6 @@ contains
 
   end subroutine gaussian_operator
   ! =====================================================================================
-
   subroutine ICE_grid
 
     integer::step,i,j,ic,jc,p,m
@@ -276,7 +268,6 @@ contains
 
   end subroutine ICE_grid
   ! =====================================================================================
-
   subroutine FLEX_grid
 
     integer::step,i
@@ -331,6 +322,5 @@ contains
 
   end subroutine FLEX_grid
   ! =====================================================================================
-
 end module gaussian_filter
 ! =====================================================================================

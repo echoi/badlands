@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  Restart.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module restart
 
   use hdf5
@@ -56,7 +54,6 @@ module restart
 contains
 
   ! =====================================================================================
-
   subroutine getSPM_hdf5topography3D
 
     logical::compression,simple
@@ -243,7 +240,6 @@ contains
 
   end subroutine getSPM_hdf5topography3D
   ! =====================================================================================
-
   subroutine getRestart_topography
 
     integer::id,k,rc,p,n
@@ -349,7 +345,6 @@ contains
 
   end subroutine getRestart_topography
   ! =====================================================================================
-
   subroutine getSPM_hdf5topography
 
     logical::compression,simple
@@ -530,5 +525,4 @@ contains
 
   end subroutine getSPM_hdf5topography
   ! =====================================================================================
-
 end module restart

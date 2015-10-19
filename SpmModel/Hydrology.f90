@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  Hydrology.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module hydrology
 
   use sorting
@@ -51,7 +49,6 @@ module hydrology
 contains
 
   ! =====================================================================================
-
   subroutine define_landscape_network
 
     integer,dimension(npets)::disps
@@ -165,7 +162,6 @@ contains
 
   end subroutine define_landscape_network
   ! =====================================================================================
-
   recursive function addtostack(base,donor,stackID) result(success)
 
     integer::base,donor,stackID,n,success
@@ -185,7 +181,6 @@ contains
 
   end function addtostack
   ! =====================================================================================
-
   subroutine planchon_dem_fill_algorithm
 
     logical::flag
@@ -231,7 +226,6 @@ contains
 
   end subroutine planchon_dem_fill_algorithm
   ! =====================================================================================
-
   subroutine compute_vertical_displacement
 
     integer::k,lid,id
@@ -244,7 +238,6 @@ contains
 
   end subroutine compute_vertical_displacement
   ! =====================================================================================
-
   subroutine update_grid_borders
 
     integer::k,p
@@ -447,7 +440,6 @@ contains
 
   end subroutine update_grid_borders
   ! =====================================================================================
-
   subroutine DeriveTrianglePlanes(x,y,id1,id2,id3,z)
 
     integer::id1,id2,id3
@@ -479,7 +471,6 @@ contains
 
   end subroutine DeriveTrianglePlanes
   ! =====================================================================================
-
   subroutine DeriveTrianglePlanesSed(x,y,id1,id2,id3,sh)
 
     integer::p,id1,id2,id3
@@ -524,7 +515,6 @@ contains
 
   end subroutine DeriveTrianglePlanesSed
   ! =====================================================================================
-
   subroutine DeriveTrianglePlanes2(xy,xa,ya,za,z)
 
     real(kind=8),dimension(2)::xy
@@ -557,7 +547,6 @@ contains
 
   end subroutine DeriveTrianglePlanes2
   ! =====================================================================================
-
   subroutine inside_triangle(xa,ya,xb,yb,l)
 
     integer,intent(out)::l
@@ -581,5 +570,4 @@ contains
 
   end subroutine inside_triangle
   ! =====================================================================================
-
 end module hydrology

@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  VisualiseSurface.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module outspm_surface
 
   use hdf5
@@ -50,7 +48,6 @@ module outspm_surface
 contains
 
   ! =====================================================================================
-
   subroutine spm_hdf5(iter)
 
     logical::compression
@@ -574,7 +571,6 @@ contains
 
   end subroutine spm_hdf5
   ! =====================================================================================
-
   subroutine spm_xmf(iter)
 
     type(xmlf_t)::xf
@@ -875,7 +871,6 @@ contains
 
   end subroutine spm_xmf
   ! =====================================================================================
-
   subroutine visualise_surface_changes(iter)
 
     ! Parameters Declaration
@@ -930,5 +925,4 @@ contains
 
    end subroutine visualise_surface_changes
    ! =====================================================================================
-
 end module outspm_surface

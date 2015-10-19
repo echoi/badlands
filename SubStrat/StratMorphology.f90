@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  StratMorphology.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module stratmorph
 
   use bilinear
@@ -61,7 +59,6 @@ module stratmorph
 contains
 
   ! =====================================================================================
-
   subroutine stratgeomorph
 
     integer::k,ks
@@ -188,7 +185,6 @@ contains
 
   end subroutine stratgeomorph
   ! =====================================================================================
-
   subroutine CFL_conditionS
 
     integer::k,p,id,lid
@@ -239,7 +235,6 @@ contains
 
   end subroutine CFL_conditionS
   ! =====================================================================================
-
   subroutine geomorphic_evolutionS
 
     integer::k,id,rcv,lid,p,q,m,ks
@@ -393,7 +388,6 @@ contains
 
   end subroutine geomorphic_evolutionS
   ! =====================================================================================
-
   subroutine detachmentlimitedS(id,distance,maxh,ST,Qs)
 
     integer::id,rcv,ks,eroOn
@@ -530,5 +524,4 @@ contains
 
   end subroutine detachmentlimitedS
   ! =====================================================================================
-
 end module stratmorph

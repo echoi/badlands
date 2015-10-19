@@ -1,37 +1,35 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (c) Tristan Salles (The University of Sydney) 
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU Lesser General Public License as published by the Free Software 
-! Foundation; either version 3.0 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
-
+! =====================================================================================
 ! =====================================================================================
 !
 !       Filename:  StratalFunctions.f90
 !
 !    Description:  Stratigraphic grid evolution functions.
 !
-!        Version:  1.0 
+!        Version:  1.0
 !        Created:  03/06/15 09:05:27
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module strata_evol
 
   use parallel
@@ -46,9 +44,8 @@ module strata_evol
 contains
 
   ! =====================================================================================
-
   subroutine StrataGen
-    
+
     ! Get stratal definition
     call stratal_parser
 
@@ -59,7 +56,6 @@ contains
 
   end subroutine StrataGen
   ! =====================================================================================
-
   subroutine compute_stratal_displacement
 
     integer::k,id
@@ -71,9 +67,8 @@ contains
 
   end subroutine compute_stratal_displacement
   ! =====================================================================================
-
   subroutine update_stratigraphy_layer
-    
+
     integer::k,gid,ks,ll
 
     real(kind=8)::remain,sed
@@ -121,18 +116,17 @@ contains
 
   end subroutine update_stratigraphy_layer
   ! =====================================================================================
-
   subroutine buildActiveLayer
 
     integer::k,l,ks,gid
 
     real(kind=8)::th,sed(totgrn),prop(totgrn)
-    real(kind=8),dimension(dnodes)::tsed,gsed    
+    real(kind=8),dimension(dnodes)::tsed,gsed
 
     if(.not.allocated(alay_thick))then
       allocate(alay_thick(dnodes))
       allocate(alay_sed(dnodes,totgrn))
-      allocate(alay_dsed(dnodes,totgrn)) 
+      allocate(alay_dsed(dnodes,totgrn))
     endif
 
     ! Get the composition and thickness of the active layer
@@ -157,7 +151,7 @@ contains
             sed(ks)=sed(ks)+lay_sed(k,l,ks)
           enddo
         endif
-        if(th>=active_thick)then 
+        if(th>=active_thick)then
           alay_sed(gid,1:totgrn)=sed(1:totgrn)
           exit lp
         endif
@@ -177,5 +171,4 @@ contains
 
   end subroutine buildActiveLayer
   ! =====================================================================================
-
 end module strata_evol

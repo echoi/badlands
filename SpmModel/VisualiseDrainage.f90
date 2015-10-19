@@ -1,23 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (c) Tristan Salles (The University of Sydney) 
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU Lesser General Public License as published by the Free Software 
-! Foundation; either version 3.0 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
- 
+! =====================================================================================
 ! =====================================================================================
 !
 !       Filename:  VisualiseDrainage.f90
@@ -28,10 +27,9 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module outspm_drainage
 
   use hdf5
@@ -48,7 +46,6 @@ module outspm_drainage
 contains
 
   ! =====================================================================================
-
   subroutine drainage_hdf5(iter,totelems)
 
     logical::compression
@@ -97,9 +94,9 @@ contains
     facc=0.
     cID=0.
     stNb=0.
-    do lid=1,localNodes !dnodes 
+    do lid=1,localNodes !dnodes
        k=localNodesGID(lid)
-       i=stackOrder(k) 
+       i=stackOrder(k)
        p=p+1
        nodes(id)=tcoordX(i)
        nodes(id+1)=tcoordY(i)
@@ -116,7 +113,7 @@ contains
        dglbID(i)=p
        if(subcatchmentProc(i)/= &
          subcatchmentProc(receivers(i)))then
-         i=receivers(i) 
+         i=receivers(i)
          p=p+1
          nodes(id)=tcoordX(i)
          nodes(id+1)=tcoordY(i)
@@ -187,7 +184,7 @@ contains
 
     ! Create the dataset with default properties
     call h5dcreate_f(file_id,trim(text),h5t_native_integer,filespace,dset_id,rc,plist_id)
-    
+
     ! Write the dataset collectively
     call h5dwrite_f(dset_id,h5t_native_integer,connect(1:totelems*2),dims,rc)
     call h5pclose_f(plist_id,rc)
@@ -213,7 +210,7 @@ contains
 
     ! Create the dataset with default properties
     call h5dcreate_f(file_id,trim(text),h5t_native_integer,filespace,dset_id,rc,plist_id)
-    
+
     ! Write the dataset collectively
     call h5dwrite_f(dset_id,h5t_native_integer,connectg(1:totelems*2),dims,rc)
     call h5pclose_f(plist_id,rc)
@@ -255,7 +252,7 @@ contains
     call h5screate_simple_f(rank,dims,filespace,ierr)
     text=''
     text="/facc"
-    
+
     ! Create property list for collective dataset write
     call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
     call h5pset_deflate_f(plist_id,9,ierr)
@@ -279,7 +276,7 @@ contains
     call h5screate_simple_f(rank,dims,filespace,ierr)
     text=''
     text="/cID"
-    
+
     ! Create property list for collective dataset write
     call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
     call h5pset_deflate_f(plist_id,9,ierr)
@@ -295,7 +292,7 @@ contains
     ! Close the dataset
     call h5dclose_f(dset_id,ierr)
     call h5sclose_f(filespace,ierr)
-    
+
     ! Node global ID
     dims(1)=1
     dims(2)=totnodes
@@ -303,7 +300,7 @@ contains
     call h5screate_simple_f(rank,dims,filespace,ierr)
     text=''
     text="/globID"
-    
+
     ! Create property list for collective dataset write
     call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
     call h5pset_deflate_f(plist_id,9,ierr)
@@ -327,7 +324,7 @@ contains
     call h5screate_simple_f(rank,dims,filespace,ierr)
     text=''
     text="/strahler"
-    
+
     ! Create property list for collective dataset write
     call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
     call h5pset_deflate_f(plist_id,9,ierr)
@@ -356,7 +353,6 @@ contains
 
   end subroutine drainage_hdf5
   ! =====================================================================================
-
   subroutine drainage_xmf(iter)
 
     type(xmlf_t)::xf
@@ -367,11 +363,11 @@ contains
     character(len=128)::stg,filename3,filename4
 
     call drainage_hdf5(iter,totelems)
-    
+
     if(.not.allocated(doutnode)) allocate(doutnode(npets),doutelem(npets))
     call mpi_gather(drainOde,1,mpi_integer,doutnode,1,mpi_integer,0,badlands_world,ierr)
     call mpi_gather(totelems,1,mpi_integer,doutelem,1,mpi_integer,0,badlands_world,ierr)
-    
+
     if(pet_id==0)then
         fdspm='DrainageSPM'
         totnodes=localNodes
@@ -402,7 +398,7 @@ contains
         call xml_AddAttribute(xf,"Value",time_display)
         call xml_EndElement(xf,"Time")
         do k=1,npets
-            totnodes=doutnode(k) 
+            totnodes=doutnode(k)
             totelems=doutelem(k)
             filename=''
             filename=fdspm
@@ -484,8 +480,8 @@ contains
             call xml_AddAttribute(xf,"Dimensions",trim(str))
             call xml_AddCharacters(xf,trim(filename2))
             call xml_EndElement(xf,"DataItem")
-            call xml_EndElement(xf,"Attribute") 
-            
+            call xml_EndElement(xf,"Attribute")
+
             ! Strahler stream order
             call xml_NewElement(xf,"Attribute")
             call xml_AddAttribute(xf,"Type","Scalar")
@@ -501,7 +497,7 @@ contains
             call xml_AddAttribute(xf,"Dimensions",trim(str))
             call xml_AddCharacters(xf,trim(filename4))
             call xml_EndElement(xf,"DataItem")
-            call xml_EndElement(xf,"Attribute") 
+            call xml_EndElement(xf,"Attribute")
 
             ! Catchment ID
             call xml_NewElement(xf,"Attribute")
@@ -518,7 +514,7 @@ contains
             call xml_AddAttribute(xf,"Dimensions",trim(str))
             call xml_AddCharacters(xf,trim(filename3))
             call xml_EndElement(xf,"DataItem")
-            call xml_EndElement(xf,"Attribute") 
+            call xml_EndElement(xf,"Attribute")
             call xml_EndElement(xf,"Grid")
         enddo
 
@@ -533,7 +529,6 @@ contains
 
   end subroutine drainage_xmf
   ! =====================================================================================
-  
   subroutine visualise_drainage_changes(iter)
 
     ! Parameters Declaration
@@ -547,7 +542,7 @@ contains
     if(pet_id==0)then
         filename='SPMdrainage_series.xdmf'
         call addpath1(filename)
-        
+
         ! Header
         call xml_OpenFile(filename,xf)
         call xml_AddDOCTYPE(xf,"Xdmf","Xdmf.dtd")
@@ -558,7 +553,7 @@ contains
         call xml_NewElement(xf,"Grid")
         call xml_AddAttribute(xf,"GridType","Collection")
         call xml_AddAttribute(xf,"CollectionType","Temporal")
-        
+
         it0=1
         ! Loop over time step
         do i=it0,iter+1
@@ -576,7 +571,7 @@ contains
             call xml_AddAttribute(xf,"xpointer","xpointer(//Xdmf/Domain/Grid)")
             call xml_EndElement(xf,"xi:include")
         enddo
-        
+
         ! Footer
         call xml_EndElement(xf,"Grid")
         call xml_EndElement(xf,"Domain")
@@ -588,5 +583,4 @@ contains
 
    end subroutine visualise_drainage_changes
    ! =====================================================================================
-
 end module outspm_drainage

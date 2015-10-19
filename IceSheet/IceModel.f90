@@ -1,39 +1,38 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (c) Tristan Salles (The University of Sydney) 
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU Lesser General Public License as published by the Free Software 
-! Foundation; either version 3.0 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
 !       Filename:  IceModel.f90
 !
-!    Description:  Shallow Ice Approximation model. 
+!    Description:  Shallow Ice Approximation model.
 !
 !        Version:  1.0
 !        Created:  01/07/15 10:14:30
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module ice_model
-  
+
   use parallel
   use topology
   use parameters
@@ -45,11 +44,11 @@ module ice_model
   integer::ice_stp
 
   real(kind=8)::gamma,gammas,ice_Hslide
-  
+
   ! Glen's flow parameter
   integer,parameter::ice_glen=3
 
-  ! Mass balance regularization parameter 
+  ! Mass balance regularization parameter
   real(kind=8),parameter::ice_epsl=0.1
   ! Ice density
   real(kind=8),parameter::ice_dens=910.0
@@ -57,7 +56,6 @@ module ice_model
 contains
 
   ! =====================================================================================
-
   subroutine ice_initialisation
 
     ! Initialise number of steps to reach steady step
@@ -79,16 +77,15 @@ contains
     iceZb(2:nbix-1,nbiy)=iceZb(2:nbix-1,nbiy-1)+(iceZb(2:nbix-1,nbiy-1)-iceZb(2:nbix-1,nbiy-2))
     iceZb(1,2:nbiy-1)=iceZb(2,2:nbiy-1)+iceZb(2,2:nbiy-1)-iceZb(3,2:nbiy-1)
     iceZb(nbix,2:nbiy-1)=iceZb(nbix-1,2:nbiy-1)+iceZb(nbix-1,2:nbiy-1)-iceZb(nbix-2,2:nbiy-1)
-    
-    ! Update corner    
+
+    ! Update corner
     iceZb(1,1)=iceZb(2,2)+iceZb(2,2)-iceZb(3,3)
     iceZb(1,nbiy)=iceZb(2,nbiy-1)+iceZb(2,nbiy-1)-iceZb(3,nbiy-2)
     iceZb(nbix,1)=iceZb(nbix-1,2)+iceZb(nbix-1,2)-iceZb(nbix-2,3)
     iceZb(nbix,nbiy)=iceZb(nbix-1,nbiy-1)+iceZb(nbix-1,nbiy-1)-iceZb(nbix-2,nbiy-2)
-     
+
   end subroutine ice_initialisation
   ! =====================================================================================
-
   subroutine ice_reset_topography
 
     integer::step,i,j,ic,jc,p,m
@@ -127,8 +124,8 @@ contains
     iceZ(2:nbix-1,nbiy)=iceZ(2:nbix-1,nbiy-1)+(iceZ(2:nbix-1,nbiy-1)-iceZ(2:nbix-1,nbiy-2))
     iceZ(1,2:nbiy-1)=iceZ(2,2:nbiy-1)+iceZ(2,2:nbiy-1)-iceZ(3,2:nbiy-1)
     iceZ(nbix,2:nbiy-1)=iceZ(nbix-1,2:nbiy-1)+iceZ(nbix-1,2:nbiy-1)-iceZ(nbix-2,2:nbiy-1)
-   
-    ! Update corner    
+
+    ! Update corner
     iceZ(1,1)=iceZ(2,2)+iceZ(2,2)-iceZ(3,3)
     iceZ(1,nbiy)=iceZ(2,nbiy-1)+iceZ(2,nbiy-1)-iceZ(3,nbiy-2)
     iceZ(nbix,1)=iceZ(nbix-1,2)+iceZ(nbix-1,2)-iceZ(nbix-2,3)
@@ -143,28 +140,27 @@ contains
     iceZb(2:nbix-1,nbiy)=iceZb(2:nbix-1,nbiy-1)+(iceZb(2:nbix-1,nbiy-1)-iceZb(2:nbix-1,nbiy-2))
     iceZb(1,2:nbiy-1)=iceZb(2,2:nbiy-1)+iceZb(2,2:nbiy-1)-iceZb(3,2:nbiy-1)
     iceZb(nbix,2:nbiy-1)=iceZb(nbix-1,2:nbiy-1)+iceZb(nbix-1,2:nbiy-1)-iceZb(nbix-2,2:nbiy-1)
-    
-    ! Update corner    
+
+    ! Update corner
     iceZb(1,1)=iceZb(2,2)+iceZb(2,2)-iceZb(3,3)
     iceZb(1,nbiy)=iceZb(2,nbiy-1)+iceZb(2,nbiy-1)-iceZb(3,nbiy-2)
     iceZb(nbix,1)=iceZb(nbix-1,2)+iceZb(nbix-1,2)-iceZb(nbix-2,3)
     iceZb(nbix,nbiy)=iceZb(nbix-1,nbiy-1)+iceZb(nbix-1,nbiy-1)-iceZb(nbix-2,nbiy-2)
 
-  end subroutine ice_reset_topography  
+  end subroutine ice_reset_topography
   ! =====================================================================================
-
   subroutine ice_SIA_run
 
     integer::i,j,p
 
     real(kind=8)::nldiff(4),a,b
-    
+
     real(kind=8),dimension(nbix-2)::a1,b1,c1,d1,sol1
     real(kind=8),dimension(nbiy-2)::a2,b2,c2,d2,sol2
 
     real(kind=8),dimension(nbix,nbiy)::halfH
     real(kind=8),dimension(nbix*nbiy)::iceVU,iceVZ
-  
+
     iceVU=0.
     iceVZ=0.
 
@@ -216,8 +212,8 @@ contains
         ! ADI: step two
         halfH=0.
         do i=2,nbix-1
-          do j=2,nbiy-1     
-            nldiff=0. 
+          do j=2,nbiy-1
+            nldiff=0.
             call compute_nonlinear_diffusion(i,j,nldiff)
             a2(j-1)=-ice_dt*(nldiff(3)+nldiff(1))/(4.0*ice_dx**2.)
             c2(j-1)=-ice_dt*(nldiff(4)+nldiff(2))/(4.0*ice_dx**2.)
@@ -249,7 +245,7 @@ contains
 
         iceU=0.
         do i=2,nbix-1
-          do j=2,nbiy-1 
+          do j=2,nbiy-1
             if(iceH(i,j)>0.0) iceU(i,j)=ice_sliding_velocity(i,j)
           enddo
         enddo
@@ -278,11 +274,10 @@ contains
         p=p+1
       enddo
     enddo
-    
+
 
   end subroutine ice_SIA_run
   ! =====================================================================================
-
   subroutine compute_nonlinear_diffusion(i,j,nldiff)
 
     integer::i,j
@@ -304,9 +299,9 @@ contains
     ppalpha12=ppalpha12+((iceZ(i,j)-iceZ(i,j+1)+iceZ(i+1,j)-iceZ(i+1,j+1))/(2*ice_dx))**2
     ppalpha12=sqrt(ppalpha12)
 
-    nnh12=(iceH(i-1,j-1)+iceH(i,j-1)+iceH(i-1,j)+iceH(i,j))/4.    
-    nph12=(iceH(i-1,j+1)+iceH(i,j+1)+iceH(i-1,j)+iceH(i,j))/4.    
-    pnh12=(iceH(i+1,j-1)+iceH(i,j-1)+iceH(i+1,j)+iceH(i,j))/4.    
+    nnh12=(iceH(i-1,j-1)+iceH(i,j-1)+iceH(i-1,j)+iceH(i,j))/4.
+    nph12=(iceH(i-1,j+1)+iceH(i,j+1)+iceH(i-1,j)+iceH(i,j))/4.
+    pnh12=(iceH(i+1,j-1)+iceH(i,j-1)+iceH(i+1,j)+iceH(i,j))/4.
     pph12=(iceH(i+1,j+1)+iceH(i,j+1)+iceH(i+1,j)+iceH(i,j))/4.
 
     nnkappa12=(nnh12**(ice_glen+1))*(nnalpha12**(ice_glen-1))
@@ -350,7 +345,6 @@ contains
 
   end subroutine compute_nonlinear_diffusion
   ! =====================================================================================
-
   function surface_mass_balance(i,j) result(mb)
 
     integer::i,j
@@ -361,10 +355,9 @@ contains
     temp2=0.5*(ice_m1-ice_m2)*(iceZ(i,j)-(gela%actual_ela+gsea%actual_sea))
 
     mb=temp1-sqrt(temp2**2+ice_epsl)
-  
+
   end function surface_mass_balance
   ! =====================================================================================
-
   subroutine solve_tridiag(a,b,c,d,x,n)
 
     ! a - sub-diagonal (means it is the diagonal below the main diagonal)
@@ -383,14 +376,14 @@ contains
     ! Initialize c-prime and d-prime
     cp(1)=c(1)/b(1)
     dp(1)=d(1)/b(1)
-    
+
     ! Solve for vectors c-prime and d-prime
     do i=2,n
       m=b(i)-cp(i-1)*a(i)
       cp(i)=c(i)/m
       dp(i)=(d(i)-dp(i-1)*a(i))/m
     enddo
-    
+
     ! Initialize x
     x(n)=dp(n)
     if(x(n)<0.)x(n)=0.
@@ -403,7 +396,6 @@ contains
 
   end subroutine solve_tridiag
   ! =====================================================================================
-
   function ice_sliding_velocity(i,j) result(us)
 
     integer::i,j
@@ -427,9 +419,9 @@ contains
     ppalpha12=ppalpha12+((iceZ(i,j)-iceZ(i,j+1)+iceZ(i+1,j)-iceZ(i+1,j+1))/(2*ice_dx))**2
     ppalpha12=sqrt(ppalpha12)
 
-    nnh12=(iceH(i-1,j-1)+iceH(i,j-1)+iceH(i-1,j)+iceH(i,j))/4.    
-    nph12=(iceH(i-1,j+1)+iceH(i,j+1)+iceH(i-1,j)+iceH(i,j))/4.    
-    pnh12=(iceH(i+1,j-1)+iceH(i,j-1)+iceH(i+1,j)+iceH(i,j))/4.    
+    nnh12=(iceH(i-1,j-1)+iceH(i,j-1)+iceH(i-1,j)+iceH(i,j))/4.
+    nph12=(iceH(i-1,j+1)+iceH(i,j+1)+iceH(i-1,j)+iceH(i,j))/4.
+    pnh12=(iceH(i+1,j-1)+iceH(i,j-1)+iceH(i+1,j)+iceH(i,j))/4.
     pph12=(iceH(i+1,j+1)+iceH(i,j+1)+iceH(i+1,j)+iceH(i,j))/4.
 
     nnkappa12=(nnh12**(ice_glen))*(nnalpha12**(ice_glen))
@@ -467,7 +459,7 @@ contains
 !     us=us+(pnh12*gamma*5./4.+pngammas12)*pnkappa12
 !     us=us+(pph12*gamma*5./4.+ppgammas12)*ppkappa12
 !     us=us/4.
-    
+
     us=(nngammas12)*nnkappa12
     us=us+(npgammas12)*npkappa12
     us=us+(pngammas12)*pnkappa12
@@ -476,9 +468,9 @@ contains
 
   end function ice_sliding_velocity
   ! =====================================================================================
-  
+
   subroutine bc_constantIce(bcArray)
-    
+
     real(kind=8),intent(inout),dimension(nbix,nbiy)::bcArray
 
     ! Update border
@@ -486,44 +478,42 @@ contains
     bcArray(2:nbix-1,nbiy)=bcArray(2:nbix-1,nbiy-1)
     bcArray(1,2:nbiy-1)=bcArray(2,2:nbiy-1)
     bcArray(nbix,2:nbiy-1)=bcArray(nbix-1,2:nbiy-1)
-    
-    ! Update corner    
+
+    ! Update corner
     bcArray(1,1)=bcArray(2,2)
     bcArray(1,nbiy)=bcArray(2,nbiy-1)
     bcArray(nbix,1)=bcArray(nbix-1,2)
     bcArray(nbix,nbiy)=bcArray(nbix-1,nbiy-1)
-  
+
   end subroutine bc_constantIce
   ! =====================================================================================
-
   subroutine bc_zeroIce(bcArray)
-    
+
     real(kind=8),intent(inout),dimension(nbix,nbiy)::bcArray
-    
+
     ! Update border
     bcArray(2:nbix-1,1)=0.
     bcArray(2:nbix-1,nbiy)=0.
     bcArray(1,2:nbiy-1)=0.
     bcArray(nbix,2:nbiy-1)=0.
-    
-    ! Update corner    
+
+    ! Update corner
     bcArray(1,1)=0.
     bcArray(1,nbiy)=0.
     bcArray(nbix,1)=0.
     bcArray(nbix,nbiy)=0.
-  
+
   end subroutine bc_zeroIce
   ! =====================================================================================
-
   subroutine bc_wall
-    
+
     ! Update border
     iceH(2:nbix-1,1)=0.
     iceH(2:nbix-1,nbiy)=0.
     iceH(1,2:nbiy-1)=0.
     iceH(nbix,2:nbiy-1)=0.
-    
-    ! Update corner    
+
+    ! Update corner
     iceH(1,1)=0.
     iceH(1,nbiy)=0.
     iceH(nbix,1)=0.
@@ -534,14 +524,13 @@ contains
     iceZb(2:nbix-1,nbiy)=500.
     iceZb(1,2:nbiy-1)=500.
     iceZb(nbix,2:nbiy-1)=500.
-    
-    ! Update corner    
+
+    ! Update corner
     iceZb(1,1)=500.
     iceZb(1,nbiy)=500.
     iceZb(nbix,1)=500.
     iceZb(nbix,nbiy)=500.
-  
+
   end subroutine bc_wall
   ! =====================================================================================
-
 end module ice_model

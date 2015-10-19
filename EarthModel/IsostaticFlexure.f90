@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  IsostaticFlexure.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 
 module isoflex
 
@@ -101,7 +99,6 @@ contains
 
   end subroutine porosity_compaction
   ! =====================================================================================
-
   subroutine get_porosity(Plith,in_phi,out_phi)
 
     integer:: p,fd
@@ -126,7 +123,6 @@ contains
 
   end subroutine get_porosity
   ! =====================================================================================
-
   subroutine update_Flex_array
 
     integer::step,i,j,ic,jc,p,m
@@ -185,7 +181,6 @@ contains
 
   end subroutine update_Flex_array
   ! =====================================================================================
-
   subroutine built_initial_load
 
     integer::step,i,j,ic,jc,p,m
@@ -255,7 +250,6 @@ contains
 
   end subroutine built_initial_load
   ! =====================================================================================
-
   subroutine isostatic_flexure
 
     integer::i,j,n,m
@@ -485,7 +479,6 @@ contains
 
   end subroutine isostatic_flexure
   ! =====================================================================================
-
   subroutine boundary_flexure(ks,nrw,ncl,temp)
 
     integer::ncl,nrw,i,j,ks,k1
@@ -512,7 +505,6 @@ contains
 
   end subroutine boundary_flexure
   ! =====================================================================================
-
   subroutine solve_flexure4(m,nrw,ncl,nloop)
 
     integer::m,ncl,nrw,nloop,i,j,ks,isw,jsw,ipass,n
@@ -600,7 +592,6 @@ contains
 
   end subroutine solve_flexure4
   ! =====================================================================================
-
   subroutine solve_flexure2(m,nrw,ncl,nloop)
 
     integer::m,ncl,nrw,nloop,i,j,ks,im,jm,im2,jm2,n,ip,jp,ip2,jp2
@@ -679,6 +670,5 @@ contains
 
   end subroutine solve_flexure2
   ! =====================================================================================
-
 end module isoflex
 ! =====================================================================================

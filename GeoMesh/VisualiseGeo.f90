@@ -17,7 +17,6 @@
 ! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
 ! =====================================================================================
-
 ! =====================================================================================
 !
 !       Filename:  SurfaceOut.f90
@@ -31,7 +30,6 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-
 module outsurf
 
   use hdf5
@@ -46,7 +44,6 @@ module outsurf
 contains
 
   ! =====================================================================================
-
   subroutine delaunay_hdf5
 
     logical::compression
@@ -169,7 +166,6 @@ contains
 
   end subroutine delaunay_hdf5
   ! =====================================================================================
-
   subroutine delaunay_xmf
 
     type(xmlf_t)::xf
@@ -267,7 +263,6 @@ contains
 
   end subroutine delaunay_xmf
   ! =====================================================================================
-
   subroutine voronoi_hdf5
 
     logical :: compression
@@ -355,7 +350,6 @@ contains
 
   end subroutine voronoi_hdf5
   ! =====================================================================================
-
   subroutine voronoi_xmf
 
     type(xmlf_t)::xf
@@ -459,5 +453,4 @@ contains
 
   end subroutine voronoi_xmf
   ! =====================================================================================
-
 end module outsurf
