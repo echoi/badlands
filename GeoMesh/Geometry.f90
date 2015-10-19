@@ -57,6 +57,8 @@ contains
     logical::found
 
 !     real(kind=8)::time1,time2
+    real_type=mpi_real
+    max_type=mpi_max
     totgrn=0
     update3d=.false.
     inquire(file=xmlfile,exist=found)

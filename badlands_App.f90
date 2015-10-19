@@ -94,6 +94,9 @@ program BADLANDS_Application
     ! Perform ice sheet flow modelling
     if(ice_dx>0.) call getIceModel
 
+    ! Perform ocean and wave velocity modelling
+    if(ocean_dx>0.) call getOceanModel
+
     ! Perform ice sheet flow modelling
     if(flexure) call getFlexModel
 

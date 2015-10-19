@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (c) Tristan Salles (The University of Sydney) 
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU Lesser General Public License as published by the Free Software 
-! Foundation; either version 3.0 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  08/05/15 10:49:25
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -38,7 +38,7 @@ module bilinear
 
   real(kind=8),parameter::epsilon=0.1
   real(kind=8),parameter::epsilon2=0.1*0.1
-  
+
 contains
 
   ! =====================================================================================
@@ -62,14 +62,14 @@ contains
     real::d
 
     d=1e-9
-        
+
     left=1
     right=length
     do
       if(left>right)then
         exit
       endif
-            
+
       middle=nint((left+right)/2.0)
       if(abs(array(middle)-value)<=d)then
         binarySearch=middle
@@ -83,23 +83,45 @@ contains
     binarysearch=right
 
   end function binarysearch
+  ! ============================================================================
+  real function interpolate_circulation_grid(x_len,x_array,y_len,y_array,f,x,y)
+
+    integer,intent(in)::x_len,y_len
+    real,dimension(x_len),intent(in)::x_array
+    real,dimension(y_len),intent(in)::y_array
+    real,dimension(x_len,y_len),intent(in)::f
+    real,intent(in)::x,y
+    real::denom,x1,x2,y1,y2
+    integer::i,j
+
+    i=binarysearch(x_len,x_array,x)
+    j=binarysearch(y_len,y_array,y)
+    x1=x_array(i)
+    x2=x_array(i+1)
+    y1=y_array(j)
+    y2=y_array(j+1)
+    denom=(x2-x1)*(y2-y1)
+    interpolate_circulation_grid=(f(i,j)*(x2-x)*(y2-y)+f(i+1,j)*(x-x1)*(y2-y)+ &
+      f(i,j+1)*(x2-x)*(y-y1)+f(i+1,j+1)*(x-x1)*(y-y1))/denom
+
+  end function interpolate_circulation_grid
   ! =====================================================================================
-    
+
   subroutine interpolate_grid_bilinear(x_len,x_array,y_len,y_array,f,u_len,x,y,ibv)
-        
+
     ! This function uses bilinear interpolation to estimate the value
     ! of a function f at point (x,y)
     ! f is assumed to be sampled on a regular grid, with the grid x values specified
     ! by x_array and the grid y values specified by y_array
     ! Reference: http://en.wikipedia.org/wiki/Bilinear_interpolation
-    
-    integer,intent(in)::x_len,y_len,u_len        
+
+    integer,intent(in)::x_len,y_len,u_len
     real,dimension(x_len),intent(in)::x_array
     real,dimension(y_len),intent(in)::y_array
     real,dimension(x_len,y_len),intent(in)::f
     real,dimension(u_len),intent(in)::x,y
     real,dimension(u_len),intent(out)::ibv
-    
+
     real::denom,x1,x2,y1,y2
     integer::i,j,p,i2,j2
 
@@ -115,7 +137,7 @@ contains
       x1=x_array(i)
       x2=x_array(i2)
       y1=y_array(j)
-      y2=y_array(j2)  
+      y2=y_array(j2)
       denom=(x2-x1)*(y2-y1)
       if(denom==0)then
         ibv(p)=f(i,j)
@@ -127,22 +149,22 @@ contains
 
   end subroutine interpolate_grid_bilinear
   ! =====================================================================================
-    
+
   subroutine interpolate_grid_bilinear3(x_len,x_array,y_len,y_array,f1,f2,f3,u_len,x,y,ib1,ib2,ib3)
-        
+
     ! This function uses bilinear interpolation to estimate the value
     ! of a function f at point (x,y)
     ! f is assumed to be sampled on a regular grid, with the grid x values specified
     ! by x_array and the grid y values specified by y_array
     ! Reference: http://en.wikipedia.org/wiki/Bilinear_interpolation
-    
-    integer,intent(in)::x_len,y_len,u_len        
+
+    integer,intent(in)::x_len,y_len,u_len
     real,dimension(x_len),intent(in)::x_array
     real,dimension(y_len),intent(in)::y_array
     real,dimension(x_len,y_len),intent(in)::f1,f2,f3
     real,dimension(u_len),intent(in)::x,y
     real,dimension(u_len),intent(out)::ib1,ib2,ib3
-    
+
     real::denom,x1,x2,y1,y2
     integer::i,j,p,i2,j2
 
@@ -158,7 +180,7 @@ contains
       x1=x_array(i)
       x2=x_array(i2)
       y1=y_array(j)
-      y2=y_array(j2)  
+      y2=y_array(j2)
       denom=(x2-x1)*(y2-y1)
       if(denom==0)then
         ib1(p)=f1(i,j)
@@ -176,9 +198,9 @@ contains
 
   end subroutine interpolate_grid_bilinear3
   ! =====================================================================================
-    
+
   subroutine pointInTriangleBoundingBox(xy,xb,yb,l)
-        
+
     integer::l
     real(kind=8)::xy(2),xb(3),yb(3)
     real(kind=8)::xmin,ymin,xmax,ymax
@@ -195,9 +217,9 @@ contains
 
   end subroutine pointInTriangleBoundingBox
   ! =====================================================================================
-    
+
   subroutine sideTriangle(xy,x1,y1,x2,y2,dist)
-        
+
     real(kind=8)::xy(2),x1,y1,x2,y2,dist
 
     dist=(y2-y1)*(xy(1)-x1)+(-x2+x1)*(xy(2)-y1)
@@ -206,9 +228,9 @@ contains
 
   end subroutine sideTriangle
   ! =====================================================================================
-    
+
   subroutine naivepointInTriangle(xy,xb,yb,l)
-        
+
     integer::l
     real(kind=8)::xy(2),xb(3),yb(3),d1,d2,d3
 
@@ -218,7 +240,7 @@ contains
     call sideTriangle(xy,xb(2),yb(2),xb(3),yb(3),d2)
     d3=-1000.
     call sideTriangle(xy,xb(3),yb(3),xb(1),yb(1),d3)
-    
+
     l=0
     if(d1>=0..and.d2>=0..and.d3>=0.) l=1
 
@@ -226,15 +248,15 @@ contains
 
   end subroutine naivepointInTriangle
   ! =====================================================================================
-    
+
   subroutine distanceSquarePt2Segment(xy,x1,y1,x2,y2,dist)
-        
+
     real(kind=8)::xy(2),x1,y1,x2,y2,dist
     real(kind=8)::squarelgth,squarelgth2,dotProduct
 
     squarelgth=(x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)
     dotProduct=((xy(1)-x1)*(x2-x1)+(xy(2)-y1)*(y2-y1))/squarelgth
-    
+
     if(dotProduct<0)then
       dist=(xy(1)-x1)*(xy(1)-x1)+(xy(2)-y1)*(xy(2)-y1)
     elseif(dotProduct<=1)then
@@ -247,7 +269,7 @@ contains
 
   end subroutine distanceSquarePt2Segment
   ! =====================================================================================
-  
+
   subroutine is_point_in_triangle(xy,xb,yb,l)
 
     integer,intent(inout)::l
@@ -274,7 +296,7 @@ contains
   ! =====================================================================================
 
   subroutine insideTriangle(xy,xb,yb,l)
-        
+
     integer::l
     real(kind=8)::xy(2),xb(3),yb(3),dist
 

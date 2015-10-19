@@ -46,6 +46,9 @@ module parameters
 
   implicit none
 
+  ! MPI type communicator
+  integer::real_type,max_type
+
   logical::updateSPM_elevation,oceanFlag,geodynamicFlag,restartFlag,udwFlag,update3d
 
   ! Step for restarting simulation
@@ -191,6 +194,58 @@ module parameters
 
   real(kind=8),dimension(:,:),allocatable::load,prevload,flexZ,flexDisp,flexSed
   real(kind=8),dimension(:),allocatable::flexX,flexY,sedloader
+
+  ! Ocean parameters
+  integer::circON,waveON
+  integer::nbox,nboy
+  real::storm_dt,ocean_Tstep,latitude,circbase,oceanfric
+  real::ocean_dt,ocean_dx,ocean_xo,ocean_yo,courant,oceanfilter
+  real,dimension(:,:),allocatable::oceanZ,circZ
+
+  ! Hindcast
+  integer::season,forecast
+  real(kind=8)::wavebase
+  real(kind=8),dimension(:,:),allocatable::ocircU,ocircV,rcircU,rcircV
+  real(kind=8),dimension(:,:,:),allocatable::circU,circV
+
+  real,dimension(8)::forecast_param
+
+  ! Number of hindcast scenarios
+  type hindcast_param
+    ! Percentage of wind/wave subgroup.
+    real::oc
+    ! Significant wave height (in metres).
+    real::hs
+    ! Wave period of the energy spectrum
+    real::per
+    ! Peak wave direction.
+    real::dir
+    ! Coefficient of directional spreading.
+    real::dd
+    ! Wind velocity at 10 m elevation (m/s).
+    real::wvel
+    ! Wind direction.
+    real::wdir
+  end type hindcast_param
+
+  type hindcast_def
+    ! Time start
+    real::tstart
+    ! Time end
+    real::tend
+    ! Subgroud parameters
+    type(hindcast_param),dimension(:),allocatable::subgroup
+  end type hindcast_def
+  type(hindcast_def),dimension(:),allocatable::hindcast
+
+  ! Hindcast group number
+  integer,dimension(:),allocatable::hcast_gp
+
+  ! Swan model
+  character(len=128)::swaninput,swaninfo,swanbot,swanout
+  real(kind=8),dimension(:,:,:),allocatable::waveU,waveV
+  real(kind=8),dimension(:,:),allocatable::owaveU,owaveV
+
 
 contains
 

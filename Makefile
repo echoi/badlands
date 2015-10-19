@@ -1,7 +1,7 @@
 # ============================================================================
 # Name        : Makefile
 # Author      : tristan salles
-# Copyright (C) 2015 
+# Copyright (C) 2015
 # Description : Makefile for BADLANDS
 # ============================================================================
 TOP=$(shell pwd)
@@ -9,7 +9,7 @@ CONFFILE= $(TOP)/config/Makefile.inc
 
 include $(CONFFILE)
 
-DIRMODS= GlobalUtils GeoMesh SpmModel IceSheet SubStrat EarthModel CouplerUtils
+DIRMODS= GlobalUtils GeoMesh SpmModel IceSheet OceanCirc SubStrat EarthModel CouplerUtils
 
 #OceanModel EarthModel  CouplerModel
 
@@ -20,13 +20,13 @@ OBJS=$(SOURCES:.f90=.o)
 
 all: dist
 
-dist: 
+dist:
 	@echo
 	@echo "*************************************************"
 	@echo "BADLANDS Author Tristan Salles "
 	@echo "*************************************************"
 	@echo
-	@mkdir -p $(BUILDDIR)	
+	@mkdir -p $(BUILDDIR)
 	@mkdir -p $(OBJDIR)
 	@mkdir -p $(MODDIR)
 	@mkdir -p $(LIBDIR)
@@ -35,26 +35,26 @@ dist:
     	  ( cd $$i ; make dist) ;       \
 	done
 	@echo "*************************************************"
-	@echo	
+	@echo
 	@echo "Build BADLANDS binary."
-	@echo	
+	@echo
 	@echo "*************************************************"
-	@$(if $(wildcard badlands_App.o),rm -f badlands_App.o,)	
+	@$(if $(wildcard badlands_App.o),rm -f badlands_App.o,)
 	make $(EXEC)
 
 $(EXEC) :	$(OBJS)
 	$(BADLANDS_F) $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) -o $@ $^ \
 	$(LDFLAGS) -lBADLANDS $(H5LDFLAGS) $(H5LIBS) $(ZOLTANLDFLAGS) $(ZOLTANLIBS) $(METISLDFLAGS) $(METISLIBS) $(LDFOXFLAGS)
 	@echo "*************************************************"
-	@echo	
+	@echo
 	@echo "BADLANDS updated in ./bin/."
-	@echo	
+	@echo
 	@echo "*************************************************"
 
 %.o : %.f90
-	$(BADLANDS_F) -c $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) $< -o $@ 
+	$(BADLANDS_F) -c $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) $< -o $@
 	$(AR) $(LIBDIR)/libBADLANDS.a $(OBJDIR)/*.o
-	
+
 dust :
 	for i in $(DIRMODS) ; do   \
     	( cd $$i ; make dust) ;       \
@@ -65,5 +65,5 @@ dust :
 clobber : dust
 	for i in $(DIRMODS) ; do   \
     	( cd $$i ; make clobber) ;   \
-	done	
+	done
 	rm -rfv $(BUILDDIR)

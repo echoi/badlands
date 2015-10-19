@@ -1,22 +1,22 @@
 ! =====================================================================================
 ! BADLANDS (BAsin anD LANdscape DynamicS)
 !
-! Copyright (c) Tristan Salles (The University of Sydney) 
+! Copyright (c) Tristan Salles (The University of Sydney)
 !
-! This program is free software; you can redistribute it and/or modify it under 
-! the terms of the GNU Lesser General Public License as published by the Free Software 
-! Foundation; either version 3.0 of the License, or (at your option) any later 
+! This program is free software; you can redistribute it and/or modify it under
+! the terms of the GNU Lesser General Public License as published by the Free Software
+! Foundation; either version 3.0 of the License, or (at your option) any later
 ! version.
 !
-! This program is distributed in the hope that it will be useful, but WITHOUT 
-! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for 
+! This program is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
 ! more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License along with
-! this program; if not, write to the Free Software Foundation, Inc., 59 Temple 
+! this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ! Place, Suite 330, Boston, MA 02111-1307 USA
-! ===================================================================================== 
+! =====================================================================================
 
 ! =====================================================================================
 !
@@ -28,7 +28,7 @@
 !        Created:  11/02/15 05:05:05
 !        Revision:  none
 !
-!        Author:  Tristan Salles     
+!        Author:  Tristan Salles
 !
 ! =====================================================================================
 
@@ -40,30 +40,30 @@ module topology
   implicit none
 
   ! Shewchuck Triangle's algorithm generated files
-  character(len=128)::TINfile,elemfile,vorofile,rstfolder 
+  character(len=128)::TINfile,elemfile,vorofile,rstfolder
 
   ! Total number of nodes and elements of the user provided regular grid
   integer::nbnodes
   integer::bnbnodes
   integer::nbelm
 
-  ! Users requested minimum delaunay triangle angle and maximum area 
+  ! Users requested minimum delaunay triangle angle and maximum area
   real(kind=8)::del_area,del_angle
-  
-  ! Boundary type 
+
+  ! Boundary type
   integer,dimension(4)::bounds
-  
-  ! Outlet type 
+
+  ! Outlet type
   integer::outlet
 
-  ! Delaunay cell centroid 
+  ! Delaunay cell centroid
   real(kind=8),dimension(:,:),allocatable::dcentroid
   real(kind=8),dimension(:,:),allocatable::Fdata,Fdata2
 
-  ! Shewchuck Triangle's algorithm delaunay elements/edges and voronoi edges  
+  ! Shewchuck Triangle's algorithm delaunay elements/edges and voronoi edges
   integer,dimension(:,:),allocatable::delmt,dedg,vedg,delmt2
 
-  ! Shewchuck Triangle's algorithm grid boundaries, voronoi duplicates and output masks 
+  ! Shewchuck Triangle's algorithm grid boundaries, voronoi duplicates and output masks
   integer,dimension(:),allocatable::tbound,mask,elemtmask
 
   ! Number of user defined refinement regions
@@ -77,7 +77,7 @@ module topology
   end type regions_refine
   type(regions_refine),dimension(:),allocatable::refine_grid
 
-contains 
+contains
   ! =====================================================================================
 
   function cmp_centroid(fce) result(centroid)
@@ -103,7 +103,7 @@ contains
 
   subroutine ReadStrings(id,str)
 
-    character(len=50)::str 
+    character(len=50)::str
     character(len=1)::delims
 
     integer,parameter::StrMax=50,Nmax=10
@@ -121,7 +121,7 @@ contains
        if(vedg(id,k)>0) vedg(id,k)=mask( vedg(id,k))
     enddo
 
-    return 
+    return
 
   end subroutine ReadStrings
   ! =====================================================================================
@@ -129,7 +129,7 @@ contains
   subroutine addpath(fname)
 
     integer::pathlen,flen
-    
+
     character(len=128)::fname,dname,dummy
 
     ! for files to be read, they'll be in the session path
@@ -156,7 +156,7 @@ contains
 
     integer::pathlen,flen
 
-    
+
     character(len=128)::fname,dname,dummy
 
     ! for files to be read, they'll be in the session path
@@ -277,12 +277,23 @@ contains
     return
 
   end subroutine noblnk
-  ! =====================================================================================
+  ! ============================================================================
+  subroutine append_str2(stg1,stg2)
 
+    integer::l1,l2
+    character(len=128)::stg1,stg2
+
+    l1=len_trim(stg1)
+    l2=len_trim(stg2)
+    stg1(l1+1:l1+l2)=stg2
+
+    return
+
+  end subroutine append_str2
+  ! =====================================================================================
   subroutine append_str(stg1,stg2)
 
     integer :: l1,l2
-
     character(len=128) :: stg1,stg2
 
     l1=len_trim(stg1)
@@ -364,7 +375,7 @@ contains
 
   end subroutine append_nb
   ! =====================================================================================
-  
+
   subroutine append_nb2(stg1,i)
 
     integer::l1,l2,i

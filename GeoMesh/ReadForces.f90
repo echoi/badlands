@@ -45,6 +45,7 @@ module readforces
   implicit none
 
   integer::dispn,rainn
+  integer::hclass,sclass
 
   logical,save::in_Sea=.false.
   logical,save::in_SeaFile=.false.
@@ -86,6 +87,27 @@ module readforces
   logical,save::in_flexporosity=.false.
   logical,save::in_flexthick=.false.
   logical,save::in_mantledens=.false.
+  ! Circulation parameters
+  logical,save::in_circ=.false.
+  logical,save::in_circon=.false.
+  logical,save::in_waveon=.false.
+  logical,save::in_courant=.false.
+  logical,save::in_stormdt=.false.
+  logical,save::in_oceandx=.false.
+  logical,save::in_oceancall=.false.
+  logical,save::in_latmean=.false.
+  logical,save::in_friccoef=.false.
+  logical,save::in_filter=.false.
+  logical,save::in_circbase=.false.
+  ! Wave Parameters Region
+  logical,save::in_wave=.false.
+  logical,save::in_wbase=.false.
+  logical,save::in_forecastnb=.false.
+  logical,save::in_seasonnb=.false.
+  logical,save::in_hindcast=.false.
+  logical,save::in_wtstart=.false.
+  logical,save::in_wtend=.false.
+  logical,save::in_seasonparam=.false.
 
 contains
 
@@ -138,6 +160,18 @@ contains
     if(name=='struct_flex')in_flex=.true.
     if(in_flex) call SflexElement_handler(name)
 
+    ! Circulation Element
+    if(name=='struct_circulation') in_circ=.true.
+    if(in_circ) call ScircElement_handler(name)
+
+    ! Wave element
+    if(name=='struct_wave') in_wave=.true.
+    if(in_wave) call SwaveElement_handler(name)
+    if(name=='forecast_class') in_hindcast=.true.
+    if(in_hindcast)then
+      call ShindcastElement_handler(name)
+    endif
+
   end subroutine startElement_handler
   ! =====================================================================================
 
@@ -153,6 +187,9 @@ contains
     call ErainmapElement_handler(name)
     call ErainfieldElement_handler(name)
     call EiceElement_handler(name)
+    call EcircElement_handler(name)
+    call EwaveElement_handler(name)
+    call EhindcastElement_handler(name)
     call EflexElement_handler(name)
 
   end subroutine endElement_handler
@@ -169,6 +206,9 @@ contains
     if(in_rain) call rainfield_characters_handler(chars)
     if(in_Ice) call ice_characters_handler(chars)
     if(in_flex) call flex_characters_handler(chars)
+    if(in_circ) call circ_characters_handler(chars)
+    if(in_wave) call wave_characters_handler(chars)
+    if(in_hindcast) call hindcast_characters_handler(chars)
 
   end subroutine characters_handler
   ! =====================================================================================
@@ -220,6 +260,47 @@ contains
     if(name=='ice_ero') in_iceero=.true.
 
   end subroutine SiceElement_handler
+  ! =====================================================================================
+
+  subroutine ScircElement_handler(name)
+
+    character(len=*),intent(in)::name
+
+    if(name=='circ_on') in_circon=.true.
+    if(name=='wave_on') in_waveon=.true.
+    if(name=='courant') in_courant=.true.
+    if(name=='storm_dt') in_stormdt=.true.
+    if(name=='ocean_dx') in_oceandx=.true.
+    if(name=='ocean_call') in_oceancall=.true.
+    if(name=='lat_mean') in_latmean=.true.
+    if(name=='fric_coef') in_friccoef=.true.
+    if(name=='filter_step') in_filter=.true.
+    if(name=='circ_base') in_circbase=.true.
+
+  end subroutine ScircElement_handler
+  ! =====================================================================================
+
+  subroutine SwaveElement_handler(name)
+
+    character(len=*),intent(in)::name
+
+    if(name=='wave_base') in_wbase=.true.
+    if(name=='forecast_nb') in_forecastnb=.true.
+    if(name=='season_nb') in_seasonnb=.true.
+
+  end subroutine SwaveElement_handler
+  ! =====================================================================================
+
+  subroutine ShindcastElement_handler(name)
+
+    character(len=*),intent(in)::name
+
+    if(name=='start_forecast') in_wtstart=.true.
+    if(name=='end_forecast') in_wtend=.true.
+    if(name=='season_param') in_seasonparam=.true.
+    if(in_seasonparam) sclass=sclass+1
+
+  end subroutine ShindcastElement_handler
   ! =====================================================================================
 
   subroutine SflexElement_handler(name)
@@ -308,6 +389,46 @@ contains
     if(name=='ice_ero') in_iceero=.false.
 
   end subroutine EiceElement_handler
+  ! =====================================================================================
+
+  subroutine EcircElement_handler(name)
+
+    character(len=*),intent(in)::name
+
+    if(name=='circ_on') in_circon=.false.
+    if(name=='wave_on') in_waveon=.false.
+    if(name=='courant') in_courant=.false.
+    if(name=='storm_dt') in_stormdt=.false.
+    if(name=='ocean_dx') in_oceandx=.false.
+    if(name=='ocean_call') in_oceancall=.false.
+    if(name=='lat_mean') in_latmean=.false.
+    if(name=='fric_coef') in_friccoef=.false.
+    if(name=='filter_step') in_filter=.false.
+    if(name=='circ_base') in_circbase=.false.
+
+  end subroutine EcircElement_handler
+  ! =====================================================================================
+
+  subroutine EwaveElement_handler(name)
+
+    character(len=*),intent(in)::name
+
+    if(name=='wave_base') in_wbase=.false.
+    if(name=='forecast_nb') in_forecastnb=.false.
+    if(name=='season_nb') in_seasonnb=.false.
+
+  end subroutine EwaveElement_handler
+  ! =====================================================================================
+
+  subroutine EhindcastElement_handler(name)
+
+    character(len=*),intent(in)::name
+
+    if(name=='start_forecast') in_wtstart=.false.
+    if(name=='end_forecast') in_wtend=.false.
+    if(name=='season_param') in_seasonparam=.false.
+
+  end subroutine EhindcastElement_handler
   ! =====================================================================================
 
   subroutine EflexElement_handler(name)
@@ -499,6 +620,93 @@ contains
   end subroutine disp_characters_handler
   ! =====================================================================================
 
+  subroutine circ_characters_handler(chars)
+
+    character(len=*),intent(in)::chars
+
+    if(in_circon)then
+      call rts(chars,circON)
+    endif
+    if(in_waveon)then
+      call rts(chars,waveON)
+    endif
+    if(in_courant)then
+      call rts(chars,courant)
+    endif
+    if(in_stormdt)then
+      call rts(chars,storm_dt)
+    endif
+    if(in_oceandx)then
+      call rts(chars,ocean_dx)
+    endif
+    if(in_oceancall)then
+      call rts(chars,ocean_Tstep)
+    endif
+    if(in_latmean)then
+      call rts(chars,latitude)
+    endif
+    if(in_friccoef)then
+      call rts(chars,oceanfric)
+    endif
+    if(in_filter)then
+      call rts(chars,oceanfilter)
+    endif
+    if(in_circbase)then
+      call rts(chars,circbase)
+    endif
+
+  end subroutine circ_characters_handler
+  ! =====================================================================================
+
+  subroutine wave_characters_handler(chars)
+
+    integer::k
+    character(len=*),intent(in)::chars
+
+    if(in_wbase)then
+      call rts(chars,wavebase)
+    endif
+    if(in_forecastnb)then
+      call rts(chars,forecast)
+      allocate(hindcast(forecast))
+    endif
+    if(in_seasonnb)then
+      call rts(chars,season)
+      do k=1,forecast
+        allocate(hindcast(k)%subgroup(season))
+      enddo
+    endif
+
+  end subroutine wave_characters_handler
+  ! =====================================================================================
+
+  subroutine hindcast_characters_handler(chars)
+
+    character(len=*),intent(in)::chars
+    real::sbwi(3)
+
+    if(in_wtstart)then
+      hclass=hclass+1
+      sclass=0
+      call rts(chars,hindcast(hclass)%tstart)
+    endif
+    if(in_wtend)then
+        call rts(chars,hindcast(hclass)%tend)
+    endif
+    if(in_seasonparam)then
+      call rts(chars,sbwi)
+      hindcast(hclass)%subgroup(sclass)%oc=sbwi(1)
+      hindcast(hclass)%subgroup(sclass)%wvel=sbwi(2)
+      hindcast(hclass)%subgroup(sclass)%wdir=sbwi(3)
+      hindcast(hclass)%subgroup(sclass)%hs=0.0_8
+      hindcast(hclass)%subgroup(sclass)%per=0.0_8
+      hindcast(hclass)%subgroup(sclass)%dir=0.0_8
+      hindcast(hclass)%subgroup(sclass)%dd=0.0_8
+    endif
+
+  end subroutine hindcast_characters_handler
+  ! =====================================================================================
+
   subroutine forces_parser
 
     type(xml_t)::xf
@@ -507,6 +715,8 @@ contains
     disp3d=.false.
     rainn=0
     dispn=0
+    hclass=0
+    sclass=0
     rain_event=0
     if(.not.udwFlag)disp%event=0
     gsea%sealevel=.false.
@@ -514,6 +724,9 @@ contains
     disp%mindist=0.0
     gausskernelSize=2
     ice_dx=0.0
+    ocean_dx=0.0
+    circON=0
+    waveON=0
     gela%ela=.false.
     gela%actual_ela=2000.
     ice_m1=0.01
@@ -555,6 +768,12 @@ contains
       cpl3_time=time_start
     else
       cpl3_time=time_end+1000.0
+    endif
+
+    if(ocean_dx>0.)then
+      cpl5_time=time_start
+    else
+      cpl5_time=time_end+1000.0
     endif
 
     if(flexure)then

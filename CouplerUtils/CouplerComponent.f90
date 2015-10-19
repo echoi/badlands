@@ -45,6 +45,8 @@ module coupling
   use watershed
   use hydrology
   use underworld
+  use wave_model
+  use ocean_model
   use earthforces
   use stratal_class
   use external_forces
@@ -199,6 +201,98 @@ contains
   end subroutine bilinearIce
   ! =====================================================================================
 
+  subroutine bilinearWave
+
+    integer::k,p,id
+    real(kind=8),dimension(nx+2,ny+2)::waU,waV
+    real,dimension(upartN)::wav1,wav2
+    real,dimension(upartN)::uxpart,uypart
+    real(kind=8),dimension(dnodes)::woV,woU
+
+    do k=1,upartN
+      id=unodeID(k)
+      uxpart(k)=real(tcoordX(id))
+      uypart(k)=real(tcoordY(id))
+    enddo
+
+    if(.not.allocated(owaveU))then
+      allocate(owaveU(dnodes,season))
+      allocate(owaveV(dnodes,season))
+    endif
+    owaveU=0.0
+    owaveV=0.0
+
+    do k=1,season
+      waU=waveU(:,:,k)
+      waV=waveV(:,:,k)
+      call interpolate_grid_bilinear(nx+2,bilinearX,ny+2,bilinearY,real(waU),upartN,uxpart,uypart,wav1)
+      call interpolate_grid_bilinear(nx+2,bilinearX,ny+2,bilinearY,real(waV),upartN,uxpart,uypart,wav2)
+      woU=-1.e6
+      woV=-1.e6
+      do p=1,upartN
+        id=unodeID(p)
+        woU(id)=wav1(p)
+        woV(id)=wav2(p)
+        if(tcoordZ(id)>gsea%actual_sea)then
+          woU(id)=0.
+          woV(id)=0.
+        endif
+      enddo
+      call mpi_allreduce(woU,owaveU(:,k),dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
+      call mpi_allreduce(woV,owaveV(:,k),dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
+    enddo
+
+    return
+
+  end subroutine bilinearWave
+  ! =====================================================================================
+
+  subroutine bilinearCirculation
+
+    integer::k,id,p
+    real(kind=8),dimension(nbox,nboy)::oceanU,oceanV
+    real,dimension(upartN)::uxpart,uypart
+    real,dimension(upartN)::circ1,circ2
+    real(kind=8),dimension(dnodes)::coV,coU
+
+    do k=1,upartN
+      id=unodeID(k)
+      uxpart(k)=real(tcoordX(id))
+      uypart(k)=real(tcoordY(id))
+    enddo
+
+    if(.not.allocated(ocircU))then
+      allocate(ocircU(dnodes,season))
+      allocate(ocircV(dnodes,season))
+    endif
+    ocircU=0.0
+    ocircV=0.0
+
+    do k=1,season
+      oceanU=circU(:,:,k)
+      oceanV=circV(:,:,k)
+      call interpolate_grid_bilinear(nbox,real(oceanX),nboy,real(oceanY),real(oceanU),upartN,uxpart,uypart,circ1)
+      call interpolate_grid_bilinear(nbox,real(oceanX),nboy,real(oceanY),real(oceanV),upartN,uxpart,uypart,circ2)
+      coU=-1.e6
+      coV=-1.e6
+      do p=1,upartN
+        id=unodeID(p)
+        coU(id)=circ1(p)
+        coV(id)=circ2(p)
+        if(tcoordZ(id)>gsea%actual_sea)then
+          coU(id)=0.
+          coV(id)=0.
+        endif
+      enddo
+      call mpi_allreduce(coU,ocircU(:,k),dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
+      call mpi_allreduce(coV,ocircV(:,k),dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
+    enddo
+
+    return
+
+  end subroutine bilinearCirculation
+  ! =====================================================================================
+
   subroutine bilinearFlex
 
     integer::k,id
@@ -222,7 +316,6 @@ contains
     call mpi_allreduce(ufV,tflex,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
 
     ! Apply the flexural isostasy to delaunay points
-    ! print*,'dedeefffffffd',tflex(1)
     do k=1,dnodes
       tcoordZ(k)=tcoordZ(k)-tflex(k)
       gtflex(k)=gtflex(k)-tflex(k)
@@ -407,14 +500,15 @@ contains
       call delaunayInterpolant(.false.)
       ! Setup ice Gaussian grid
       call ice_initialisation
-    else
-      ! Get the updated topography from TIN to regular grid
-      call delaunayInterpolant(.false.)
-      ! Build ice Gaussian grid
-      call ice_reset_topography
     endif
 
     if(cpl3_time<=simulation_time)then
+      if(simulation_time>time_start)then
+        ! Get the updated topography from TIN to regular grid
+        call delaunayInterpolant(.false.)
+        ! Build ice Gaussian grid
+        call ice_reset_topography
+      endif
       ! Run the ice SIA model
       call ice_SIA_run
       ! Update ice velocity and thickness on TIN delaunay grid
@@ -425,6 +519,98 @@ contains
     return
 
   end subroutine getIceModel
+
+  ! =====================================================================================
+
+  subroutine ocean_circulation_wave_run
+
+    integer::scn,sgp,scn1,scn2
+
+    ! Find the appropriate climatic forces
+    do scn=1,forecast
+      if(simulation_time>=hindcast(scn)%tstart.and.simulation_time<hindcast(scn)%tend)then
+        scn1=scn
+        scn2=scn
+        if(simulation_time+ocean_Tstep>=hindcast(scn)%tend)then
+          scn2=scn+1
+          if(scn2>forecast) scn2=forecast
+        endif
+      endif
+    enddo
+
+    do sgp=1,season
+      ! Allocate forecasts
+      ! For the current circulation use current step
+      forecast_param(7)=hindcast(scn1)%subgroup(sgp)%wvel*sin(hindcast(scn1)%subgroup(sgp)%wdir*3.14/180.)
+      forecast_param(8)=hindcast(scn1)%subgroup(sgp)%wvel*cos(hindcast(scn1)%subgroup(sgp)%wdir*3.14/180.)
+      ! For the wave simulation initialise the next step
+      if(sgp<season)then
+        forecast_param(1)=hindcast(scn1)%subgroup(sgp+1)%hs
+        forecast_param(2)=hindcast(scn1)%subgroup(sgp+1)%per
+        forecast_param(3)=hindcast(scn1)%subgroup(sgp+1)%dir
+        forecast_param(4)=hindcast(scn1)%subgroup(sgp+1)%dd
+        forecast_param(5)=hindcast(scn1)%subgroup(sgp+1)%wvel
+        forecast_param(6)=hindcast(scn1)%subgroup(sgp+1)%wdir
+      elseif(scn1==scn2)then
+        forecast_param(1)=hindcast(scn1)%subgroup(1)%hs
+        forecast_param(2)=hindcast(scn1)%subgroup(1)%per
+        forecast_param(3)=hindcast(scn1)%subgroup(1)%dir
+        forecast_param(4)=hindcast(scn1)%subgroup(1)%dd
+        forecast_param(5)=hindcast(scn1)%subgroup(1)%wvel
+        forecast_param(6)=hindcast(scn1)%subgroup(1)%wdir
+      else
+        forecast_param(1)=hindcast(scn2)%subgroup(1)%hs
+        forecast_param(2)=hindcast(scn2)%subgroup(1)%per
+        forecast_param(3)=hindcast(scn2)%subgroup(1)%dir
+        forecast_param(4)=hindcast(scn2)%subgroup(1)%dd
+        forecast_param(5)=hindcast(scn2)%subgroup(1)%wvel
+        forecast_param(6)=hindcast(scn2)%subgroup(1)%wdir
+      endif
+      ! First compute current circulation
+      call ocean_circulation_run(sgp)
+      call mpi_barrier(badlands_world,rc)
+      ! Then compute the wave fields
+      call waves_circulation_run(sgp)
+      call mpi_barrier(badlands_world,rc)
+    enddo
+
+  end subroutine ocean_circulation_wave_run
+  ! =====================================================================================
+
+  subroutine getOceanModel
+
+    if(simulation_time==time_start)then
+      ! Get the updated topography from TIN to regular grid
+      call delaunayInterpolant(.false.)
+      ! Setup ocean grid
+      call ocean_initialisation
+      ! Build ocean elevation grid
+      call ocean_reset_topography
+      ! Setup wave initialisation
+      call wave_initialisation
+    endif
+
+    if(cpl5_time<=simulation_time)then
+      if(simulation_time>time_start)then
+        ! Get the updated topography from TIN to regular grid
+        call delaunayInterpolant(.false.)
+        ! Build ocean elevation grid
+        call ocean_reset_topography
+      endif
+      ! Update bathymetry
+      call wave_update_bathymetry
+      ! Run the ocean circulation and wave model
+      call ocean_circulation_wave_run
+      ! Update ocean circulation on TIN delaunay grid
+      if(circON==1) call bilinearCirculation
+      ! Update ocean wave on TIN delaunay grid
+      if(waveON==1) call bilinearWave
+      cpl5_time=simulation_time+ocean_Tstep
+    endif
+
+    return
+
+  end subroutine getOceanModel
   ! =====================================================================================
 
   subroutine getFlexModel

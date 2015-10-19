@@ -90,9 +90,9 @@ contains
     cpl_time=min(cpl1_time,cpl2_time)
     cpl_time=min(cpl_time,cpl3_time)
     cpl_time=min(cpl_time,cpl4_time)
+    cpl_time=min(cpl_time,cpl5_time)
     cpl_time=min(cpl_time,time_end)
-
-    do while(simulation_time<cpl_time+0.0001)
+    do while(simulation_time<cpl_time+0.0001.and.simulation_time<cpl5_time)
 
       if(.not.allocated(filldem)) allocate(filldem(dnodes))
       if(.not.allocated(watercell)) allocate(watercell(dnodes))
