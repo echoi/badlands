@@ -679,10 +679,10 @@ contains
     ed2(:)=dedg(:,2)
     call mrgrnk(ed1,rk1)
     call mrgrnk(ed2,rk2)
-
     id1=0
     id2=0
     do cell=1,dnodes
+
       delaunayVertex(cell)%ngbNb=0
       delaunayVertex(cell)%ngbID=-1
       delaunayVertex(cell)%voronoi_edge=0.0_8
@@ -970,7 +970,7 @@ contains
       endif
 
     enddo
-
+    
     return
 
   end subroutine DelaunayVoronoiDuality

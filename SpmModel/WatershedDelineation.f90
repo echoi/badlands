@@ -58,7 +58,7 @@ contains
 
     integer::id,k,n,p,s,maxs,jcts(npets),disp(npets),disps(npets+1)
     ! real(kind=8)::act,aire
-
+    real(kind=8)::pp,dist
     if(.not.allocated(strahler)) allocate(strahler(dnodes))
     if(.not.allocated(subcatchmentID)) allocate(subcatchmentID(dnodes))
     if(.not.allocated(junctionIDs)) allocate(junctionIDs(dnodes))
@@ -85,6 +85,21 @@ contains
     enddo
 
     call mpi_allreduce(mpi_in_place,discharge,dnodes,mpi_double_precision,mpi_max,badlands_world,rc)
+
+    ! Create global catchment IDs and Chi coefficient
+    s=0
+    pp=spl_m/spl_n
+    do id=1,dnodes
+      k=stackOrder(id)
+      p=receivers(k)
+      if(p==k) s=s+1
+      bsID(k)=s
+      if(discharge(p)>0..and.discharge(k)>0.and.p/=k)then
+        dist=sqrt((tcoordX(k)-tcoordX(p))**2.+(tcoordY(k)-tcoordY(p))**2.)
+        chi(k)=chi(p)+0.5*((1./(discharge(p)))**pp+(1./(discharge(k)))**pp)*dist
+      endif
+    enddo
+
 
     ! Compute Strahler stream order
     strahler=0

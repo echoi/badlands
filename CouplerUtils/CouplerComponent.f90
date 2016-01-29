@@ -1219,6 +1219,8 @@ contains
     if(allocated(watercell)) deallocate(watercell)
     if(allocated(receivers)) deallocate(receivers)
     if(allocated(discharge)) deallocate(discharge)
+    if(allocated(bsID)) deallocate(bsID)
+    if(allocated(chi)) deallocate(chi)
     if(allocated(indexArray)) deallocate(indexArray)
     if(allocated(donorCount)) deallocate(donorCount)
     if(allocated(stackOrder)) deallocate(stackOrder)

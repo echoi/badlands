@@ -140,7 +140,7 @@ contains
            sedphi(id2)=ulay_phi(i,p)
          enddo
        endif
-       cID(k)=real(subcatchmentID(i))
+       cID(k)=real(bsID(i))
        sl(k)=gsea%actual_sea
        if(ice_dx>0.)then
         if(tcoordX(i)>minx.and.tcoordX(i)<maxx &

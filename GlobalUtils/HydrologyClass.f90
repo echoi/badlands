@@ -61,6 +61,12 @@ module hydroUtil
   ! Discharge
   real(kind=8),dimension(:),allocatable::discharge
 
+  ! Chi parameter
+  real(kind=8),dimension(:),allocatable::chi
+
+  ! Chi parameter
+  integer,dimension(:),allocatable::bsID
+
   ! Maximum number of receiver nodes
   integer::maxrcvs
 

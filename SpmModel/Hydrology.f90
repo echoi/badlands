@@ -61,10 +61,14 @@ contains
     if(.not.allocated(lstackOrder)) allocate(lstackOrder(dnodes))
     if(.not.allocated(donorCount)) allocate(donorCount(dnodes))
     if(.not.allocated(discharge)) allocate(discharge(dnodes))
+    if(.not.allocated(bsID)) allocate(bsID(dnodes))
+    if(.not.allocated(chi)) allocate(chi(dnodes))
 
     receivers=-1
     discharge=0.
     watercell=0
+    bsID=-1
+    chi=0.
     do j=1,upartN
       k=unodeID(j)
       watercell(k)=filldem(k)-spmZ(k)

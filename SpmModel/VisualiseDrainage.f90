@@ -53,7 +53,7 @@ contains
     integer::id,i,k,p,lid,rank,iter,totnodes,totelems,ierr,rcv
     integer,dimension(:),allocatable::connect,drainers,connectg
 
-    real(kind=8),dimension(:),allocatable::nodes,facc,cID,stNb
+    real(kind=8),dimension(:),allocatable::nodes,facc,cID,stNb,chiID
 
     character(len=128)::text,file
 
@@ -80,6 +80,7 @@ contains
     allocate(nodes(3*totnodes))
     allocate(facc(totnodes))
     allocate(cID(totnodes))
+    allocate(chiID(totnodes))
     allocate(stNb(totnodes))
     allocate(drainers(totnodes))
     allocate(connect(2*totnodes))
@@ -106,7 +107,8 @@ contains
          nodes(id+2)=spmZ(i)
        endif
        facc(p)=discharge(i)
-       cID(p)=real(subcatchmentID(i))
+       chiID(p)=chi(i)
+       cID(p)=real(bsID(i))
        stNb(p)=real(strahler(i))
        id=id+3
        drainers(p)=i
@@ -123,7 +125,8 @@ contains
             nodes(id+2)=spmZ(i)
          endif
          facc(p)=discharge(i)
-         cID(p)=real(subcatchmentID(i))
+         chiID(p)=chi(i)
+         cID(p)=real(bsID(i))
          stNb(p)=real(strahler(i))
          id=id+3
          drainers(p)=i
@@ -293,6 +296,30 @@ contains
     call h5dclose_f(dset_id,ierr)
     call h5sclose_f(filespace,ierr)
 
+    ! Catchment ID
+    dims(1)=1
+    dims(2)=totnodes
+    rank=2
+    call h5screate_simple_f(rank,dims,filespace,ierr)
+    text=''
+    text="/chi"
+
+    ! Create property list for collective dataset write
+    call h5pcreate_f(h5p_dataset_create_f,plist_id,ierr)
+    call h5pset_deflate_f(plist_id,9,ierr)
+    call h5pset_chunk_f(plist_id,rank,dims,ierr)
+
+    ! Create the dataset with default properties
+    call h5dcreate_f(file_id,trim(text),h5t_native_double,filespace,dset_id,ierr,plist_id)
+
+    ! Write the dataset collectively
+    call h5dwrite_f(dset_id,h5t_native_double,chiID,dims,ierr)
+    call h5pclose_f(plist_id,ierr)
+
+    ! Close the dataset
+    call h5dclose_f(dset_id,ierr)
+    call h5sclose_f(filespace,ierr)
+
     ! Node global ID
     dims(1)=1
     dims(2)=totnodes
@@ -347,7 +374,7 @@ contains
     ! Close interface
     call h5close_f(rc)
 
-    deallocate(nodes,connect,facc,stNb,drainers,cID,connectg)
+    deallocate(nodes,connect,facc,stNb,drainers,cID,connectg,chiID)
 
     return
 
@@ -360,7 +387,7 @@ contains
     integer::iter,totnodes,totelems,k,ierr
 
     character(len=128)::str,file,filename,filename1,filename2
-    character(len=128)::stg,filename3,filename4
+    character(len=128)::stg,filename3,filename4,filename5
 
     call drainage_hdf5(iter,totelems)
 
@@ -415,6 +442,7 @@ contains
             filename2=filename
             filename3=filename
             filename4=filename
+            filename5=filename
             str=':/connectivity'
             call append_str(filename,str)
             str=':/vertices'
@@ -425,6 +453,8 @@ contains
             call append_str(filename3,str)
             str=':/strahler'
             call append_str(filename4,str)
+            str=':/chi'
+            call append_str(filename5,str)
 
             ! Block begin
             call xml_NewElement(xf,"Grid")
@@ -503,7 +533,7 @@ contains
             call xml_NewElement(xf,"Attribute")
             call xml_AddAttribute(xf,"Type","Scalar")
             call xml_AddAttribute(xf,"Center","Node")
-            call xml_AddAttribute(xf,"Name","Subcatchment Id")
+            call xml_AddAttribute(xf,"Name","cID")
             call xml_NewElement(xf,"DataItem")
             call xml_AddAttribute(xf,"Format","HDF")
             call xml_AddAttribute(xf,"NumberType","Float")
@@ -513,6 +543,23 @@ contains
             call append_nb2(str,1)
             call xml_AddAttribute(xf,"Dimensions",trim(str))
             call xml_AddCharacters(xf,trim(filename3))
+            call xml_EndElement(xf,"DataItem")
+            call xml_EndElement(xf,"Attribute")
+
+            ! Chi parameter
+            call xml_NewElement(xf,"Attribute")
+            call xml_AddAttribute(xf,"Type","Scalar")
+            call xml_AddAttribute(xf,"Center","Node")
+            call xml_AddAttribute(xf,"Name","chi")
+            call xml_NewElement(xf,"DataItem")
+            call xml_AddAttribute(xf,"Format","HDF")
+            call xml_AddAttribute(xf,"NumberType","Float")
+            call xml_AddAttribute(xf,"Precision","4")
+            str=' '
+            call append_nb2(str,totnodes)
+            call append_nb2(str,1)
+            call xml_AddAttribute(xf,"Dimensions",trim(str))
+            call xml_AddCharacters(xf,trim(filename5))
             call xml_EndElement(xf,"DataItem")
             call xml_EndElement(xf,"Attribute")
             call xml_EndElement(xf,"Grid")
