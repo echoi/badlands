@@ -462,7 +462,6 @@ contains
       call rainfall
       call bilinearRain
     endif
-
     if(disp%event>0.and.cpl2_time<=simulation_time)then
       if(udwFlag)then
         call delaunayInterpolant(.false.)
@@ -1088,6 +1087,10 @@ contains
       if(disp%actual<disp%event)then
         if(disp%disptime==0.)then
           cpl2_time=disp_time(disp%actual+1,1)
+        endif
+      elseif(disp3d.and.disp%disptime>0.)then
+        if(disp_time(disp%actual,2)<time_end.and.simulation_time>disp_time(disp%actual,2))then
+          cpl2_time=time_end+1000.
         endif
       else
         cpl2_time=time_end+1000.

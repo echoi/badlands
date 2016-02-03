@@ -122,6 +122,7 @@ contains
           disp_fill(k)=k
         enddo
       endif
+
     elseif(simulation_time==time_start.and.udwFlag)then
       if(.not.allocated(disp_fill)) allocate(disp_fill(disp%event))
       do k=1,disp%event
@@ -250,7 +251,9 @@ contains
         cpl2_time=time_end+1000.
       endif
     elseif(disp3d.and.disp%disptime>0..and.disp%actual>0)then
-      if(disp_time(disp%actual+1,1)>cpl2_time+disp%disptime)then
+      if(disp%actual==disp%event.and.simulation_time<disp_time(disp%actual,2))then
+        cpl2_time=cpl2_time+disp%disptime
+      elseif(disp_time(disp%actual+1,1)>cpl2_time+disp%disptime)then
         cpl2_time=cpl2_time+disp%disptime
       else
         cpl2_time=disp_time(disp%actual+1,1)
