@@ -649,7 +649,7 @@ contains
     type(kdtree2),pointer::Ftree2
     type(kdtree2_result),dimension(12)::FRslt2
 
-    if(cpl2_time<=simulation_time)then
+    if(cpl2_time<=simulation_time.or.disp%disptime>0.)then
 
       if(allocated(nhx)) deallocate(nhx)
       if(allocated(nhy)) deallocate(nhy)
@@ -1086,7 +1086,9 @@ contains
       call bilinearRain
       ! Get next displacement timestep
       if(disp%actual<disp%event)then
-        cpl2_time=disp_time(disp%actual+1,1)
+        if(disp%disptime==0.)then
+          cpl2_time=disp_time(disp%actual+1,1)
+        endif
       else
         cpl2_time=time_end+1000.
       endif
@@ -1160,7 +1162,7 @@ contains
        write(iu,'(I10,1X,2(F16.3,1X),I2)') p,maxx,miny+(n-1)*dx,0
     enddo
 
-    ! Nodes from previous TIN after displcament
+    ! Nodes from previous TIN after displacement
     do l=1,new_nodes
       p=p+1
       write(iu,'(I10,1X,2(F16.3,1X),I2)') p,record(l,1:2),0
@@ -1182,13 +1184,20 @@ contains
     close(iu)
 
     ! Conforming Delaunay Triangulation options
-    OPTC="-Dq"
-    call append_nbreal(OPTC,del_angle)
+    OPTC="-D"
+    !call append_nbreal(OPTC,del_angle)
     stg="a"
     call append_str(OPTC,stg)
-    call append_nbreal(OPTC,del_area)
-    OPTC(len(OPTC):len(OPTC))=CHAR(0)
+    call append_nbreal(OPTC,2*del_area)
 
+    ! OPTC="-Dq"
+    ! call append_nbreal(OPTC,del_angle)
+    ! stg="a"
+    ! call append_str(OPTC,stg)
+    ! call append_nbreal(OPTC,del_area)
+
+    OPTC(len(OPTC):len(OPTC))=CHAR(0)
+    !print*,trim(OPTC)
     ! C-function Triangle call (Shewchuck's algorithm)
     call trianglegen(OPTC,TINCfile)
 

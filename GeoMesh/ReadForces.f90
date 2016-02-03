@@ -55,6 +55,7 @@ module readforces
   logical,save::in_DispET=.false.
   logical,save::in_DispST=.false.
   logical,save::in_disp=.false.
+  logical,save::in_disptime=.false.
   logical,save::in_RainGrid=.false.
   logical,save::in_RainNb=.false.
   logical,save::in_RainMFile=.false.
@@ -310,6 +311,7 @@ contains
 
     if (name=='fields_3D') in_3Dfield=.true.
     if (name=='merge_dist') in_mrgd=.true.
+    if (name=='disp_time') in_disptime=.true.
     if (name=='interval_nb') in_DispNb=.true.
 
   end subroutine SvdispElement_handler
@@ -428,6 +430,7 @@ contains
 
     if (name=='fields_3D') in_3Dfield=.false.
     if (name=='merge_dist') in_mrgd=.false.
+    if (name=='disp_time') in_disptime=.false.
     if (name=='interval_nb') in_DispNb=.false.
 
   end subroutine EvdispElement_handler
@@ -561,6 +564,8 @@ contains
 
     if(in_3Dfield)then
       disp3d=.true.
+    elseif(in_disptime)then
+      call rts(chars,disp%disptime)
     elseif(in_mrgd)then
       call rts(chars,disp%mindist)
     elseif(in_DispNb)then
@@ -684,6 +689,7 @@ contains
     gsea%sealevel=.false.
     gsea%actual_sea=0.
     disp%mindist=0.0
+    disp%disptime=0.0
     gausskernelSize=2
     ice_dx=0.0
     ocean_dx=0.0

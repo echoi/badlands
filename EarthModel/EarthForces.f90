@@ -227,9 +227,15 @@ contains
           rhyDisp(k)=0.0
           rvertDisp(k)=0.0
         else
-          rhxDisp(k)=rDisp(k,1) !/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
-          rhyDisp(k)=rDisp(k,2) !/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
-          rvertDisp(k)=rDisp(k,3) !/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+          if(disp%disptime==0.0)then
+            rhxDisp(k)=rDisp(k,1) !/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+            rhyDisp(k)=rDisp(k,2) !/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+            rvertDisp(k)=rDisp(k,3) !/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+          else
+            rhxDisp(k)=rDisp(k,1)*disp%disptime/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+            rhyDisp(k)=rDisp(k,2)*disp%disptime/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+            rvertDisp(k)=rDisp(k,3)*disp%disptime/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
+          endif
         endif
       else
         rvertDisp(k)=rDisp(k,1)/(disp_time(disp%actual,2)-disp_time(disp%actual,1))
@@ -242,6 +248,12 @@ contains
         cpl2_time=disp_time(disp%actual+1,1)
       else
         cpl2_time=time_end+1000.
+      endif
+    elseif(disp3d.and.disp%disptime>0..and.disp%actual>0)then
+      if(disp_time(disp%actual+1,1)>cpl2_time+disp%disptime)then
+        cpl2_time=cpl2_time+disp%disptime
+      else
+        cpl2_time=disp_time(disp%actual+1,1)
       endif
     endif
 

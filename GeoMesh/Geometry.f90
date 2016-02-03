@@ -970,7 +970,7 @@ contains
       endif
 
     enddo
-    
+
     return
 
   end subroutine DelaunayVoronoiDuality
@@ -1168,7 +1168,6 @@ contains
               print*,'ngh',p,tcoordX(n),tcoordY(n)
             enddo
           endif
-          if(pet_id==0) stop
         endif
       endif
     enddo
