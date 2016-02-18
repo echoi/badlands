@@ -683,6 +683,7 @@ contains
         else
           nhx(k)=tcoordX(k)
           nhy(k)=tcoordY(k)
+          nhz(k)=tcoordZ(k)
         endif
         nsh(k)=sedthick(k)
         if(flexure)then
