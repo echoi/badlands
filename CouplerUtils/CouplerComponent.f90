@@ -609,6 +609,7 @@ contains
         ulay_th(1:dnodes,flex_lay)=100000.0
         ulay_phi(1:dnodes,flex_lay)=poroTable(pressureFields)
       endif
+      flex_lay=flex_lay+1
     endif
 
     if(cpl4_time<=simulation_time)then
@@ -622,9 +623,8 @@ contains
       ! Update displacement on TIN delaunay grid
       call bilinearFlex
       cpl4_time=cpl4_time+flex_dt
+      flex_lay=flex_lay+1
     endif
-
-    flex_lay=flex_lay+1
 
     return
 
