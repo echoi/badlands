@@ -89,7 +89,7 @@ program BADLANDS_Application
   if(pet_id==0)print*,'-------------------------'
 
   do while(simulation_time<time_end)
-    
+
     ! Perform ice sheet flow modelling
     if(ice_dx>0.) call getIceModel
 

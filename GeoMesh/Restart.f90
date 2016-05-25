@@ -349,9 +349,9 @@ contains
 
     logical::compression,simple
 
-    integer::id,i,rank,rpet,localNd,p,n,loclay,id2
+    integer::id,i,rank,rpet,localNd,p,n,loclay,id2,step,j
 
-    real(kind=8),dimension(:),allocatable::nodes,nID,sedID,sedlID,layphi,layth,sedload
+    real(kind=8),dimension(:),allocatable::nodes,nID,sedID,sedlID,layphi,layth,sedload, cflex
 
     character(len=128)::text
 
@@ -359,8 +359,21 @@ contains
     integer(hid_t)::dset_id,dtype_id
     integer(hsize_t),dimension(2)::dims,maxdims
 
-    if(allocated(ulay_th)) deallocate(ulay_th)
-    if(allocated(ulay_phi)) deallocate(ulay_phi)
+    if(flexure)then
+      if(allocated(sedloader)) deallocate(sedloader)
+      if(allocated(ulay_phi)) deallocate(ulay_phi)
+      if(allocated(ulay_th)) deallocate(ulay_th)
+      allocate(sedloader(dnodes))
+
+      if(flex_dx<dx) flex_dx=dx
+      step=int(flex_dx/dx)
+      nbfx=int(nx/step)
+      nbfy=int(ny/step)
+      if(allocated(prevload)) deallocate(prevload)
+      allocate(prevload(nbfx+2,nbfy+2))
+    endif
+    !if(allocated(ulay_th)) deallocate(ulay_th)
+    !if(allocated(ulay_phi)) deallocate(ulay_phi)
 
     do rpet=0,restartPet-1
         frspm=rstfolder
@@ -426,7 +439,17 @@ contains
           call h5sget_simple_extent_ndims_f(d_spc,rank,rc)
           call h5sget_simple_extent_dims_f(d_spc,dims,maxdims,rc)
           allocate(sedload(dims(1)*dims(2)))
-          call h5dread_f(dset_id,h5t_native_double,sedloader,dims,rc)
+          call h5dread_f(dset_id,h5t_native_double,sedload,dims,rc)
+
+          text="/cumflex"
+          call h5dopen_f(file_id,trim(text),dset_id,rc)
+          call h5dget_type_f(dset_id,dtype_id,rc)
+          call h5dget_space_f(dset_id,d_spc,rc)
+          call h5sis_simple_f(d_spc,simple,rc)
+          call h5sget_simple_extent_ndims_f(d_spc,rank,rc)
+          call h5sget_simple_extent_dims_f(d_spc,dims,maxdims,rc)
+          allocate(cflex(dims(1)*dims(2)))
+          call h5dread_f(dset_id,h5t_native_double,cflex,dims,rc)
 
           text="/layth"
           call h5dopen_f(file_id,trim(text),dset_id,rc)
@@ -452,9 +475,23 @@ contains
           flex_lay=flex_lay+dims(1)
           if(.not.allocated(ulay_th))then
             allocate(ulay_th(dnodes,flex_lay),ulay_phi(dnodes,flex_lay))
-            ulay_th=0.
-            ulay_phi=0.
+            !ulay_th=0.
+            !ulay_phi=0.
           endif
+          if(.not.allocated(gtflex))then
+            allocate(gtflex(dnodes))
+            !gtflex = 0.
+          endif
+        endif
+
+        if(flexure)then
+          p = 0
+          do j=1,nbfy+2
+            do i=1,nbfx+2
+              p=p+1
+              prevload(i,j)=sedload(p)
+            enddo
+          enddo
         endif
 
         id=1
@@ -474,7 +511,8 @@ contains
             endif
             id=id+3
             if(flexure)then
-              sedloader(i)=sedload(p)
+              !sedloader(i)=sedload(p)
+              gtflex(i) = cflex(p)
               do n=1,loclay
                 id2=id2+1
                 ulay_th(i,n)=layth(id2)
@@ -495,7 +533,7 @@ contains
 
         deallocate(nodes,nID,sedID)
         if( allocated(sedlid) ) deallocate(sedlID)
-        if(flexure)deallocate(layth,layphi,sedload)
+        if(flexure)deallocate(layth,layphi,sedload,cflex)
     enddo
 
     if(allocated(bilinearX)) deallocate(bilinearX)
