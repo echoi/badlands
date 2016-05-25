@@ -488,7 +488,7 @@ contains
             !ulay_phi=0.
           endif
           if(.not.allocated(gtflex))then
-            allocate(gtflex(dnodes))
+            allocate(gtflex(dnodes)) 
             !gtflex = 0.
           endif
         endif

@@ -215,7 +215,7 @@ contains
       j=j+step
     enddo
 
-    ! Update border
+    ! Update border 
     flexZ(2:nbfx+1,1)=flexZ(2:nbfx+1,2)
     flexZ(2:nbfx+1,nbfy+2)=flexZ(2:nbfx+1,nbfy+1)
     flexZ(1,2:nbfy+1)=flexZ(2,2:nbfy+1)
