@@ -242,7 +242,7 @@ contains
   ! =====================================================================================
   subroutine getRestart_topography
 
-    integer::id,k,rc,p,n
+    integer::id,k,rc,p,n,step
 
     real(kind=8),dimension(2)::txy
     real(kind=8),dimension(2,rstnodes)::Fd
@@ -255,7 +255,14 @@ contains
       if(allocated(sedloader)) deallocate(sedloader)
       if(allocated(ulay_phi)) deallocate(ulay_phi)
       if(allocated(ulay_th)) deallocate(ulay_th)
-      allocate(sedloader(dnodes))
+      if(flex_dx<dx) flex_dx=dx
+      step=int(flex_dx/dx)
+      nbfx=int(nx/step)
+      nbfy=int(ny/step)
+      if(allocated(prevload)) deallocate(prevload)
+      allocate(prevload(nbfx+2,nbfy+2))
+      if(allocated(sedloader)) deallocate(sedloader)
+      allocate(sedloader((nbfx+2)*(nbfy+2)))
       flex_lay=flex_lay+rstlay
       allocate(ulay_th(dnodes,flex_lay))
       allocate(ulay_phi(dnodes,flex_lay))
@@ -326,7 +333,7 @@ contains
     call mpi_bcast(sedthick,dnodes,mpi_double_precision,0,badlands_world,rc)
 
     if(flexure)then
-      call mpi_bcast(sedloader,dnodes,mpi_double_precision,0,badlands_world,rc)
+      call mpi_bcast(sedloader,(nbfx+2)*(nbfy+2),mpi_double_precision,0,badlands_world,rc)
       call mpi_bcast(Fth,dnodes*rstlay,mpi_double_precision,0,badlands_world,rc)
       call mpi_bcast(Fphi,dnodes*rstlay,mpi_double_precision,0,badlands_world,rc)
       flex_lay=rstlay
@@ -363,7 +370,7 @@ contains
       if(allocated(sedloader)) deallocate(sedloader)
       if(allocated(ulay_phi)) deallocate(ulay_phi)
       if(allocated(ulay_th)) deallocate(ulay_th)
-      allocate(sedloader(dnodes))
+      !allocate(sedloader(dnodes))
 
       if(flex_dx<dx) flex_dx=dx
       step=int(flex_dx/dx)
@@ -371,6 +378,8 @@ contains
       nbfy=int(ny/step)
       if(allocated(prevload)) deallocate(prevload)
       allocate(prevload(nbfx+2,nbfy+2))
+      if(allocated(sedloader)) deallocate(sedloader)
+      allocate(sedloader((nbfx+2)*(nbfy+2)))
     endif
     !if(allocated(ulay_th)) deallocate(ulay_th)
     !if(allocated(ulay_phi)) deallocate(ulay_phi)
@@ -490,6 +499,7 @@ contains
             do i=1,nbfx+2
               p=p+1
               prevload(i,j)=sedload(p)
+              sedloader(p)=sedload(p)
             enddo
           enddo
         endif
@@ -511,7 +521,6 @@ contains
             endif
             id=id+3
             if(flexure)then
-              !sedloader(i)=sedload(p)
               gtflex(i) = cflex(p)
               do n=1,loclay
                 id2=id2+1
