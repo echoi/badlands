@@ -47,7 +47,7 @@ The code is conceived as an open-source project, and is an ideal tool for both *
 
 ### Reporting  
 
-If you come accross a bug or if you need some help compiling or using the code [drop us a line](badlandsmodel@gmail.com).
+If you come accross a bug or if you need some help compiling or using the code [drop us a line](mailto:tristan.salles@sydney.edu.au).
 
 ## Hands-on examples
 
