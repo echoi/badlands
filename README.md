@@ -63,3 +63,12 @@ A compilation of examples and some documentation related to the physics, assumpt
 | :-------------: |:-------------:|:-------------:| 
 | <a href="http://www.youtube.com/watch?feature=player_embedded&v=R16jZ2VT-ik" target="_blank"><img src="http://img.youtube.com/vi/R16jZ2VT-ik/0.jpg" alt="High-resolution depression filling model" width="240" height="180" border="10" /></a> | <a href="http://www.youtube.com/watch?feature=player_embedded&v=20Z92nnnpQY" target="_blank"><img src="http://img.youtube.com/vi/20Z92nnnpQY/0.jpg" alt="3D Tectonic forcing and drainage evolution" width="240" height="180" border="10" /></a> | <a href="http://www.youtube.com/watch?feature=player_embedded&v=ke2c9Ybb6LM" target="_blank"><img src="http://img.youtube.com/vi/ke2c9Ybb6LM/0.jpg" alt="Landscape evolution over continental scale" width="240" height="180" border="10" /></a> |
 | execution 1h 2 CPUs |execution 22h 32 CPUs|execution 4h 16 CPUs|
+
+## Citations
+
+Some documentation related to the physics & assumptions of the model can be found in:
+
++ **Salles, T. & Hardiman, L.: [Badlands: An open-source, flexible and parallel framework to study landscape dynamics](http://dx.doi.org/10.1016/j.cageo.2016.03.011), Computers & Geosciences, 91, 77-89, doi:10.1016/j.cageo.2016.03.011, 2016.**
++ **Salles, T.: [Badlands: A parallel basin and landscape dynamics model](http://dx.doi.org/10.1016/j.softx.2016.08.005), SoftwareX, doi:10.1016/j.softx.2016.08.005, 2016.**
+
+When you use **Badlands**, please cite the above papers.
