@@ -15,6 +15,8 @@ DIRMODS= GlobalUtils GeoMesh SpmModel IceSheet OceanCirc SubStrat EarthModel Cou
 
 SOURCES = badlands_App.f90
 OBJS=$(SOURCES:.f90=.o)
+BMI_SOURCES = badlands_BMI.f90
+BMI_OBJS=$(BMI_SOURCES:.f90=.o)
 
 .PHONY : all dist plugin dust clobber
 
@@ -41,6 +43,7 @@ dist:
 	@echo "*************************************************"
 	@$(if $(wildcard badlands_App.o),rm -f badlands_App.o,)
 	make $(EXEC)
+	make $(SHAREDLIB)
 
 $(EXEC) :	$(OBJS)
 	$(BADLANDS_F) $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) -o $@ $^ \
@@ -50,6 +53,11 @@ $(EXEC) :	$(OBJS)
 	@echo "BADLANDS updated in ./bin/."
 	@echo
 	@echo "*************************************************"
+
+$(SHAREDLIB) :	$(BMI_OBJS)
+	$(BADLANDS_BMI) $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) -o $@ $^ \
+	-shared -fPIC $(LDFLAGS) -lBADLANDS \
+	$(H5LDFLAGS) $(H5LIBS) $(ZOLTANLDFLAGS) $(ZOLTANLIBS) $(METISLDFLAGS) $(METISLIBS) $(LDFOXFLAGS)
 
 %.o : %.f90
 	$(BADLANDS_F) -c $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) $< -o $@
