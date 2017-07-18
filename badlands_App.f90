@@ -187,7 +187,7 @@ function BADLANDS_Initialize()
   if(pet_id==0)print*,'BADLANDS Bilinear Interpolation Initialized (s) ',t2-t1
   if(pet_id==0)print*,'-------------------------'
 
-end BADLANDS_Initialize
+end function BADLANDS_Initialize
 
 function BADLANDS_Run()
   use restart
@@ -242,11 +242,11 @@ function BADLANDS_Run()
     if(pet_id==0)print*,'-------------------------'
   enddo
 
-end BADLANDS_Run
+end function BADLANDS_Run
 
 function BADLANDS_Finalize()
   use parameters
   implicit none
 
   call mpi_finalize(rc)
-end BADLANDS_Finalize
+end function BADLANDS_Finalize
