@@ -1,4 +1,4 @@
-CFGFILE = $(TOP)/config/Makefile.cfg.osx
+CFGFILE = $(TOP)/config/Makefile.cfg.docker_linux
 include $(CFGFILE)
 
 EXEC=bin/$(EXE)
