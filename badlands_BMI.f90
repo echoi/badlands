@@ -49,7 +49,7 @@ module BADLANDS_BMI
 
 contains
 
-function BADLANDS_Initialize()
+subroutine BADLANDS_Initialize()
 
   use restart
   use geomesh
@@ -106,9 +106,9 @@ function BADLANDS_Initialize()
   if(pet_id==0)print*,'BADLANDS Bilinear Interpolation Initialized (s) ',t2-t1
   if(pet_id==0)print*,'-------------------------'
 
-end function BADLANDS_Initialize
+end subroutine BADLANDS_Initialize
 
-function BADLANDS_Run()
+subroutine BADLANDS_Run()
   use restart
   use geomesh
   use coupling
@@ -161,11 +161,13 @@ function BADLANDS_Run()
     if(pet_id==0)print*,'-------------------------'
   enddo
 
-end function BADLANDS_Run
+end subroutine BADLANDS_Run
 
-function BADLANDS_Finalize()
+subroutine BADLANDS_Finalize()
   use parameters
   implicit none
 
   call mpi_finalize(rc)
-end function BADLANDS_Finalize
+end subroutine BADLANDS_Finalize
+
+end module BADLANDS_BMI
