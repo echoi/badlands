@@ -130,7 +130,7 @@ program BADLANDS_Application
 
 end program BADLANDS_Application
 
-function BADLANDS_Initialize
+function BADLANDS_Initialize()
 
   use restart
   use geomesh
@@ -189,7 +189,7 @@ function BADLANDS_Initialize
 
 end BADLANDS_Initialize
 
-function BADLANDS_Run
+function BADLANDS_Run()
   use restart
   use geomesh
   use coupling
@@ -244,7 +244,7 @@ function BADLANDS_Run
 
 end BADLANDS_Run
 
-function BADLANDS_Finalize
+function BADLANDS_Finalize()
   use parameters
   implicit none
 
