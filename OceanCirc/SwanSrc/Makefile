@@ -8,7 +8,7 @@ include $(CONFFILE)
 TOPDIR=$(TOP)
 
 
-F77FLAGS = -O3 -m64 -w -fno-second-underscore
+F77FLAGS = -O3 -m64 -fPIC -w -fno-second-underscore
 #F77FLAGS= -O0 -g -fbounds-check -fbacktrace -finit-real=zero\
     -ffpe-trap=zero,overflow,invalid -fno-common\
     -Wtabs -Wuninitialized

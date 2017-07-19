@@ -55,7 +55,7 @@ $(EXEC) :	$(OBJS)
 	@echo "*************************************************"
 
 $(SHAREDLIB) :	$(BMI_OBJS)
-	$(BADLANDS_BMI) $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) -o $@ $^ \
+	$(BADLANDS_F) $(FFLAGS) $(FOXFLAGS) $(H5FLAGS) $(ZOLTANFLAGS) -o $@ $^ \
 	-shared -fPIC $(LDFLAGS) -lBADLANDS \
 	$(H5LDFLAGS) $(H5LIBS) $(ZOLTANLDFLAGS) $(ZOLTANLIBS) $(METISLDFLAGS) $(METISLIBS) $(LDFOXFLAGS)
 
