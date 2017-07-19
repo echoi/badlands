@@ -2,22 +2,22 @@
 
 extern "C"
 {
-    //          ,-- 2 Leading underscores to start
-    //          | ,-- then the module name
-    //          | |            ,-- then _MOD_
-    //          | |            |    ,-- then the subroutine name
-    //          V V            V    V
-    void __BADLANDS_BMI_MOD_BADLANDS_Initialize();
-    void __BADLANDS_BMI_MOD_BADLANDS_Run();
-    void __BADLANDS_BMI_MOD_BADLANDS_Finalize();
+    //   ,-- 2 Leading underscores to start
+    //   | ,-- then the module name
+    //   | |           ,-- then _MOD_
+    //   | |           |   ,-- then the subroutine name
+    //   V V           V   V
+    void __badlandsbmi_MOD_initialize();
+    void __badlandsbmi_MOD_run();
+    void __badlandsbmi_MOD_finalize();
 }
 
 int main() 
 {
 
-    __BADLANDS_BMI_MOD_BADLANDS_Initialize();
-    __BADLANDS_BMI_MOD_BADLANDS_Run();
-    __BADLANDS_BMI_MOD_BADLANDS_Finalize();
+    __badlandsbmi_MOD_initialize();
+    __badlandsbmi_MOD_run();
+    __badlandsbmi_MOD_finalize();
 
     return 0;
 }
