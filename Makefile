@@ -43,6 +43,7 @@ dist:
 	@echo "*************************************************"
 	@$(if $(wildcard badlands_App.o),rm -f badlands_App.o,)
 	make $(EXEC)
+	@mkdir -p lib
 	make $(SHAREDLIB)
 
 $(EXEC) :	$(OBJS)

@@ -1,3 +1,5 @@
+#include <iostream>
+
 extern "C"
 {
     //          ,-- 2 Leading underscores to start
@@ -5,9 +7,9 @@ extern "C"
     //          | |            ,-- then _MOD_
     //          | |            |    ,-- then the subroutine name
     //          V V            V    V
-    extern void __BADLANDS_BMI_MOD_BADLANDS_Initialize();
-    extern void __BADLANDS_BMI_MOD_BADLANDS_Run();
-    extern void __BADLANDS_BMI_MOD_BADLANDS_Finalize();
+    void __BADLANDS_BMI_MOD_BADLANDS_Initialize();
+    void __BADLANDS_BMI_MOD_BADLANDS_Run();
+    void __BADLANDS_BMI_MOD_BADLANDS_Finalize();
 }
 
 int main() 
@@ -17,4 +19,5 @@ int main()
     __BADLANDS_BMI_MOD_BADLANDS_Run();
     __BADLANDS_BMI_MOD_BADLANDS_Finalize();
 
+    return 0;
 }

@@ -2,7 +2,7 @@ CFGFILE = $(TOP)/config/Makefile.cfg.docker_linux
 include $(CFGFILE)
 
 EXEC=bin/$(EXE)
-SHAREDLIB=bin/libbadlands.so
+SHAREDLIB=lib/libbadlands.so
 
 BUILDDIR=$(TOP)/build
 OBJDIR=$(BUILDDIR)/objects

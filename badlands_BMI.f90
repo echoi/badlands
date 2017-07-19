@@ -31,7 +31,7 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-module BADLANDS_BMI
+module BADLANDSBMI
 
   use restart
   use geomesh
@@ -49,7 +49,7 @@ module BADLANDS_BMI
 
 contains
 
-subroutine BADLANDS_Initialize()
+subroutine Initialize()
 
   use restart
   use geomesh
@@ -106,9 +106,9 @@ subroutine BADLANDS_Initialize()
   if(pet_id==0)print*,'BADLANDS Bilinear Interpolation Initialized (s) ',t2-t1
   if(pet_id==0)print*,'-------------------------'
 
-end subroutine BADLANDS_Initialize
+end subroutine Initialize
 
-subroutine BADLANDS_Run()
+subroutine Run()
   use restart
   use geomesh
   use coupling
@@ -161,13 +161,13 @@ subroutine BADLANDS_Run()
     if(pet_id==0)print*,'-------------------------'
   enddo
 
-end subroutine BADLANDS_Run
+end subroutine Run
 
-subroutine BADLANDS_Finalize()
+subroutine Finalize()
   use parameters
   implicit none
 
   call mpi_finalize(rc)
-end subroutine BADLANDS_Finalize
+end subroutine Finalize
 
-end module BADLANDS_BMI
+end module BADLANDSBMI
