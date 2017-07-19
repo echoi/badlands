@@ -7,7 +7,7 @@ extern "C"
     //   | |           ,-- then _MOD_
     //   | |           |   ,-- then the subroutine name
     //   V V           V   V
-    void __badlandsbmi_MOD_initialize();
+    void __badlandsbmi_MOD_initialize(const char* buffer, int len);
     void __badlandsbmi_MOD_run();
     void __badlandsbmi_MOD_finalize();
 }
@@ -15,7 +15,12 @@ extern "C"
 int main() 
 {
 
-    __badlandsbmi_MOD_initialize();
+    CString fileName = "test.udm";
+    const char* buffer = fileName.GetBuffer();
+    int len = fileName.GetLength();
+    //F_VALIDATE_XML(buffer, len);
+
+    __badlandsbmi_MOD_initialize(buffer, len);
     __badlandsbmi_MOD_run();
     __badlandsbmi_MOD_finalize();
 

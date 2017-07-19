@@ -31,7 +31,7 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-module BADLANDSBMI
+module badlandsbmi
 
   use restart
   use geomesh
@@ -49,7 +49,8 @@ module BADLANDSBMI
 
 contains
 
-subroutine Initialize()
+!subroutine initialize(filename)
+subroutine initialize(file_name, len) 
 
   use restart
   use geomesh
@@ -65,20 +66,24 @@ subroutine Initialize()
   integer::opt
   real(kind=8)::t1,t2
 
+  integer, value, intent(in) :: len
+  character(len), intent(in) :: file_name
+
   ! start up MPI
   call mpi_init(rc)
   call mpi_comm_size(badlands_world,npets,rc)
   call mpi_comm_rank(badlands_world,pet_id,rc)
 
   ! Get experiment file name
-  xmlfile=''
-  opt=iargc()
-  if(opt<1)then
-    print*,'Wrong command line, use: mpirun -n X ./badlands <xml-file-name>'
-    call mpi_finalize(rc)
-  elseif(opt==1)then
-    call getarg(1,xmlfile)
-  endif
+  !xmlfile=''
+  !opt=iargc()
+  !if(opt<1)then
+  !  print*,'Wrong command line, use: mpirun -n X ./badlands <xml-file-name>'
+  !  call mpi_finalize(rc)
+  !elseif(opt==1)then
+  !  call getarg(1,xmlfile)
+  !endif
+  xmlfile = file_name
 
   ! Define simulation meshes
   t1=mpi_wtime()
@@ -106,9 +111,9 @@ subroutine Initialize()
   if(pet_id==0)print*,'BADLANDS Bilinear Interpolation Initialized (s) ',t2-t1
   if(pet_id==0)print*,'-------------------------'
 
-end subroutine Initialize
+end subroutine initialize
 
-subroutine Run()
+subroutine run()
   use restart
   use geomesh
   use coupling
@@ -161,13 +166,13 @@ subroutine Run()
     if(pet_id==0)print*,'-------------------------'
   enddo
 
-end subroutine Run
+end subroutine run
 
-subroutine Finalize()
+subroutine finalize()
   use parameters
   implicit none
 
   call mpi_finalize(rc)
-end subroutine Finalize
+end subroutine finalize
 
-end module BADLANDSBMI
+end module badlandsbmi
