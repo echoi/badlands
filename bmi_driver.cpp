@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string.h>
 
 extern "C"
 {
@@ -7,22 +8,21 @@ extern "C"
     //   | |           ,-- then _MOD_
     //   | |           |   ,-- then the subroutine name
     //   V V           V   V
-    void __badlandsbmi_MOD_initialize(const char* buffer, int len);
-    void __badlandsbmi_MOD_run();
-    void __badlandsbmi_MOD_finalize();
+    void __badlands_bmi_MOD_initialize(const char* buffer, int len);
+    void __badlands_bmi_MOD_run();
+    void __badlands_bmi_MOD_finalize();
 }
 
 int main() 
 {
 
-    CString fileName = "test.udm";
-    const char* buffer = fileName.GetBuffer();
-    int len = fileName.GetLength();
-    //F_VALIDATE_XML(buffer, len);
+    std::string fileName = "./input_detachment.xml";
+    const char* buffer = fileName.c_str();
+    size_t len = strlen(buffer);
 
-    __badlandsbmi_MOD_initialize(buffer, len);
-    __badlandsbmi_MOD_run();
-    __badlandsbmi_MOD_finalize();
+    __badlands_bmi_MOD_initialize(buffer, len);
+    __badlands_bmi_MOD_run();
+    __badlands_bmi_MOD_finalize();
 
     return 0;
 }

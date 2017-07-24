@@ -31,7 +31,7 @@
 !        Author:  Tristan Salles
 !
 ! =====================================================================================
-module badlandsbmi
+module badlands_bmi
 
   use restart
   use geomesh
@@ -175,4 +175,4 @@ subroutine finalize()
   call mpi_finalize(rc)
 end subroutine finalize
 
-end module badlandsbmi
+end module badlands_bmi
